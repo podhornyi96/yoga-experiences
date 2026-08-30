@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="Sunset Yoga by the Ocean">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f0a86a"/>
+      <stop offset="0.5" stop-color="#c97a63"/>
+      <stop offset="1" stop-color="#2f3a4a"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#g)"/>
+  <circle cx="400" cy="300" r="90" fill="#ffd9a0" opacity="0.7"/>
+  <rect y="420" width="800" height="180" fill="#243140" opacity="0.5"/>
+  <text x="400" y="290" font-family="Georgia, serif" font-size="44" fill="#fff" text-anchor="middle">Sunset Yoga</text>
+  <text x="400" y="335" font-family="Arial, sans-serif" font-size="22" fill="#fdeede" text-anchor="middle">By the ocean &#183; placeholder image</text>
+</svg>
