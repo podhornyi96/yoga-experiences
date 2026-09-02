@@ -5,6 +5,7 @@ import { Section, SectionHeading } from "@/components/Section";
 import { GroupCard } from "@/components/GroupCard";
 import { ExperienceCard } from "@/components/ExperienceCard";
 import { Testimonials } from "@/components/Testimonials";
+import { BehindTheScenes } from "@/components/BehindTheScenes";
 import { BookingCTA } from "@/components/BookingCTA";
 import { getFeatured } from "@/data/experiences";
 import { siteConfig } from "@/config/site";
@@ -122,6 +123,15 @@ export default function HomePage() {
             </div>
           ))}
         </div>
+      </Section>
+
+      <Section>
+        <SectionHeading
+          eyebrow="Behind the scenes"
+          title="Take a peek behind the scenes"
+          description="Real sessions around Lisbon — sunrise, the river, and sunset by the ocean."
+        />
+        <BehindTheScenes />
       </Section>
 
       {/* Testimonials */}

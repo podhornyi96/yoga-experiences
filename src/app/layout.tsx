@@ -6,8 +6,11 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { JsonLd } from "@/components/JsonLd";
+import { CookieBanner } from "@/components/CookieBanner";
 import { MetaPixel } from "@/components/MetaPixel";
+import { MicrosoftClarity } from "@/components/MicrosoftClarity";
 import { localBusinessSchema } from "@/lib/structured-data";
+import { isValidClarityId } from "@/lib/clarity";
 import { isValidPixelId } from "@/lib/pixel";
 
 const body = Inter({
@@ -34,8 +37,6 @@ export const metadata: Metadata = {
     "sunrise yoga Lisbon",
     "sunset yoga Lisbon",
     "beach yoga Lisbon",
-    "yoga Estrela park",
-    "yoga Graça",
     "corporate yoga Lisbon",
     "private yoga Lisbon",
     "yoga classes Lisbon",
@@ -57,6 +58,9 @@ export const metadata: Metadata = {
     images: [siteConfig.ogImage],
   },
   robots: { index: true, follow: true },
+  verification: {
+    google: "CB0B9TEHyF_ua_LWLRmBEhO-GPkNp9TnG3BYgdPwTcU",
+  },
 };
 
 export default function RootLayout({
@@ -76,10 +80,15 @@ export default function RootLayout({
         isValidPixelId(siteConfig.metaPixelId) ? (
           <MetaPixel pixelId={siteConfig.metaPixelId} />
         ) : null}
+        {process.env.NODE_ENV === "production" &&
+        isValidClarityId(siteConfig.clarityId) ? (
+          <MicrosoftClarity projectId={siteConfig.clarityId} />
+        ) : null}
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />
         <WhatsAppFloat />
+        <CookieBanner />
       </body>
     </html>
   );

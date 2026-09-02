@@ -4,14 +4,16 @@ import { SectionHeading } from "@/components/Section";
 import { BookingCTA } from "@/components/BookingCTA";
 import { JsonLd } from "@/components/JsonLd";
 import { siteConfig } from "@/config/site";
+import { pageSeo } from "@/lib/seo";
 import { breadcrumbSchema } from "@/lib/structured-data";
 
-export const metadata: Metadata = {
-  title: "Contact & Booking — Yoga in Lisbon",
+export const metadata: Metadata = pageSeo({
+  title: "Contact & Booking | Yoga in Lisbon",
   description:
     "Book a yoga experience in Lisbon via WhatsApp or email. Sunrise, sunset, park, private and corporate sessions.",
-  alternates: { canonical: "/contact/" },
-};
+  path: "/contact/",
+  absolute: true,
+});
 
 export default function ContactPage() {
   return (

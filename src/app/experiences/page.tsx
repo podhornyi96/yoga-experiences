@@ -4,14 +4,16 @@ import { SectionHeading } from "@/components/Section";
 import { ExperienceCard } from "@/components/ExperienceCard";
 import { JsonLd } from "@/components/JsonLd";
 import { getExperiencesByGroup, groups } from "@/data/experiences";
+import { pageSeo } from "@/lib/seo";
 import { breadcrumbSchema } from "@/lib/structured-data";
 
-export const metadata: Metadata = {
-  title: "Yoga Experiences in Lisbon — Sunrise, Sunset & Park Sessions",
+export const metadata: Metadata = pageSeo({
+  title: "Yoga Experiences in Lisbon | Ivanna Yoga",
   description:
     "Book drop-in yoga experiences: sunrise yoga, sunset by the ocean, and forest immersions in Sintra. All levels welcome.",
-  alternates: { canonical: "/experiences/" },
-};
+  path: "/experiences/",
+  absolute: true,
+});
 
 export default function ExperiencesPage() {
   const items = getExperiencesByGroup("experiences");

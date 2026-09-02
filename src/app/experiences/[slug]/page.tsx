@@ -14,6 +14,7 @@ import {
   getExperienceDetailPages,
   groups,
 } from "@/data/experiences";
+import { pageSeo } from "@/lib/seo";
 import {
   breadcrumbSchema,
   experienceSchema,
@@ -32,16 +33,12 @@ export async function generateMetadata({
   const { slug } = await params;
   const exp = getExperienceBySlug(slug);
   if (!exp) return {};
-  return {
+  return pageSeo({
     title: `${exp.title} in Lisbon`,
     description: exp.summary,
-    alternates: { canonical: `/experiences/${exp.slug}/` },
-    openGraph: {
-      title: `${exp.title} — ${groups[exp.group].label} in Lisbon`,
-      description: exp.summary,
-      images: [{ url: exp.images[0] }],
-    },
-  };
+    path: `/experiences/${exp.slug}/`,
+    image: exp.images[0],
+  });
 }
 
 export default async function ExperienceDetailPage({

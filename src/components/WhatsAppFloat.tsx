@@ -1,10 +1,17 @@
+"use client";
+
 import { siteConfig, whatsappLink } from "@/config/site";
+import { useConsent } from "@/lib/use-consent";
 import { WhatsAppIcon } from "./BookingCTA";
 
 export function WhatsAppFloat() {
+  const { bannerVisible } = useConsent();
   const href = whatsappLink(
     `Hi ${siteConfig.teacher.name}! I'd like to book a yoga experience in Lisbon.`,
   );
+
+  if (bannerVisible) return null;
+
   return (
     <a
       href={href}

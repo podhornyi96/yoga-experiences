@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { siteConfig, whatsappLink } from "@/config/site";
+import { CookieSettingsButton } from "./CookieSettingsButton";
 
 export function Footer() {
   const year = new Date().getFullYear();
@@ -83,7 +84,13 @@ export function Footer() {
             © {year} {siteConfig.name}. Yoga in {siteConfig.geo.city},{" "}
             {siteConfig.geo.country}.
           </p>
-          <p>Made with calm in Lisbon.</p>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <Link href="/privacy/" className="hover:text-clay">
+              Privacy
+            </Link>
+            <CookieSettingsButton />
+            <p>Made with calm in Lisbon.</p>
+          </div>
         </div>
       </div>
     </footer>

@@ -13,9 +13,8 @@ export const siteConfig = {
   // Production URL — update before launch. Used for canonical URLs, sitemap and OG.
   url: "https://ivanna-yoga.com",
   locale: "en",
-  // Default Open Graph image. Placeholder SVG for now — replace with a real
-  // 1200x630 JPG/PNG (most social platforms don't render SVG previews).
-  ogImage: "/og.svg",
+  // Default Open Graph image (1200×630 JPG) for link previews.
+  ogImage: "/og.jpg",
 
   // Teacher / brand
   teacher: {
@@ -67,6 +66,10 @@ export const siteConfig = {
   // Meta (Facebook) Pixel ID from Events Manager. Leave empty to skip loading.
   // Can also be overridden via NEXT_PUBLIC_META_PIXEL_ID (Cloudflare Pages build env).
   metaPixelId: process.env.NEXT_PUBLIC_META_PIXEL_ID ?? "1674795200888489",
+
+  // Microsoft Clarity project ID. Leave empty to skip loading.
+  // Can also be overridden via NEXT_PUBLIC_CLARITY_ID (Cloudflare Pages build env).
+  clarityId: process.env.NEXT_PUBLIC_CLARITY_ID ?? "yc4t014jn9",
 };
 
 export type SiteConfig = typeof siteConfig;

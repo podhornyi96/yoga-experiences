@@ -4,14 +4,16 @@ import { SectionHeading } from "@/components/Section";
 import { ExperienceCard } from "@/components/ExperienceCard";
 import { JsonLd } from "@/components/JsonLd";
 import { getExperiencesByGroup } from "@/data/experiences";
+import { pageSeo } from "@/lib/seo";
 import { breadcrumbSchema } from "@/lib/structured-data";
 
-export const metadata: Metadata = {
-  title: "Private Yoga in Lisbon — 1:1 & Tandem Sessions",
+export const metadata: Metadata = pageSeo({
+  title: "Private Yoga in Lisbon | Ivanna Yoga",
   description:
     "Personalised private yoga in Lisbon. One-to-one and tandem sessions tailored to your body, goals and schedule. For beginners and experienced practitioners alike.",
-  alternates: { canonical: "/private/" },
-};
+  path: "/private/",
+  absolute: true,
+});
 
 export default function PrivatePage() {
   const items = getExperiencesByGroup("private");

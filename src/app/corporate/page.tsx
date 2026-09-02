@@ -9,6 +9,7 @@ import { ExperienceDetails } from "@/components/ExperienceDetails";
 import { PriceTag } from "@/components/PriceTag";
 import { JsonLd } from "@/components/JsonLd";
 import { getExperiencesByGroup, groups } from "@/data/experiences";
+import { pageSeo } from "@/lib/seo";
 import {
   breadcrumbSchema,
   experienceSchema,
@@ -48,18 +49,21 @@ const formats = [
 export function generateMetadata(): Metadata {
   const exp = getExperiencesByGroup("corporate")[0];
   if (!exp) {
-    return { title: "Corporate Yoga in Lisbon for IT & Tech Teams" };
+    return pageSeo({
+      title: "Corporate Yoga for IT Teams | Lisbon",
+      description:
+        "On-site yoga for companies in Lisbon. A simple wellbeing benefit for tech teams.",
+      path: "/corporate/",
+      absolute: true,
+    });
   }
-  return {
-    title: `${exp.title} in Lisbon`,
+  return pageSeo({
+    title: "Corporate Yoga for IT Teams | Lisbon",
     description: exp.summary,
-    alternates: { canonical: "/corporate/" },
-    openGraph: {
-      title: `${exp.title} — ${groups.corporate.label} in Lisbon`,
-      description: exp.summary,
-      images: [{ url: exp.images[0] }],
-    },
-  };
+    path: "/corporate/",
+    image: exp.images[0],
+    absolute: true,
+  });
 }
 
 export default function CorporatePage() {

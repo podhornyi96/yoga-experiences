@@ -7,6 +7,9 @@
 /images/*
   Cache-Control: public, max-age=3600, must-revalidate
 
+/videos/*
+  Cache-Control: public, max-age=86400, must-revalidate
+
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin

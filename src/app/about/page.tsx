@@ -7,14 +7,17 @@ import { BookingCTA } from "@/components/BookingCTA";
 import { CredentialsGallery } from "@/components/CredentialsGallery";
 import { JsonLd } from "@/components/JsonLd";
 import { siteConfig } from "@/config/site";
+import { pageSeo } from "@/lib/seo";
 import { breadcrumbSchema } from "@/lib/structured-data";
 
-export const metadata: Metadata = {
-  title: "About — Your Yoga Teacher in Lisbon",
+export const metadata: Metadata = pageSeo({
+  title: "About Ivanna | Yoga Teacher in Lisbon",
   description:
     "Meet Ivanna — RYT-300 certified Hatha yoga teacher in Lisbon with 8+ years of experience. Breathwork, meditation, sound healing and outdoor sessions across the city.",
-  alternates: { canonical: "/about/" },
-};
+  path: "/about/",
+  image: "/images/me/ivanna-hero-portrait.jpg",
+  absolute: true,
+});
 
 const values = [
   {

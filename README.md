@@ -36,7 +36,7 @@ src/
   config/site.ts       # SINGLE source of truth: contact, bank, geo, feature flags
   data/experiences.ts  # all offerings (experiences / private / corporate) + pricing
   data/testimonials.ts # reviews
-  lib/structured-data.ts # JSON-LD builders (LocalBusiness, Event, Service, FAQ, Breadcrumb)
+  lib/structured-data.ts # JSON-LD builders (LocalBusiness, Service, FAQ, Breadcrumb)
 functions/api/checkout.ts # Cloudflare Pages Function stub for FUTURE payments
 public/images/...      # placeholder cover art (replace with real photos)
 ```
@@ -52,9 +52,7 @@ Almost everything is data-driven — no need to touch components:
 - **Photos:** drop real images into `public/images/experiences/<slug>/` and
   update the `images` array for that item (replace the placeholder `.svg`).
 - **Testimonials:** edit [`src/data/testimonials.ts`](src/data/testimonials.ts).
-- **Social preview image:** replace `public/og.svg` with a real 1200×630
-  JPG/PNG and update `ogImage` in `src/config/site.ts` (social platforms don't
-  render SVG previews).
+- **Social preview image:** `public/og.jpg` (1200×630). Change `ogImage` in `src/config/site.ts` if you replace it.
 
 ## Deploy to Cloudflare Pages
 
@@ -78,25 +76,34 @@ npx wrangler pages deploy out
 After connecting your custom domain, update `url` in `src/config/site.ts`
 (used for canonical URLs, the sitemap and structured data).
 
-## SEO (optimized for Lisbon / local search)
+## SEO (Lisbon / local search)
 
-Already implemented:
+Live site: `https://ivanna-yoga.com`. Canonicals, sitemap and Open Graph must
+keep using this host (`src/config/site.ts` → `url`).
 
-- Per-page `<title>` / meta descriptions with Lisbon geo keywords
-- Open Graph + Twitter cards, `metadataBase`, canonical URLs
-- `sitemap.xml` and `robots.txt`
-- JSON-LD structured data: `LocalBusiness` / `SportsActivityLocation`,
-  `Event` (for experiences), `Service` (private/corporate), `FAQPage`,
-  `BreadcrumbList`
-- Fast static pages, semantic headings, descriptive alt text
+### Done
 
-Post-launch checklist:
+- Per-page titles, descriptions and `rel=canonical` (trailing slashes)
+- Unique Open Graph + Twitter tags per route; default share image `public/og.jpg` (1200×630)
+- `sitemap.xml` / `robots.txt` (generated from `src/app/sitemap.ts` and `src/app/robots.ts`)
+- JSON-LD: `LocalBusiness`, `Service` (bookable offerings — not `Event`, no dates), `FAQPage`, `BreadcrumbList`
+- One H1 per page; www → apex **301** in Cloudflare Redirect Rules
+- Images compressed for the web; `/images/*` cached 1 hour (`public/_headers`)
+- Sitemap submitted in [Google Search Console](https://search.google.com/search-console) for `https://ivanna-yoga.com`
 
-- [ ] Replace placeholder text, prices, photos and contact details
-- [ ] Create a **Google Business Profile** for Lisbon and keep NAP consistent
-- [ ] Verify the site in **Google Search Console** and submit `sitemap.xml`
-- [ ] Add a real 1200×630 social/OG image
-- [ ] List in relevant local directories (TripAdvisor, GetYourGuide, etc.)
+### Still to do
+
+- [ ] Wait for indexing in Search Console (hours–days). Optionally: URL Inspection → Request indexing on `/`
+- [ ] Create a **Google Business Profile** (NAP consistent with `src/config/site.ts`)
+- [ ] Replace placeholder testimonials in `src/data/testimonials.ts` with real quotes
+- [ ] Optional: Portuguese pages / `hreflang` for “yoga Lisboa”
+- [ ] Optional: `Person` schema for the teacher; drop `HealthClub` if it still feels wrong
+- [ ] Optional: list on TripAdvisor / GetYourGuide
+- [ ] Delete unused `public/images/me/IMG_4805.JPG` (~12 MB) if it is not needed
+
+After replacing a photo at the **same filename**, either rename the file (cache
+bust) or purge Cloudflare cache — browsers/CDN may keep `/images/*` for up to
+an hour.
 
 ## Enabling online payments later
 
