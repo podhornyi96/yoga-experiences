@@ -92,8 +92,8 @@ export default function CorporatePage() {
             description={g.description}
           />
 
-          <div className="mt-6 grid gap-10 lg:grid-cols-[1.4fr_1fr] lg:items-start">
-            <div>
+          <div className="mt-6 grid min-w-0 gap-10 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-start">
+            <div className="min-w-0">
               <ExperienceGallery
                 images={exp.images}
                 title={exp.title}

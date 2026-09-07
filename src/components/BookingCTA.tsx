@@ -16,16 +16,21 @@ export function BookingCTA({
   size = "md",
   variant = "primary",
   label,
+  message: messageOverride,
 }: {
   experience?: Experience;
   className?: string;
   size?: "md" | "lg";
   variant?: "primary" | "secondary";
   label?: string;
+  /** Pre-filled WhatsApp text. Defaults to a generic booking / enquiry message. */
+  message?: string;
 }) {
-  const message = experience
-    ? `Hi ${siteConfig.teacher.name}! I'd like to book "${experience.title}". Could you share the next available dates?`
-    : `Hi ${siteConfig.teacher.name}! I'd like to know more about your yoga experiences in Lisbon.`;
+  const message =
+    messageOverride ??
+    (experience
+      ? `Hi ${siteConfig.teacher.name}! I'd like to book "${experience.title}". Could you share the next available dates?`
+      : `Hi ${siteConfig.teacher.name}! I'd like to know more about your yoga experiences in Lisbon.`);
 
   const href = whatsappLink(message);
 

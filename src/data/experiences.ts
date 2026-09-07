@@ -6,6 +6,8 @@
  * so that adding online payments later is a small, localized change.
  */
 
+import type { GroupPriceSchedule } from "@/lib/group-pricing";
+
 export type Group = "experiences" | "private" | "corporate";
 
 export type PriceUnit =
@@ -75,6 +77,19 @@ export interface Experience {
   cardImagePosition?: ImageFocalPoint;
   faq: Faq[];
   featured?: boolean;
+  /**
+   * When set, the detail page shows a people selector and a live group price.
+   */
+  groupPricing?: {
+    maxGuests: number;
+    schedule: GroupPriceSchedule;
+    /** Offer optional yoga-mat rental (€5 each, max 6). */
+    mats?: boolean;
+  };
+  /** Yoga-mat add-on on the detail page (€5 each, max 6). Implied by groupPricing. */
+  matRental?: boolean;
+  /** Fixed party size when people aren't selectable (Private / Tandem). */
+  fixedGuests?: number;
 }
 
 export const groups: Record<
@@ -114,10 +129,11 @@ export const experiences: Experience[] = [
       "Start your day with a gentle sunrise flow and the city waking up around you.",
     description:
       "Greet the day with a calming Vinyasa flow as the sun rises over Lisbon. This sunrise yoga session blends mindful movement and breathwork to leave you grounded, energised and clear-headed before the city wakes up. Suitable for all levels — modifications offered throughout.",
-    price: { amount: 99, currency: "EUR", unit: "from" },
+    price: { amount: 50, currency: "EUR", unit: "from" },
     bookingType: "whatsapp",
     duration: "60 min",
     groupSize: "Up to 30 people",
+    groupPricing: { maxGuests: 30, schedule: "coastal", mats: true },
     locationLabel: "Largo Portas do Sol",
     locationUrl:
       "https://maps.app.goo.gl/NyVbTeYwjc7KskRX8?g_st=ic",
@@ -127,7 +143,7 @@ export const experiences: Experience[] = [
       "Breathwork + gentle Vinyasa",
       "Stunning early-morning city light",
     ],
-    includes: ["Yoga mat (on request)", "Guided breathwork"],
+    includes: ["Yoga mat (€5, on request)", "Guided breathwork"],
     images: [
       "/images/experiences/sunrise-yoga-lisbon/sunrise-yoga-lisbon-1.jpg",
       "/images/experiences/sunrise-yoga-lisbon/sunrise-yoga-lisbon-2.jpg",
@@ -141,7 +157,7 @@ export const experiences: Experience[] = [
       {
         question: "Do I need to bring a mat?",
         answer:
-          "We can provide a mat on request — just mention it when you book on WhatsApp.",
+          "You can rent a yoga mat for €5 — choose how many you need when you book. You're also welcome to bring your own.",
       },
       {
         question: "What if I'm a complete beginner?",
@@ -159,10 +175,11 @@ export const experiences: Experience[] = [
       "Unwind with a slow flow on the sand as the sun sets over the Atlantic.",
     description:
       "Roll out your mat at Praia das Avencas (Parede) and flow with the sound of the waves. This sunset yoga experience by the ocean combines a slow, restorative practice with golden-hour views over the Atlantic — the perfect way to end the day.",
-    price: { amount: 99, currency: "EUR", unit: "from" },
+    price: { amount: 50, currency: "EUR", unit: "from" },
     bookingType: "whatsapp",
     duration: "60 min",
     groupSize: "Up to 8 people",
+    groupPricing: { maxGuests: 8, schedule: "coastal", mats: true },
     locationLabel: "Praia das Avencas (Parede)",
     locationUrl:
       "https://maps.app.goo.gl/C7LJKA8XEhHEnFdg8?g_st=ic",
@@ -172,7 +189,12 @@ export const experiences: Experience[] = [
       "Slow, restorative flow",
       "Sound of the waves",
     ],
-    includes: ["Guided relaxation", "Beach-friendly sequence", "Small group"],
+    includes: [
+      "Guided relaxation",
+      "Beach-friendly sequence",
+      "Small group",
+      "Yoga mat (€5, on request)",
+    ],
     images: [
       "/images/experiences/sunset-yoga-ocean/sunset-yoga-ocean-1.jpg",
       "/images/experiences/sunset-yoga-ocean/sunset-yoga-ocean-2.jpg",
@@ -193,7 +215,7 @@ export const experiences: Experience[] = [
       {
         question: "What should I bring?",
         answer:
-          "A towel or beach mat, water, and something warm for the relaxation at the end.",
+          "Water and something warm for the relaxation at the end. You can rent a yoga mat for €5 when you book, or bring your own towel or mat.",
       },
     ],
     featured: true,
@@ -206,7 +228,7 @@ export const experiences: Experience[] = [
       "A 2-hour immersion in a cosy wooden house — movement, breathwork, meditation and sound healing by the coast.",
     description:
       "Step into a warm wooden house in Cascais for a slow, nourishing yoga experience designed for a small group. Over two hours you'll move through mindful Hatha-inspired sequences, conscious breathwork and guided meditation, ending with a calming sound healing session. All mats and equipment are provided — just arrive, settle in, and let the natural wood and coastal calm do the rest. An intimate alternative to the city — perfect if you want depth, quiet and personal attention.",
-    price: { amount: 199, currency: "EUR", unit: "from" },
+    price: { amount: 180, currency: "EUR", unit: "per_session" },
     bookingType: "whatsapp",
     duration: "2 hrs",
     groupSize: "Up to 6 people",
@@ -252,13 +274,14 @@ export const experiences: Experience[] = [
     group: "experiences",
     title: "Yoga in Sintra Forest",
     summary:
-      "A 3-hour forest immersion — meditation, breathwork, movement and sound healing in Sintra.",
+      "A 2.5-hour forest immersion — meditation, breathwork, movement and sound healing in Sintra.",
     description:
-      "An immersive half-day experience in the Sintra forest combining deep meditation, conscious breathwork, mindful movement and sound healing. Step away from the city and reconnect with yourself among the trees. All equipment is included — just bring yourself.",
+      "An immersive 2.5-hour experience in the Sintra forest combining deep meditation, conscious breathwork, mindful movement and sound healing. Step away from the city and reconnect with yourself among the trees. All equipment is included — just bring yourself.",
     price: { amount: 299, currency: "EUR", unit: "from" },
     bookingType: "whatsapp",
-    duration: "3 hrs",
+    duration: "2.5 hrs",
     groupSize: "Up to 20 people",
+    groupPricing: { maxGuests: 20, schedule: "sintra" },
     locationLabel: "Sintra",
     tags: { timeOfDay: "day", location: "sintra", level: "all-levels" },
     highlights: [
@@ -270,7 +293,7 @@ export const experiences: Experience[] = [
       "Yoga mat & equipment",
       "Guided meditation & breathwork",
       "Sound healing session",
-      "3-hour forest immersion",
+      "2.5-hour forest immersion",
     ],
     images: [
       "/images/experiences/sintra/sintra-cover.jpg",
@@ -325,6 +348,7 @@ export const experiences: Experience[] = [
       "Pre-session consultation",
       "Tailored sequence",
       "Follow-up tips",
+      "Yoga mat (€5, on request)",
     ],
     images: [
       "/images/experiences/private-yoga-session/private-yoga-session-1.jpg",
@@ -335,8 +359,15 @@ export const experiences: Experience[] = [
         answer:
           "Yes — sessions can take place at your home, in a park, or at another location we agree on in the Lisbon area.",
       },
+      {
+        question: "Do I need to bring a mat?",
+        answer:
+          "You can rent a yoga mat for €5 — choose how many you need when you book. You're also welcome to bring your own.",
+      },
     ],
     featured: true,
+    matRental: true,
+    fixedGuests: 1,
   },
   {
     slug: "private-yoga-tandem",
@@ -361,6 +392,7 @@ export const experiences: Experience[] = [
       "Pre-session consultation",
       "Shared tailored sequence",
       "Follow-up tips",
+      "Yoga mat (€5, on request)",
     ],
     images: ["/images/tandem/tandem-1.jpg"],
     cardImagePosition: "50% 70%",
@@ -371,7 +403,14 @@ export const experiences: Experience[] = [
         answer:
           "Not at all — I'll adapt the session so you both feel supported and challenged in the right way.",
       },
+      {
+        question: "Do we need to bring mats?",
+        answer:
+          "You can rent yoga mats for €5 each — choose how many you need when you book. You're also welcome to bring your own.",
+      },
     ],
+    matRental: true,
+    fixedGuests: 2,
   },
 
   // ---------------- CORPORATE ----------------
@@ -448,6 +487,10 @@ export function experiencePagePath(exp: Experience): string {
 /** Offerings that get a dedicated /experiences/[slug]/ page. */
 export function getExperienceDetailPages(): Experience[] {
   return experiences.filter((e) => e.group !== "corporate");
+}
+
+export function hasLiveBooking(exp: Experience): boolean {
+  return Boolean(exp.groupPricing || exp.matRental);
 }
 
 const unitLabels: Record<PriceUnit, string> = {

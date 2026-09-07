@@ -6,6 +6,7 @@ import { BookingCTA } from "@/components/BookingCTA";
 import { ExperienceGallery } from "@/components/ExperienceGallery";
 import { Faq } from "@/components/Faq";
 import { ExperienceDetails } from "@/components/ExperienceDetails";
+import { GroupBookingPanel } from "@/components/GroupBookingPanel";
 import { MapPinIcon } from "@/components/icons";
 import { PriceTag } from "@/components/PriceTag";
 import { JsonLd } from "@/components/JsonLd";
@@ -13,6 +14,7 @@ import {
   getExperienceBySlug,
   getExperienceDetailPages,
   groups,
+  hasLiveBooking,
 } from "@/data/experiences";
 import { pageSeo } from "@/lib/seo";
 import {
@@ -78,15 +80,15 @@ export default async function ExperienceDetailPage({
         </nav>
       </Container>
 
-      <Container className="grid gap-10 pb-16 lg:grid-cols-[1.4fr_1fr] lg:items-start">
-        <div>
+      <Container className="grid min-w-0 gap-10 pb-16 lg:grid-cols-[minmax(0,11fr)_minmax(0,10fr)] lg:items-start">
+        <div className="min-w-0">
           <ExperienceGallery
             images={exp.images}
             title={exp.title}
             coverImagePosition={exp.cardImagePosition ?? exp.coverImagePosition}
           />
 
-          <p className="mt-8 flex items-center gap-1.5 text-sm font-semibold text-sage-dark">
+          <p className="mt-6 flex items-center gap-1.5 text-sm font-semibold text-sage-dark">
             <MapPinIcon className="h-4 w-4 shrink-0" />
             {exp.locationUrl ? (
               <a
@@ -146,16 +148,22 @@ export default async function ExperienceDetailPage({
         {/* Booking sidebar */}
         <aside className="lg:sticky lg:top-24">
           <div className="rounded-2xl border border-sand-dark bg-white p-7 shadow-sm">
-            <div className="flex items-baseline justify-between">
-              <PriceTag price={exp.price} className="text-2xl" />
-            </div>
-            <ExperienceDetails experience={exp} />
-            <div className="mt-6">
-              <BookingCTA experience={exp} size="lg" className="w-full" />
-            </div>
-            <p className="mt-3 text-center text-xs text-muted">
-              You&apos;ll be redirected to WhatsApp to confirm a date.
-            </p>
+            {hasLiveBooking(exp) ? (
+              <GroupBookingPanel experience={exp} />
+            ) : (
+              <>
+                <div className="flex items-baseline justify-between">
+                  <PriceTag price={exp.price} className="text-2xl" />
+                </div>
+                <ExperienceDetails experience={exp} />
+                <div className="mt-6">
+                  <BookingCTA experience={exp} size="lg" className="w-full" />
+                </div>
+                <p className="mt-3 text-center text-xs text-muted">
+                  You&apos;ll be redirected to WhatsApp to confirm a date.
+                </p>
+              </>
+            )}
           </div>
         </aside>
       </Container>

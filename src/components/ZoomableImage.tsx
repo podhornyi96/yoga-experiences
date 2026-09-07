@@ -101,24 +101,24 @@ export function ZoomableImage({
           <button
             type="button"
             className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-lg text-cream transition-colors hover:bg-white/25"
-            onClick={() => setOpen(false)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpen(false);
+            }}
             aria-label="Close"
           >
             ×
           </button>
-          <div
-            className="relative h-full w-full max-h-[90vh] max-w-5xl"
+          <Image
+            src={src}
+            alt={alt}
+            width={2400}
+            height={1800}
+            sizes="100vw"
+            className="max-h-[90vh] w-auto max-w-full object-contain"
+            style={positionStyle}
             onClick={(e) => e.stopPropagation()}
-          >
-            <Image
-              src={src}
-              alt={alt}
-              fill
-              sizes="100vw"
-              className="object-contain"
-              style={positionStyle}
-            />
-          </div>
+          />
         </div>
       ) : null}
     </>
