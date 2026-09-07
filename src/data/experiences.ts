@@ -106,7 +106,7 @@ export const groups: Record<
   private: {
     slug: "private",
     label: "Private",
-    tagline: "1:1 or tandem — in person",
+    tagline: "Personalised 1:1 or tandem sessions in Lisbon",
     description:
       "Personalised private yoga in Lisbon. Whether you are starting out, recovering, or deepening your practice, sessions are fully adapted to your body and goals.",
   },
