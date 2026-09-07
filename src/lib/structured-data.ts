@@ -34,7 +34,7 @@ export function localBusinessSchema() {
       "@type": "City",
       name,
     })),
-    sameAs: [siteConfig.contact.instagram],
+    sameAs: [siteConfig.contact.instagram, siteConfig.contact.telegram],
   };
 }
 

@@ -17,7 +17,7 @@ export function Header() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-sand-dark/60 bg-cream/85 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-sand-dark/60 bg-cream pt-[env(safe-area-inset-top)] shadow-[0_-12px_0_0_var(--color-cream)]">
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
         <Link
           href="/"

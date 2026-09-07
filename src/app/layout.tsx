@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Inter } from "next/font/google";
 import "./globals.css";
 import { siteConfig } from "@/config/site";
@@ -61,6 +61,16 @@ export const metadata: Metadata = {
   verification: {
     google: "CB0B9TEHyF_ua_LWLRmBEhO-GPkNp9TnG3BYgdPwTcU",
   },
+  appleWebApp: {
+    title: siteConfig.name,
+    statusBarStyle: "default",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#f7f3ec",
+  colorScheme: "light",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

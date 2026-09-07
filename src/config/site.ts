@@ -32,6 +32,8 @@ export const siteConfig = {
     whatsappDisplay: "+351 964 275 367",
     instagram: "https://instagram.com/ivanna.yoga.guide",
     instagramHandle: "@ivanna.yoga.guide",
+    telegram: "https://t.me/ivanna_pylypchuk",
+    telegramHandle: "@ivanna_pylypchuk",
   },
 
   // Geo / local SEO data for Lisbon.

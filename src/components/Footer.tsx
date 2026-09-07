@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { siteConfig, whatsappLink } from "@/config/site";
+import { WhatsAppIcon } from "./BookingCTA";
 import { CookieSettingsButton } from "./CookieSettingsButton";
+import { InstagramIcon, MailIcon, TelegramIcon } from "./icons";
+
+const contactLinkClass =
+  "inline-flex items-center gap-2.5 text-cream/85 transition-colors hover:text-clay";
 
 export function Footer() {
   const year = new Date().getFullYear();
@@ -46,7 +51,7 @@ export function Footer() {
           <p className="text-sm font-semibold uppercase tracking-[0.15em] text-cream/60">
             Get in touch
           </p>
-          <ul className="mt-4 space-y-2 text-sm">
+          <ul className="mt-4 space-y-3 text-sm">
             <li>
               <a
                 href={whatsappLink(
@@ -54,14 +59,21 @@ export function Footer() {
                 )}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-clay"
+                className={contactLinkClass}
+                aria-label={`WhatsApp ${siteConfig.contact.whatsappDisplay}`}
               >
+                <WhatsAppIcon className="h-4 w-4 shrink-0" />
                 WhatsApp
               </a>
             </li>
             <li>
-              <a href={`mailto:${siteConfig.contact.email}`} className="hover:text-clay">
-                {siteConfig.contact.email}
+              <a
+                href={`mailto:${siteConfig.contact.email}`}
+                className={contactLinkClass}
+                aria-label={`Email ${siteConfig.contact.email}`}
+              >
+                <MailIcon className="h-4 w-4 shrink-0" />
+                Email
               </a>
             </li>
             <li>
@@ -69,9 +81,23 @@ export function Footer() {
                 href={siteConfig.contact.instagram}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-clay"
+                className={contactLinkClass}
+                aria-label={`Instagram ${siteConfig.contact.instagramHandle}`}
               >
-                {siteConfig.contact.instagramHandle}
+                <InstagramIcon className="h-4 w-4 shrink-0" />
+                Instagram
+              </a>
+            </li>
+            <li>
+              <a
+                href={siteConfig.contact.telegram}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={contactLinkClass}
+                aria-label={`Telegram ${siteConfig.contact.telegramHandle}`}
+              >
+                <TelegramIcon className="h-4 w-4 shrink-0" />
+                Telegram
               </a>
             </li>
           </ul>

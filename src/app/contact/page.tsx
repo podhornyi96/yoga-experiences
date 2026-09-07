@@ -61,6 +61,17 @@ export default function ContactPage() {
                   {siteConfig.contact.instagramHandle}
                 </a>
               </li>
+              <li className="flex items-center justify-between border-b border-sand pb-3">
+                <span className="text-muted">Telegram</span>
+                <a
+                  href={siteConfig.contact.telegram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-ink hover:text-clay-dark"
+                >
+                  {siteConfig.contact.telegramHandle}
+                </a>
+              </li>
               <li className="flex items-center justify-between">
                 <span className="text-muted">Based in</span>
                 <span className="font-medium text-ink">

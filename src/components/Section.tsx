@@ -25,12 +25,14 @@ export function SectionHeading({
   description,
   align = "center",
   as: HeadingTag = "h2",
+  id,
 }: {
   eyebrow?: string;
   title: string;
   description?: string;
   align?: "center" | "left";
   as?: "h1" | "h2";
+  id?: string;
 }) {
   const alignment =
     align === "center" ? "text-center mx-auto" : "text-left";
@@ -41,7 +43,7 @@ export function SectionHeading({
           {eyebrow}
         </p>
       ) : null}
-      <HeadingTag className="text-3xl text-forest sm:text-4xl">
+      <HeadingTag id={id} className="text-3xl text-forest sm:text-4xl">
         {title}
       </HeadingTag>
       {description ? (

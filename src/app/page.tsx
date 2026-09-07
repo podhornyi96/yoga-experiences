@@ -29,32 +29,36 @@ export default function HomePage() {
 
   return (
     <>
-      <section className="relative overflow-hidden bg-gradient-to-b from-sand to-cream">
-        <div className="absolute inset-0 lg:hidden">
+      <section
+        id="home-hero"
+        className="relative overflow-x-clip bg-forest shadow-[0_10px_0_0_var(--color-forest)] lg:overflow-hidden lg:bg-gradient-to-b lg:from-sand lg:to-cream lg:shadow-none"
+      >
+        <div className="pointer-events-none absolute inset-0 -bottom-3 lg:hidden">
           <Image
             src="/images/me/ivanna-hero-portrait.jpg"
             alt="Ivanna, yoga teacher in Lisbon"
             fill
             priority
             sizes="100vw"
-            className="object-cover object-[center_18%]"
+            className="object-cover object-[center_top]"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-forest from-[12%] via-forest/55 to-forest/20" />
         </div>
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[min(58svh,34rem)] bg-gradient-to-t from-forest from-0% via-forest/80 via-[42%] to-transparent lg:hidden" />
+        <div className="pointer-events-none absolute inset-x-0 -bottom-3 h-3 bg-forest lg:hidden" />
 
-        <Container className="relative flex min-h-[calc(100svh-4.5rem)] flex-col justify-end py-8 sm:py-10 lg:grid lg:min-h-[calc(100dvh-4.5rem)] lg:grid-cols-2 lg:items-center lg:gap-10 lg:py-16">
+        <Container className="relative flex min-h-[calc(100dvh-4.5rem-env(safe-area-inset-top))] flex-col justify-end pb-8 pt-[min(52svh,29.5rem)] sm:pb-10 lg:grid lg:min-h-[calc(100dvh-4.5rem)] lg:grid-cols-2 lg:items-center lg:gap-10 lg:py-16">
           <div>
             <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-cream/90 lg:text-sage-dark">
               Yoga in {siteConfig.geo.city}, {siteConfig.geo.country}
             </p>
-            <h1 className="text-3xl leading-tight text-cream sm:text-4xl lg:text-5xl lg:text-forest">
+            <h1 className="text-[1.75rem] leading-snug text-cream sm:text-4xl lg:text-5xl lg:text-forest">
               Sunrise over the city. Sunset by the Atlantic.
             </h1>
-            <p className="mt-4 max-w-xl text-base leading-relaxed text-cream/85 sm:text-lg lg:text-muted">
+            <p className="mt-3 max-w-xl text-sm leading-relaxed text-cream/85 sm:mt-4 sm:text-lg lg:text-muted">
               Forest immersions in Sintra, private sessions, and yoga for teams.
               Practise in the most beautiful corners of {siteConfig.geo.city}.
             </p>
-            <div className="mt-6 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+            <div className="mt-5 flex flex-col items-stretch gap-3 sm:mt-6 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
               <BookingCTA size="lg" className="w-full sm:w-auto" />
               <Link
                 href="/experiences/"
@@ -86,6 +90,7 @@ export default function HomePage() {
 
       <Section>
         <SectionHeading
+          id="home-feel-title"
           eyebrow="Behind the scenes"
           title="This is what it feels like"
           description="Real sessions around Lisbon — sunrise, the river, and sunset by the ocean."

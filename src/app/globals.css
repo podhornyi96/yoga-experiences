@@ -27,7 +27,6 @@
 
 html {
   scroll-behavior: smooth;
-  overflow-x: hidden;
 }
 
 body {
@@ -35,6 +34,7 @@ body {
   color: var(--color-ink);
   font-family: var(--font-body), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
 /* iOS Safari zooms focused inputs under 16px, which also creates overflow scroll. */
