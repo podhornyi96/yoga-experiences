@@ -99,12 +99,66 @@ function NumberField({
   );
 }
 
+function SelectField({
+  id,
+  label,
+  hint,
+  value,
+  options,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  hint?: string;
+  value: number;
+  options: { value: number; label: string }[];
+  onChange: (value: number) => void;
+}) {
+  return (
+    <div>
+      <div className="flex items-baseline justify-between gap-3">
+        <label htmlFor={id} className="text-sm font-medium text-ink">
+          {label}
+        </label>
+        {hint ? <span className="text-xs text-muted">{hint}</span> : null}
+      </div>
+      <div className="relative mt-1.5">
+        <select
+          id={id}
+          value={value}
+          onChange={(event) => onChange(Number(event.target.value))}
+          className="w-full appearance-none rounded-xl border border-sand-dark bg-cream px-3 py-2.5 pr-10 text-base font-medium text-ink outline-none transition-colors focus:border-clay focus:ring-2 focus:ring-clay/25 sm:text-sm"
+        >
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </div>
+    </div>
+  );
+}
+
 export function GroupBookingPanel({ experience }: { experience: Experience }) {
   const groupPricing = experience.groupPricing;
   const showMats = Boolean(experience.matRental || groupPricing?.mats);
   const [people, setPeople] = useState(1);
   const [mats, setMats] = useState(0);
   const peopleCount = groupPricing ? people : (experience.fixedGuests ?? 1);
+  const matSelectMax = Math.min(MAT_MAX, peopleCount);
   const matsOverPeople = showMats && mats > peopleCount;
   const matsOverLimit = showMats && mats > MAT_MAX;
   const matsError = matsOverPeople
@@ -165,17 +219,36 @@ export function GroupBookingPanel({ experience }: { experience: Experience }) {
         ) : null}
 
         {showMats ? (
-          <NumberField
-            id={`${experience.slug}-mats`}
-            label="Yoga mats"
-            hint={`€${MAT_PRICE_EUR} each · max ${MAT_MAX}`}
-            value={mats}
-            min={0}
-            max={MAT_MAX}
-            clampMax={false}
-            error={matsError}
-            onChange={setMats}
-          />
+          groupPricing ? (
+            <NumberField
+              id={`${experience.slug}-mats`}
+              label="Yoga mats"
+              hint={`€${MAT_PRICE_EUR} each · max ${MAT_MAX}`}
+              value={mats}
+              min={0}
+              max={MAT_MAX}
+              clampMax={false}
+              error={matsError}
+              onChange={setMats}
+            />
+          ) : (
+            <SelectField
+              id={`${experience.slug}-mats`}
+              label="Yoga mats"
+              hint={`€${MAT_PRICE_EUR} each`}
+              value={mats}
+              options={Array.from({ length: matSelectMax + 1 }, (_, count) => ({
+                value: count,
+                label:
+                  count === 0
+                    ? "None"
+                    : count === 1
+                      ? "1 mat"
+                      : `${count} mats`,
+              }))}
+              onChange={setMats}
+            />
+          )
         ) : null}
       </div>
 
