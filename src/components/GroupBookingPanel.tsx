@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { BookingCTA } from "@/components/BookingCTA";
+import { AvailabilityBooking } from "@/components/AvailabilityBooking";
 import { ExperienceDetails } from "@/components/ExperienceDetails";
 import { siteConfig } from "@/config/site";
 import type { Experience } from "@/data/experiences";
@@ -253,17 +253,11 @@ export function GroupBookingPanel({ experience }: { experience: Experience }) {
       </div>
 
       <ExperienceDetails experience={experience} />
-      <div className="mt-6">
-        <BookingCTA
-          experience={experience}
-          message={message}
-          size="lg"
-          className="w-full"
-        />
-      </div>
-      <p className="mt-3 text-center text-xs text-muted">
-        You&apos;ll be redirected to WhatsApp to confirm a date.
-      </p>
+      <AvailabilityBooking
+        experience={experience}
+        bookingMessageBase={message}
+        className="mt-6"
+      />
     </>
   );
 }

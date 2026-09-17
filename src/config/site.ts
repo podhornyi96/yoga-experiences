@@ -65,6 +65,12 @@ export const siteConfig = {
   // Keep false until the payment backend is wired up.
   paymentsEnabled: false,
 
+  /** Soft-hold length when a guest selects a schedule slot (minutes). */
+  scheduleHoldMinutes: 20,
+
+  /** Wall-clock timezone for schedule slots shown to guests and set by admin. */
+  scheduleTimezone: "Europe/Lisbon" as const,
+
   // Meta (Facebook) Pixel ID from Events Manager. Leave empty to skip loading.
   // Can also be overridden via NEXT_PUBLIC_META_PIXEL_ID (Cloudflare Pages build env).
   metaPixelId: process.env.NEXT_PUBLIC_META_PIXEL_ID ?? "1674795200888489",

@@ -32,6 +32,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+.dev.vars
+.wrangler/
+
 
 # vercel
 .vercel
@@ -42,6 +45,8 @@ next-env.d.ts
 
 # playwright mcp output (screenshots/snapshots)
 .playwright-mcp/
+# visual QA screenshots dropped in repo root (assets live under public/)
+/*.png
 
 # original (unoptimized) photo sources — kept locally, not committed/deployed
 /originals/

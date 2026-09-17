@@ -148,7 +148,7 @@ export default async function ExperienceDetailPage({
         {/* Booking sidebar */}
         <aside className="lg:sticky lg:top-24">
           <div className="rounded-2xl border border-sand-dark bg-white p-7 shadow-sm">
-            {hasLiveBooking(exp) ? (
+            {hasLiveBooking(exp) || exp.group === "experiences" ? (
               <GroupBookingPanel experience={exp} />
             ) : (
               <>

@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "deploy": "next build && npx wrangler pages deploy out"
+    "deploy": "next build && npx wrangler pages deploy out",
+    "dev:pages": "npm run build && npx wrangler pages dev out",
+    "db:migrate:local": "npx wrangler d1 migrations apply yoga-experiences-slots --local",
+    "db:migrate:remote": "npx wrangler d1 migrations apply yoga-experiences-slots --remote"
   },
   "dependencies": {
     "next": "16.2.9",
