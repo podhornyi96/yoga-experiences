@@ -1,0 +1,12 @@
+# Cloudflare Pages + Functions + D1
+# Docs: https://developers.cloudflare.com/pages/functions/wrangler-configuration/
+
+name = "yoga-experiences"
+compatibility_date = "2025-03-01"
+pages_build_output_dir = "out"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "yoga-experiences-slots"
+database_id = "694b3679-b54c-4152-a7c9-4d3c88470698"
+migrations_dir = "migrations"

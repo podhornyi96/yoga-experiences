@@ -1,0 +1,6 @@
+# Local secrets for `wrangler pages dev` (do not commit real values).
+# Copy to `.dev.vars` and fill in.
+
+ADMIN_PASSWORD=change-me
+ADMIN_SESSION_SECRET=generate-a-long-random-string
+# SCHEDULE_HOLD_MINUTES=20
