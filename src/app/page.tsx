@@ -6,6 +6,7 @@ import { GroupCard } from "@/components/GroupCard";
 import { ExperienceCard } from "@/components/ExperienceCard";
 import { BehindTheScenes } from "@/components/BehindTheScenes";
 import { BookingCTA } from "@/components/BookingCTA";
+import { Testimonials } from "@/components/Testimonials";
 import { getFeatured } from "@/data/experiences";
 import { siteConfig } from "@/config/site";
 
@@ -121,6 +122,17 @@ export default function HomePage() {
 
       <Section>
         <SectionHeading
+          eyebrow="Reviews"
+          title="What people say"
+          description="Real messages from Instagram — tap View original review to see the screenshot."
+        />
+        <div className="mt-12">
+          <Testimonials />
+        </div>
+      </Section>
+
+      <Section className="bg-sand/50">
+        <SectionHeading
           eyebrow="What we offer"
           title="Find the right experience for you"
           description="Three ways to practise, each tailored to a different need and moment."
@@ -132,7 +144,7 @@ export default function HomePage() {
         </div>
       </Section>
 
-      <Section className="bg-sand/50">
+      <Section>
         <SectionHeading
           eyebrow="How it works"
           title="Booking is simple"

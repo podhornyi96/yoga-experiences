@@ -1,14 +1,14 @@
 import { isAdminAuthenticated } from "../../_lib/auth";
+import { cancelActiveBookingsForSlot } from "../../_lib/bookings";
 import { error, json, readJson } from "../../_lib/http";
 import {
   adminSlot,
   blockSiblingSlotsOnDay,
+  createOpenSlot,
   dayHasBookedSlot,
-  dayHasSameExperienceSlot,
   expireHolds,
   getSlotById,
   nowIso,
-  parseLocalDateTime,
   unblockSiblingSlotsOnDay,
 } from "../../_lib/slots";
 import {
@@ -90,45 +90,23 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     return error("Unsupported experience slug.", 400);
   }
 
-  const parsed = parseLocalDateTime(body?.date ?? "", body?.time ?? "");
-  if (!parsed) {
-    return error("Provide date as YYYY-MM-DD and time as HH:mm.");
-  }
-
-  const booked = await dayHasBookedSlot(env.DB, parsed.day);
-  if (booked) {
-    return error(
-      `This day is already booked (${booked.experience_slug} at ${booked.starts_at}). Release or cancel it first.`,
-      409,
-    );
-  }
-
-  const same = await dayHasSameExperienceSlot(
+  const result = await createOpenSlot(
     env.DB,
-    parsed.day,
     experienceSlug,
+    body?.date ?? "",
+    body?.time ?? "",
   );
-  if (same) {
-    return error(
-      `This experience already has a slot on ${parsed.day} (${same.starts_at}).`,
-      409,
-    );
+  if (!result.ok) {
+    if (result.reason === "Invalid date or time.") {
+      return error("Provide date as YYYY-MM-DD and time as HH:mm.");
+    }
+    if (result.reason === "Insert failed.") {
+      return error(result.reason, 500);
+    }
+    return error(result.reason, 409);
   }
 
-  const id = crypto.randomUUID();
-  const ts = nowIso();
-
-  await env.DB.prepare(
-    `INSERT INTO slots (
-      id, experience_slug, starts_at, day, status,
-      hold_token, hold_expires_at, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, 'open', NULL, NULL, ?, ?)`,
-  )
-    .bind(id, experienceSlug, parsed.starts_at, parsed.day, ts, ts)
-    .run();
-
-  const row = await getSlotById(env.DB, id);
-  return json({ slot: row ? adminSlot(row) : null }, { status: 201 });
+  return json({ slot: adminSlot(result.slot) }, { status: 201 });
 };
 
 /**
@@ -202,6 +180,7 @@ export const onRequestPatch: PagesFunction<Env> = async (context) => {
       .bind(ts, id)
       .run();
     if (wasBooked) {
+      await cancelActiveBookingsForSlot(env.DB, id, "cancelled");
       await unblockSiblingSlotsOnDay(env.DB, slot.day, ts);
     }
   } else if (action === "cancel") {
@@ -218,6 +197,7 @@ export const onRequestPatch: PagesFunction<Env> = async (context) => {
       .bind(ts, id)
       .run();
     if (wasBooked) {
+      await cancelActiveBookingsForSlot(env.DB, id, "cancelled");
       await unblockSiblingSlotsOnDay(env.DB, slot.day, ts);
     }
   } else {

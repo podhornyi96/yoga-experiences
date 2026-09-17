@@ -18,6 +18,10 @@ export interface Env {
   ADMIN_SESSION_SECRET?: string;
   /** Soft-hold length in minutes. Defaults to 20. */
   SCHEDULE_HOLD_MINUTES?: string;
+  STRIPE_SECRET_KEY?: string;
+  STRIPE_WEBHOOK_SECRET?: string;
+  /** Canonical site origin for Checkout success/cancel URLs (no trailing slash). */
+  SITE_URL?: string;
 }
 
 /** Group experiences that support a public schedule in v1. */

@@ -8,6 +8,7 @@ export function pageSeo({
   path,
   image,
   absolute = false,
+  noIndex = false,
 }: {
   title: string;
   description: string;
@@ -15,12 +16,15 @@ export function pageSeo({
   image?: string;
   /** Skip the root title template (`%s — Ivanna Yoga Lisbon`). */
   absolute?: boolean;
+  /** Hide from search engines (booking success/cancel, admin helpers). */
+  noIndex?: boolean;
 }): Metadata {
   const ogImage = image ?? siteConfig.ogImage;
   return {
     title: absolute ? { absolute: title } : title,
     description,
     alternates: { canonical: path },
+    ...(noIndex ? { robots: { index: false, follow: false } } : {}),
     openGraph: {
       type: "website",
       locale: "en_US",

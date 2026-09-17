@@ -6,8 +6,8 @@ private 1:1 yoga, and corporate yoga for IT teams.
 
 Built with **Next.js (App Router) + TypeScript + Tailwind CSS**, exported as a
 **static site** and deployed to **Cloudflare Pages**. Schedule + soft-hold APIs
-run as **Pages Functions** on **D1**. Bookings still go through **WhatsApp**
-(with bank transfer); **Stripe** is stubbed for later.
+run as **Pages Functions** on **D1**. Group experiences can take a **30% Stripe
+deposit** after a soft-hold; private/corporate stay on **WhatsApp**.
 
 ## Tech stack
 
@@ -40,13 +40,28 @@ Admin UI: `http://localhost:8788/admin/` (not linked from the public nav).
 In the Cloudflare Pages project → Settings:
 
 1. Bind D1 database `yoga-experiences-slots` as binding name **`DB`** (see `wrangler.toml`).
-2. Add secrets: `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`.
-3. Apply remote migrations once:
+2. Add secrets: `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`.
+3. Optional var: `SITE_URL=https://ivanna-yoga.com` (Checkout success/cancel URLs).
+4. Apply remote migrations once:
 
 ```bash
 npm run db:migrate:remote
 ```
 
+### Stripe webhook
+
+1. Stripe Dashboard → Developers → Webhooks → endpoint  
+   `https://ivanna-yoga.com/api/stripe/webhook`
+2. Event: `checkout.session.completed`
+3. Paste the signing secret into Pages as `STRIPE_WEBHOOK_SECRET`
+
+Local webhook forwarding:
+
+```bash
+stripe listen --forward-to localhost:8788/api/stripe/webhook
+```
+
+Put the CLI `whsec_…` into `.dev.vars` as `STRIPE_WEBHOOK_SECRET`.
 ## Project structure
 
 ```
@@ -59,15 +74,15 @@ src/
   components/          # UI (AvailabilityBooking, BookingCTA, GroupBookingPanel, ...)
   config/site.ts       # SINGLE source of truth: contact, geo, feature flags, hold minutes
   data/experiences.ts  # all offerings (experiences / private / corporate) + pricing
-  lib/schedule-api.ts  # client helpers for /api/slots and /api/holds
+  lib/schedule-api.ts  # client helpers for /api/slots, /api/holds, /api/checkout
 functions/
   api/slots.ts         # public available slots
   api/holds.ts         # 20-minute soft hold
+  api/checkout.ts      # Stripe Checkout Session (30% deposit)
+  api/stripe/webhook.ts # checkout.session.completed → mark booked
   api/admin/*          # login + slot CRUD
-  api/checkout.ts      # Stripe stub (future)
 migrations/            # D1 schema
 ```
-
 ## Editing content
 
 Almost everything is data-driven — no need to touch components:
@@ -133,19 +148,18 @@ After replacing a photo at the **same filename**, either rename the file (cache
 bust) or purge Cloudflare cache — browsers/CDN may keep `/images/*` for up to
 an hour.
 
-## Enabling online payments later
+## Online payments (Stripe deposit)
 
-The site is structured so payments are a small, isolated change:
+Group experiences with schedule slots: soft-hold → **30% deposit** via Stripe
+Checkout → webhook creates a **booking** (`deposit_paid`), marks the slot
+`booked`, and blocks sibling offers that day. Admin marks **paid in full** when
+the balance arrives (`/admin/bookings/`). Private / corporate stay on WhatsApp.
 
-1. Set `paymentsEnabled: true` in [`src/config/site.ts`](src/config/site.ts).
-2. Implement [`functions/api/checkout.ts`](functions/api/checkout.ts) to create
-   a Stripe Checkout Session from a valid soft-hold (`holdToken` from
-   `POST /api/holds`).
-3. Add `STRIPE_SECRET_KEY` (and webhook secret) in the Cloudflare Pages project.
-4. On `checkout.session.completed`, mark the D1 slot `booked`.
-5. In [`AvailabilityBooking`](src/components/AvailabilityBooking.tsx) /
-   [`BookingCTA`](src/components/BookingCTA.tsx), branch on `paymentsEnabled`
-   to POST `/api/checkout` and redirect instead of opening WhatsApp.
+1. Add `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET` (and optional `SITE_URL`) in Pages.
+2. Configure the webhook endpoint (see above).
+3. Redeploy.
+4. UI shows **Deposit today** / **Due later** on the experience booking panel;
+   CTA becomes **Pay €X deposit**.
 
-Pricing data already carries structured `amount` / `currency` / `unit`, so no
-data migration is needed.
+Pricing formulas live in [`src/lib/group-pricing.ts`](src/lib/group-pricing.ts)
+and are mirrored for Functions in [`functions/_lib/pricing.ts`](functions/_lib/pricing.ts).

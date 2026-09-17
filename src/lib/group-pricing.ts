@@ -3,6 +3,9 @@
 export const MAT_PRICE_EUR = 5;
 export const MAT_MAX = 6;
 
+/** Fraction of the booking total charged online as a deposit. */
+export const DEPOSIT_RATE = 0.3;
+
 export type GroupPriceSchedule = "coastal" | "sintra";
 
 /** Sunrise Yoga and Sunset Yoga by the Ocean. */
@@ -36,4 +39,19 @@ export function matsSubtotal(mats: number): number {
 
 export function groupBookingTotal(people: number, mats: number): number {
   return coastalPriceForPeople(people) + matsSubtotal(mats);
+}
+
+/** Stripe amount in the smallest currency unit (EUR cents). */
+export function depositCents(totalEur: number): number {
+  if (!Number.isFinite(totalEur) || totalEur <= 0) return 0;
+  return Math.round(totalEur * 100 * DEPOSIT_RATE);
+}
+
+/** Deposit in whole euros for display (matches Stripe cents / 100). */
+export function depositEur(totalEur: number): number {
+  return depositCents(totalEur) / 100;
+}
+
+export function remainingEur(totalEur: number): number {
+  return Math.round((totalEur - depositEur(totalEur)) * 100) / 100;
 }

@@ -16,6 +16,7 @@ import {
   groups,
   hasLiveBooking,
 } from "@/data/experiences";
+import { withDepositPolicyFaq } from "@/lib/booking-policy";
 import { pageSeo } from "@/lib/seo";
 import {
   breadcrumbSchema,
@@ -53,11 +54,12 @@ export default async function ExperienceDetailPage({
   if (!exp) notFound();
 
   const group = groups[exp.group];
+  const faq = withDepositPolicyFaq(exp.faq);
 
   return (
     <>
       <JsonLd data={experienceSchema(exp)} />
-      <JsonLd data={faqSchema(exp.faq)} />
+      <JsonLd data={faqSchema(faq)} />
       <JsonLd
         data={breadcrumbSchema([
           { name: "Home", path: "/" },
@@ -135,19 +137,19 @@ export default async function ExperienceDetailPage({
             </div>
           </div>
 
-          {exp.faq.length ? (
+          {faq.length ? (
             <div className="mt-10">
               <h2 className="mb-4 text-2xl text-forest">
                 Frequently asked questions
               </h2>
-              <Faq items={exp.faq} />
+              <Faq items={faq} />
             </div>
           ) : null}
         </div>
 
         {/* Booking sidebar */}
         <aside className="lg:sticky lg:top-24">
-          <div className="rounded-2xl border border-sand-dark bg-white p-7 shadow-sm">
+          <div className="rounded-2xl border border-sand-dark bg-white p-5 shadow-sm sm:p-6">
             {hasLiveBooking(exp) || exp.group === "experiences" ? (
               <GroupBookingPanel experience={exp} />
             ) : (

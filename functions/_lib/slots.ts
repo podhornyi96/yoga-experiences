@@ -197,3 +197,98 @@ export async function unblockSiblingSlotsOnDay(
     .bind(updatedAt, day)
     .run();
 }
+
+export type CreateOpenSlotResult =
+  | { ok: true; slot: SlotRow }
+  | { ok: false; day: string; reason: string };
+
+/** Insert an open slot, or return a skip reason (conflicts / invalid). */
+export async function createOpenSlot(
+  db: D1Database,
+  experienceSlug: string,
+  date: string,
+  time: string,
+): Promise<CreateOpenSlotResult> {
+  const parsed = parseLocalDateTime(date, time);
+  if (!parsed) {
+    return { ok: false, day: date, reason: "Invalid date or time." };
+  }
+  if (!isFutureStartsAt(parsed.starts_at)) {
+    return {
+      ok: false,
+      day: parsed.day,
+      reason: "Slot must be in the future (Lisbon time).",
+    };
+  }
+
+  const booked = await dayHasBookedSlot(db, parsed.day);
+  if (booked) {
+    return {
+      ok: false,
+      day: parsed.day,
+      reason: `Day already booked (${booked.experience_slug} at ${booked.starts_at}).`,
+    };
+  }
+
+  const same = await dayHasSameExperienceSlot(db, parsed.day, experienceSlug);
+  if (same) {
+    return {
+      ok: false,
+      day: parsed.day,
+      reason: `Same experience already has a slot (${same.starts_at}).`,
+    };
+  }
+
+  const id = crypto.randomUUID();
+  const ts = nowIso();
+  await db
+    .prepare(
+      `INSERT INTO slots (
+        id, experience_slug, starts_at, day, status,
+        hold_token, hold_expires_at, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, 'open', NULL, NULL, ?, ?)`,
+    )
+    .bind(id, experienceSlug, parsed.starts_at, parsed.day, ts, ts)
+    .run();
+
+  const row = await getSlotById(db, id);
+  if (!row) {
+    return { ok: false, day: parsed.day, reason: "Insert failed." };
+  }
+  return { ok: true, slot: row };
+}
+
+/** ISO weekday: Mon=1 … Sun=7 for a `YYYY-MM-DD` calendar day. */
+export function isoWeekday(day: string): number {
+  const [y, m, d] = day.split("-").map(Number);
+  const js = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  return js === 0 ? 7 : js;
+}
+
+export function addDays(day: string, delta: number): string {
+  const [y, m, d] = day.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + delta));
+  const yyyy = dt.getUTCFullYear();
+  const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(dt.getUTCDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/**
+ * Dates after `fromDate` through `fromDate + weeks`, matching ISO weekdays.
+ * The seed day itself is excluded (already created).
+ */
+export function repeatDatesAfter(
+  fromDate: string,
+  weeks: number,
+  weekdays: number[],
+): string[] {
+  if (weeks < 1 || weekdays.length === 0) return [];
+  const wanted = new Set(weekdays);
+  const end = addDays(fromDate, weeks * 7);
+  const out: string[] = [];
+  for (let d = addDays(fromDate, 1); d <= end; d = addDays(d, 1)) {
+    if (wanted.has(isoWeekday(d))) out.push(d);
+  }
+  return out;
+}

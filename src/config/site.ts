@@ -60,10 +60,8 @@ export const siteConfig = {
   // Currency used across pricing.
   currency: "EUR" as const,
 
-  // Feature flag: when true, BookingCTA can route to online checkout
-  // (Stripe via a Cloudflare Pages Function) instead of WhatsApp only.
-  // Keep false until the payment backend is wired up.
-  paymentsEnabled: false,
+  // Group experiences with slots: soft-hold → Stripe deposit checkout.
+  paymentsEnabled: true,
 
   /** Soft-hold length when a guest selects a schedule slot (minutes). */
   scheduleHoldMinutes: 20,

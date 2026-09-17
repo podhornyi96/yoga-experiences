@@ -5,10 +5,14 @@ import { AvailabilityBooking } from "@/components/AvailabilityBooking";
 import { ExperienceDetails } from "@/components/ExperienceDetails";
 import { siteConfig } from "@/config/site";
 import type { Experience } from "@/data/experiences";
+import { DEPOSIT_POLICY_SHORT } from "@/lib/booking-policy";
 import {
+  DEPOSIT_RATE,
   MAT_MAX,
   MAT_PRICE_EUR,
+  depositEur,
   priceForSchedule,
+  remainingEur,
 } from "@/lib/group-pricing";
 
 function clampInt(value: number, min: number, max: number) {
@@ -84,14 +88,14 @@ function NumberField({
           onChange(parse(raw));
         }}
         onBlur={() => commit(draft)}
-        className={`mt-1.5 w-full rounded-xl border bg-cream px-3 py-2.5 text-base font-medium text-ink outline-none transition-colors focus:ring-2 sm:text-sm ${
+        className={`mt-1 w-full rounded-lg border bg-cream px-3 py-2 text-base font-medium text-ink outline-none transition-colors focus:ring-2 sm:text-sm ${
           error
             ? "border-red-600 focus:border-red-600 focus:ring-red-600/20"
             : "border-sand-dark focus:border-clay focus:ring-clay/25"
         }`}
       />
       {error ? (
-        <p id={errorId} role="alert" className="mt-1.5 text-sm text-red-700">
+        <p id={errorId} role="alert" className="mt-1 text-sm text-red-700">
           {error}
         </p>
       ) : null}
@@ -122,12 +126,12 @@ function SelectField({
         </label>
         {hint ? <span className="text-xs text-muted">{hint}</span> : null}
       </div>
-      <div className="relative mt-1.5">
+      <div className="relative mt-1">
         <select
           id={id}
           value={value}
           onChange={(event) => onChange(Number(event.target.value))}
-          className="w-full appearance-none rounded-xl border border-sand-dark bg-cream px-3 py-2.5 pr-10 text-base font-medium text-ink outline-none transition-colors focus:border-clay focus:ring-2 focus:ring-clay/25 sm:text-sm"
+          className="w-full appearance-none rounded-lg border border-sand-dark bg-cream px-3 py-2 pr-10 text-base font-medium text-ink outline-none transition-colors focus:border-clay focus:ring-2 focus:ring-clay/25 sm:text-sm"
         >
           {options.map((option) => (
             <option key={option.value} value={option.value}>
@@ -171,6 +175,12 @@ export function GroupBookingPanel({ experience }: { experience: Experience }) {
     ? priceForSchedule(groupPricing.schedule, people)
     : experience.price.amount;
   const total = sessionPrice + effectiveMats * MAT_PRICE_EUR;
+  const deposit = depositEur(total);
+  const remaining = remainingEur(total);
+  const showDeposit = siteConfig.paymentsEnabled;
+
+  const formatMoney = (amount: number) =>
+    Number.isInteger(amount) ? `€${amount}` : `€${amount.toFixed(2)}`;
 
   const summary = useMemo(() => {
     const sessionLabel = groupPricing
@@ -203,10 +213,36 @@ export function GroupBookingPanel({ experience }: { experience: Experience }) {
 
   return (
     <>
-      <p className="text-2xl font-semibold text-forest">€{total}</p>
-      <p className="mt-1 text-sm text-muted">{summary}</p>
+      <p className="text-2xl font-semibold text-forest">{formatMoney(total)}</p>
+      <p className="mt-0.5 text-sm text-muted">{summary}</p>
+      {showDeposit ? (
+        <div className="mt-2 space-y-0.5 text-sm leading-snug">
+          <p className="font-medium text-forest">
+            Deposit today: {formatMoney(deposit)} ({Math.round(DEPOSIT_RATE * 100)}
+            %)
+          </p>
+          <p className="text-muted">
+            Due later: {formatMoney(remaining)} — paid on arrival or as agreed
+          </p>
+          <p className="text-xs text-muted">
+            {DEPOSIT_POLICY_SHORT}{" "}
+            <a
+              href="/terms/"
+              className="font-medium text-forest underline-offset-2 hover:underline"
+            >
+              Terms
+            </a>
+          </p>
+        </div>
+      ) : null}
 
-      <div className="mt-5 space-y-4">
+      <div
+        className={`mt-4 ${
+          groupPricing && showMats
+            ? "grid grid-cols-2 gap-3"
+            : "space-y-3"
+        }`}
+      >
         {groupPricing ? (
           <NumberField
             id={`${experience.slug}-people`}
@@ -223,7 +259,7 @@ export function GroupBookingPanel({ experience }: { experience: Experience }) {
             <NumberField
               id={`${experience.slug}-mats`}
               label="Yoga mats"
-              hint={`€${MAT_PRICE_EUR} each · max ${MAT_MAX}`}
+              hint={`€${MAT_PRICE_EUR} · max ${MAT_MAX}`}
               value={mats}
               min={0}
               max={MAT_MAX}
@@ -256,7 +292,10 @@ export function GroupBookingPanel({ experience }: { experience: Experience }) {
       <AvailabilityBooking
         experience={experience}
         bookingMessageBase={message}
-        className="mt-6"
+        people={peopleCount}
+        mats={effectiveMats}
+        totalEur={total}
+        className="mt-4"
       />
     </>
   );

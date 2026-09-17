@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { AdminNav } from "@/components/AdminNav";
 import { Container } from "@/components/Container";
 import { siteConfig } from "@/config/site";
 import { getExperiencesByGroup } from "@/data/experiences";
 import { formatSlotLabel } from "@/lib/schedule-api";
+import { adminApi, slotStatusBadgeClass } from "@/lib/admin-client";
 
 type AdminSlot = {
   id: string;
@@ -19,28 +21,34 @@ type AdminSlot = {
 
 const scheduled = getExperiencesByGroup("experiences");
 
-async function api<T>(
-  path: string,
-  init?: RequestInit,
-): Promise<{ ok: true; data: T } | { ok: false; status: number; error: string }> {
-  try {
-    const res = await fetch(path, {
-      credentials: "same-origin",
-      headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
-      ...init,
-    });
-    const data = (await res.json()) as T & { error?: string };
-    if (!res.ok) {
-      return {
-        ok: false,
-        status: res.status,
-        error: data.error ?? `Request failed (${res.status})`,
-      };
-    }
-    return { ok: true, data };
-  } catch {
-    return { ok: false, status: 0, error: "Network error" };
-  }
+const WEEKDAYS: { iso: number; label: string }[] = [
+  { iso: 1, label: "Mon" },
+  { iso: 2, label: "Tue" },
+  { iso: 3, label: "Wed" },
+  { iso: 4, label: "Thu" },
+  { iso: 5, label: "Fri" },
+  { iso: 6, label: "Sat" },
+  { iso: 7, label: "Sun" },
+];
+
+/** ISO weekday Mon=1 … Sun=7 for YYYY-MM-DD. */
+function isoWeekday(day: string): number {
+  const [y, m, d] = day.split("-").map(Number);
+  const js = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  return js === 0 ? 7 : js;
+}
+
+/** Today's calendar date in Europe/Lisbon as YYYY-MM-DD. */
+function lisbonToday(): string {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Lisbon",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const get = (type: string) =>
+    parts.find((p) => p.type === type)?.value ?? "00";
+  return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
 function holdRemaining(expiresAt: string | null, now: number): string | null {
@@ -67,12 +75,16 @@ export default function AdminPage() {
   });
   const [bookConfirm, setBookConfirm] = useState<AdminSlot | null>(null);
   const [bookBusy, setBookBusy] = useState(false);
+  const [repeatPrompt, setRepeatPrompt] = useState<AdminSlot | null>(null);
+  const [repeatWeekdays, setRepeatWeekdays] = useState<number[]>([]);
+  const [repeatWeeks, setRepeatWeeks] = useState(4);
+  const [repeatBusy, setRepeatBusy] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const q = filterSlug ? `?slug=${encodeURIComponent(filterSlug)}` : "";
-      const res = await api<{ slots: AdminSlot[] }>(`/api/admin/slots${q}`);
+      const res = await adminApi<{ slots: AdminSlot[] }>(`/api/admin/slots${q}`);
       if (cancelled) return;
       if (!res.ok) {
         if (res.status === 401) {
@@ -104,7 +116,7 @@ export default function AdminPage() {
 
   async function refreshSlots() {
     const q = filterSlug ? `?slug=${encodeURIComponent(filterSlug)}` : "";
-    const res = await api<{ slots: AdminSlot[] }>(`/api/admin/slots${q}`);
+    const res = await adminApi<{ slots: AdminSlot[] }>(`/api/admin/slots${q}`);
     if (!res.ok) {
       if (res.status === 401) {
         setAuthed(false);
@@ -121,7 +133,7 @@ export default function AdminPage() {
   async function onLogin(e: FormEvent) {
     e.preventDefault();
     setLoginError(null);
-    const res = await api<{ ok: boolean }>("/api/admin/login", {
+    const res = await adminApi<{ ok: boolean }>("/api/admin/login", {
       method: "POST",
       body: JSON.stringify({ password }),
     });
@@ -135,7 +147,7 @@ export default function AdminPage() {
   }
 
   async function onLogout() {
-    await api("/api/admin/logout", { method: "POST" });
+    await adminApi("/api/admin/logout", { method: "POST" });
     setAuthed(false);
     setSlots([]);
   }
@@ -144,7 +156,12 @@ export default function AdminPage() {
     e.preventDefault();
     setMessage(null);
     setError(null);
-    const res = await api<{ slot: AdminSlot }>("/api/admin/slots", {
+    const today = lisbonToday();
+    if (form.date < today) {
+      setError("Pick a date today or in the future (Lisbon time).");
+      return;
+    }
+    const res = await adminApi<{ slot: AdminSlot }>("/api/admin/slots", {
       method: "POST",
       body: JSON.stringify(form),
     });
@@ -154,13 +171,62 @@ export default function AdminPage() {
     }
     setMessage(`Added ${formatSlotLabel(res.data.slot.startsAt)}`);
     setForm((f) => ({ ...f, date: "" }));
+    setRepeatPrompt(res.data.slot);
+    setRepeatWeekdays([isoWeekday(res.data.slot.day)]);
+    setRepeatWeeks(4);
     await refreshSlots();
+  }
+
+  async function onRepeat() {
+    if (!repeatPrompt || repeatWeekdays.length === 0) return;
+    setRepeatBusy(true);
+    setMessage(null);
+    setError(null);
+    const time = repeatPrompt.startsAt.slice(11, 16);
+    const res = await adminApi<{
+      created: AdminSlot[];
+      skipped: { day: string; reason: string }[];
+      summary: { created: number; skipped: number };
+    }>("/api/admin/slots/repeat", {
+      method: "POST",
+      body: JSON.stringify({
+        experienceSlug: repeatPrompt.experienceSlug,
+        time,
+        fromDate: repeatPrompt.day,
+        weekdays: repeatWeekdays,
+        weeks: repeatWeeks,
+      }),
+    });
+    setRepeatBusy(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+    const { summary, skipped } = res.data;
+    const skipNote =
+      skipped.length > 0
+        ? ` Skipped ${summary.skipped}: ${skipped
+            .slice(0, 5)
+            .map((s) => `${s.day} (${s.reason})`)
+            .join("; ")}${skipped.length > 5 ? "…" : ""}`
+        : "";
+    setMessage(
+      `Duplicated: created ${summary.created}.${skipNote}`,
+    );
+    setRepeatPrompt(null);
+    await refreshSlots();
+  }
+
+  function toggleRepeatWeekday(iso: number) {
+    setRepeatWeekdays((prev) =>
+      prev.includes(iso) ? prev.filter((d) => d !== iso) : [...prev, iso].sort(),
+    );
   }
 
   async function patch(id: string, action: "book" | "release" | "cancel") {
     setMessage(null);
     setError(null);
-    const res = await api("/api/admin/slots", {
+    const res = await adminApi("/api/admin/slots", {
       method: "PATCH",
       body: JSON.stringify({ id, action }),
     });
@@ -247,13 +313,7 @@ export default function AdminPage() {
             Lisbon time · soft hold {siteConfig.scheduleHoldMinutes} min
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => void onLogout()}
-          className="rounded-full border border-sand-dark px-4 py-2 text-sm font-medium text-ink hover:bg-sand"
-        >
-          Sign out
-        </button>
+        <AdminNav active="schedule" onLogout={() => void onLogout()} />
       </div>
 
       <form
@@ -287,6 +347,7 @@ export default function AdminPage() {
             id="date"
             type="date"
             required
+            min={lisbonToday()}
             value={form.date}
             onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
             className="mt-1.5 w-full rounded-xl border border-sand-dark bg-cream px-3 py-2.5 text-sm"
@@ -368,7 +429,9 @@ export default function AdminPage() {
                   <p className="mt-0.5 text-sm text-muted">
                     {titleBySlug.get(slot.experienceSlug) ?? slot.experienceSlug}
                     {" · "}
-                    <span className="capitalize">{slot.status}</span>
+                    <span className={slotStatusBadgeClass(slot.status)}>
+                      {slot.status}
+                    </span>
                     {slot.status === "held" && hold ? ` · ${hold}` : null}
                     {slot.status === "blocked"
                       ? " · another session booked that day"
@@ -463,6 +526,99 @@ export default function AdminPage() {
                 className="rounded-full border border-sand-dark px-5 py-2.5 text-sm font-semibold text-ink hover:bg-sand disabled:opacity-60"
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {repeatPrompt ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 p-0 sm:items-center sm:p-4"
+          role="presentation"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget && !repeatBusy) {
+              setRepeatPrompt(null);
+            }
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="repeat-slot-title"
+            className="w-full max-w-md rounded-t-2xl border border-sand-dark bg-cream p-6 shadow-lg sm:rounded-2xl"
+          >
+            <h2 id="repeat-slot-title" className="text-xl text-forest">
+              Duplicate this slot?
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-ink">
+              Repeat{" "}
+              <span className="font-medium">
+                {titleBySlug.get(repeatPrompt.experienceSlug) ??
+                  repeatPrompt.experienceSlug}
+              </span>{" "}
+              at{" "}
+              <span className="font-medium">
+                {repeatPrompt.startsAt.slice(11, 16)}
+              </span>{" "}
+              on selected weekdays for the next N weeks (seed day already
+              created — skipped).
+            </p>
+
+            <fieldset className="mt-5">
+              <legend className="text-sm font-medium text-ink">Weekdays</legend>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {WEEKDAYS.map((d) => {
+                  const on = repeatWeekdays.includes(d.iso);
+                  return (
+                    <button
+                      key={d.iso}
+                      type="button"
+                      onClick={() => toggleRepeatWeekday(d.iso)}
+                      className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                        on
+                          ? "bg-forest text-cream"
+                          : "border border-sand-dark bg-white text-ink hover:bg-sand"
+                      }`}
+                    >
+                      {d.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </fieldset>
+
+            <div className="mt-4">
+              <label htmlFor="repeat-weeks" className="text-sm font-medium text-ink">
+                Weeks ahead
+              </label>
+              <input
+                id="repeat-weeks"
+                type="number"
+                min={1}
+                max={26}
+                value={repeatWeeks}
+                onChange={(e) => setRepeatWeeks(Number(e.target.value) || 1)}
+                className="mt-1.5 w-24 rounded-xl border border-sand-dark bg-white px-3 py-2 text-sm"
+              />
+            </div>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button
+                type="button"
+                disabled={repeatBusy || repeatWeekdays.length === 0}
+                onClick={() => void onRepeat()}
+                className="rounded-full bg-clay px-5 py-2.5 text-sm font-semibold text-cream hover:bg-clay-dark disabled:opacity-60"
+              >
+                {repeatBusy ? "Creating…" : "Create duplicates"}
+              </button>
+              <button
+                type="button"
+                disabled={repeatBusy}
+                onClick={() => setRepeatPrompt(null)}
+                className="rounded-full border border-sand-dark px-5 py-2.5 text-sm font-semibold text-ink hover:bg-sand disabled:opacity-60"
+              >
+                Skip
               </button>
             </div>
           </div>

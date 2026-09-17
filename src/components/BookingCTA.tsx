@@ -5,10 +5,10 @@ import type { Experience } from "@/data/experiences";
 /**
  * Primary booking call-to-action.
  *
- * Today it always opens WhatsApp with a pre-filled message. When
- * `siteConfig.paymentsEnabled` is turned on (after wiring up Stripe via a
- * Cloudflare Pages Function), this is the single place to branch into an
- * online checkout flow — the rest of the site doesn't need to change.
+ * Today it opens WhatsApp with a pre-filled message. When
+ * `siteConfig.paymentsEnabled` is on, schedule-aware booking uses
+ * AvailabilityBooking → Stripe deposit instead; BookingCTA remains the
+ * WhatsApp fallback (no slots / private / corporate / enquiry).
  */
 export function BookingCTA({
   experience,

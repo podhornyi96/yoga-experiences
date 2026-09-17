@@ -111,6 +111,9 @@ export function Footer() {
             {siteConfig.geo.country}.
           </p>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <Link href="/terms/" className="hover:text-clay">
+              Terms
+            </Link>
             <Link href="/privacy/" className="hover:text-clay">
               Privacy
             </Link>

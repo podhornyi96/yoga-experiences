@@ -19,7 +19,7 @@ function DetailRow({
   href?: string;
 }) {
   return (
-    <div className="flex items-center justify-between border-b border-sand pb-3 last:border-0 last:pb-0">
+    <div className="flex items-center justify-between border-b border-sand py-2 last:border-0">
       <dt className="flex items-center gap-2 text-muted">
         <Icon className="h-4 w-4 shrink-0 text-sage-dark" />
         {label}
@@ -45,7 +45,7 @@ function DetailRow({
 
 export function ExperienceDetails({ experience }: { experience: Experience }) {
   return (
-    <dl className="mt-5 space-y-3 text-sm">
+    <dl className="mt-4 text-sm">
       <DetailRow
         icon={ClockIcon}
         label="Duration"

@@ -11,7 +11,7 @@ import { breadcrumbSchema } from "@/lib/structured-data";
 export const metadata: Metadata = pageSeo({
   title: "Privacy Policy | Yoga in Lisbon",
   description:
-    "How Ivanna Yoga Lisbon uses cookies and analytics: Meta Pixel, Microsoft Clarity, and how to change your consent.",
+    "How Ivanna Yoga Lisbon handles bookings, payments, cookies and analytics — and how to change your consent.",
   path: "/privacy/",
   absolute: true,
 });
@@ -31,7 +31,7 @@ export default function PrivacyPage() {
             as="h1"
             eyebrow="Privacy"
             title="Privacy & cookies"
-            description={`How ${siteConfig.name} uses analytics on this site, and how you can change your choice.`}
+            description={`How ${siteConfig.name} uses booking data, payments and analytics on this site, and how you can change your choice.`}
             align="left"
           />
         </Container>
@@ -57,14 +57,30 @@ export default function PrivacyPage() {
             </div>
 
             <div>
-              <h2 className="text-xl text-forest sm:text-2xl">
-                What we collect without cookies
-              </h2>
+              <h2 className="text-xl text-forest sm:text-2xl">Bookings &amp; payments</h2>
               <p className="mt-3">
-                Booking happens on WhatsApp, email or Instagram. Messages you send
-                there are handled by those apps under their own policies. This
-                site does not run an account system or a contact form that stores
-                your details on our servers.
+                When you reserve a date and pay a deposit online, payment is
+                processed by Stripe. Stripe collects card details and related
+                checkout information under their own privacy policy. We receive
+                confirmation of payment (for example name, email, amount and
+                booking identifiers) so we can hold your slot and contact you.
+              </p>
+              <p className="mt-3">
+                We store booking records needed to run the session (date, party
+                size, payment status and contact details shared at checkout or on
+                WhatsApp). We do not store full card numbers on our servers.
+              </p>
+              <p className="mt-3">
+                Messages you send on WhatsApp, email or Instagram are handled by
+                those apps under their own policies. Deposit, refund and
+                reschedule rules are described in our{" "}
+                <Link
+                  href="/terms/"
+                  className="font-medium text-forest underline decoration-sand-dark underline-offset-2 hover:text-clay-dark"
+                >
+                  Terms of booking
+                </Link>
+                .
               </p>
             </div>
 
@@ -110,11 +126,20 @@ export default function PrivacyPage() {
                 How long this applies
               </h2>
               <p className="mt-3">
-                Your stored choice stays until you change it or clear site data
-                in your browser. Analytics providers keep data according to their
-                own retention rules.
+                Your stored cookie choice stays until you change it or clear site
+                data in your browser. Analytics providers keep data according to
+                their own retention rules. Booking and payment records are kept
+                as long as needed to fulfil the booking, handle follow-ups and
+                meet legal or accounting requirements.
               </p>
               <p className="mt-3">
+                <Link
+                  href="/terms/"
+                  className="font-medium text-forest underline decoration-sand-dark underline-offset-2 hover:text-clay-dark"
+                >
+                  Terms of booking
+                </Link>
+                {" · "}
                 <Link
                   href="/"
                   className="font-medium text-forest underline decoration-sand-dark underline-offset-2 hover:text-clay-dark"
