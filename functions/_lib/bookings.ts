@@ -24,6 +24,7 @@ export interface BookingRow {
   stripe_payment_intent_id: string | null;
   notes: string | null;
   paid_in_full_at: string | null;
+  location_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -47,6 +48,7 @@ export function publicBooking(row: BookingRow) {
     stripePaymentIntentId: row.stripe_payment_intent_id,
     notes: row.notes,
     paidInFullAt: row.paid_in_full_at,
+    locationId: row.location_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -110,6 +112,8 @@ export type InsertBookingInput = {
   stripeCheckoutSessionId?: string | null;
   stripePaymentIntentId?: string | null;
   notes?: string | null;
+  locationId?: string | null;
+  paidInFullAt?: string | null;
 };
 
 export async function insertBooking(
@@ -118,6 +122,9 @@ export async function insertBooking(
 ): Promise<BookingRow> {
   const id = crypto.randomUUID();
   const ts = nowIso();
+  const paidInFullAt =
+    input.paidInFullAt ??
+    (input.paymentStatus === "paid_in_full" ? ts : null);
   await db
     .prepare(
       `INSERT INTO bookings (
@@ -125,8 +132,8 @@ export async function insertBooking(
         guest_email, guest_name, guest_phone,
         people, mats, total_eur, deposit_eur, remaining_eur,
         payment_status, stripe_checkout_session_id, stripe_payment_intent_id,
-        notes, paid_in_full_at, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)`,
+        notes, paid_in_full_at, location_id, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .bind(
       id,
@@ -145,6 +152,8 @@ export async function insertBooking(
       input.stripeCheckoutSessionId ?? null,
       input.stripePaymentIntentId ?? null,
       input.notes ?? null,
+      paidInFullAt,
+      input.locationId ?? null,
       ts,
       ts,
     )

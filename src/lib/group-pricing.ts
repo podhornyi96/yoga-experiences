@@ -1,10 +1,13 @@
-/** Shared rates for optional yoga mats and live group pricing. */
+/** Shared rates for optional yoga mats and live group / private pricing. */
 
 export const MAT_PRICE_EUR = 5;
 export const MAT_MAX = 6;
 
-/** Fraction of the booking total charged online as a deposit. */
+/** Default fraction charged online for group experiences (deposit). */
 export const DEPOSIT_RATE = 0.3;
+
+/** Private / Tandem inventory always charges in full online (v1). */
+export const PRIVATE_DEPOSIT_RATE = 1;
 
 export type GroupPriceSchedule = "coastal" | "sintra";
 
@@ -41,17 +44,31 @@ export function groupBookingTotal(people: number, mats: number): number {
   return coastalPriceForPeople(people) + matsSubtotal(mats);
 }
 
+export function privateSessionEur(people: number): number {
+  if (people >= 2) return 80;
+  return 45;
+}
+
 /** Stripe amount in the smallest currency unit (EUR cents). */
-export function depositCents(totalEur: number): number {
+export function depositCents(
+  totalEur: number,
+  rate: number = DEPOSIT_RATE,
+): number {
   if (!Number.isFinite(totalEur) || totalEur <= 0) return 0;
-  return Math.round(totalEur * 100 * DEPOSIT_RATE);
+  return Math.round(totalEur * 100 * rate);
 }
 
-/** Deposit in whole euros for display (matches Stripe cents / 100). */
-export function depositEur(totalEur: number): number {
-  return depositCents(totalEur) / 100;
+/** Deposit in euros for display (matches Stripe cents / 100). */
+export function depositEur(
+  totalEur: number,
+  rate: number = DEPOSIT_RATE,
+): number {
+  return depositCents(totalEur, rate) / 100;
 }
 
-export function remainingEur(totalEur: number): number {
-  return Math.round((totalEur - depositEur(totalEur)) * 100) / 100;
+export function remainingEur(
+  totalEur: number,
+  rate: number = DEPOSIT_RATE,
+): number {
+  return Math.round((totalEur - depositEur(totalEur, rate)) * 100) / 100;
 }

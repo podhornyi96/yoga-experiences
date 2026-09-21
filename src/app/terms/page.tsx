@@ -4,7 +4,7 @@ import { Container } from "@/components/Container";
 import { SectionHeading } from "@/components/Section";
 import { JsonLd } from "@/components/JsonLd";
 import { siteConfig } from "@/config/site";
-import { RESCHEDULE_NOTICE_HOURS } from "@/lib/booking-policy";
+import { RESCHEDULE_NOTICE_HOURS, PRIVATE_CANCEL_NOTICE_HOURS } from "@/lib/booking-policy";
 import { DEPOSIT_RATE } from "@/lib/group-pricing";
 import { pageSeo } from "@/lib/seo";
 import { breadcrumbSchema } from "@/lib/structured-data";
@@ -114,13 +114,35 @@ export default function TermsPage() {
 
             <div>
               <h2 className="text-xl text-forest sm:text-2xl">
-                Private &amp; corporate bookings
+                Private &amp; tandem (full payment)
               </h2>
               <p className="mt-3">
-                Private and corporate sessions are often arranged without an online
-                deposit. Timing, fees and changes are agreed in writing (WhatsApp
-                or email) for that booking. Where an online deposit is taken, the
-                deposit and reschedule rules above apply.
+                Private and tandem park sessions booked online are paid in full
+                at checkout. You may cancel for a full refund or reschedule if
+                you notify us at least {PRIVATE_CANCEL_NOTICE_HOURS} hours before
+                the start (Europe/Lisbon). Contact us on WhatsApp or email — we
+                will confirm a new date subject to availability.
+              </p>
+              <p className="mt-3">
+                With less than {PRIVATE_CANCEL_NOTICE_HOURS} hours’ notice, or if
+                you do not attend, no refund or reschedule is offered.
+              </p>
+              <p className="mt-3">
+                Sessions are outdoors at the park you choose. If weather makes
+                the spot unsafe, we will contact you to reschedule or refund.
+                Custom locations (home or elsewhere) are arranged on WhatsApp
+                and are not available for instant booking.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-xl text-forest sm:text-2xl">
+                Corporate bookings
+              </h2>
+              <p className="mt-3">
+                Corporate sessions are arranged without an online checkout.
+                Timing, fees and changes are agreed in writing (WhatsApp or
+                email) for that booking.
               </p>
             </div>
 

@@ -5,13 +5,16 @@ import { ClearPendingHold } from "@/components/ClearPendingHold";
 import { Container } from "@/components/Container";
 import { SectionHeading } from "@/components/Section";
 import { siteConfig } from "@/config/site";
-import { DEPOSIT_POLICY_SUCCESS } from "@/lib/booking-policy";
+import {
+  DEPOSIT_POLICY_SUCCESS,
+  PRIVATE_FULL_PAY_POLICY_SUCCESS,
+} from "@/lib/booking-policy";
 import { pageSeo } from "@/lib/seo";
 
 export const metadata: Metadata = pageSeo({
   title: "Booking confirmed",
   description:
-    "Your deposit is paid. We'll confirm meeting details and the remaining balance.",
+    "Your payment is received. Check your email for session details, or message us on WhatsApp.",
   path: "/booking/success/",
   noIndex: true,
 });
@@ -24,16 +27,24 @@ export default function BookingSuccessPage() {
         <SectionHeading
           as="h1"
           eyebrow="Booking"
-          title="Deposit received"
-          description="Thank you — your date is reserved. The remaining balance is due later (on arrival or as agreed)."
+          title="Payment received"
+          description="Thank you — your date is reserved. Check your email for confirmation details."
         />
         <div className="mx-auto mt-8 max-w-xl space-y-4 text-center text-sm text-ink">
           <p>
-            You’ll get meeting details from {siteConfig.teacher.name} on
-            WhatsApp. If anything looks off, message right away.
+            You’ll also hear from {siteConfig.teacher.name} on WhatsApp if
+            anything needs confirming. If anything looks off, message right
+            away.
           </p>
           <p className="text-muted">
-            {DEPOSIT_POLICY_SUCCESS}{" "}
+            <span className="font-medium text-ink">Group experiences:</span>{" "}
+            {DEPOSIT_POLICY_SUCCESS}
+          </p>
+          <p className="text-muted">
+            <span className="font-medium text-ink">Private / Tandem:</span>{" "}
+            {PRIVATE_FULL_PAY_POLICY_SUCCESS}
+          </p>
+          <p className="text-muted">
             <Link
               href="/terms/"
               className="font-medium text-forest underline-offset-2 hover:underline"
@@ -44,7 +55,7 @@ export default function BookingSuccessPage() {
           <div className="flex justify-center pt-1">
             <BookingCTA
               label="Message on WhatsApp"
-              message={`Hi ${siteConfig.teacher.name}! I just paid the deposit for my yoga booking. Looking forward to it!`}
+              message={`Hi ${siteConfig.teacher.name}! I just paid for my yoga booking. Looking forward to it!`}
             />
           </div>
           <p className="pt-2">

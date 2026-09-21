@@ -7,6 +7,7 @@ import { ExperienceGallery } from "@/components/ExperienceGallery";
 import { Faq } from "@/components/Faq";
 import { ExperienceDetails } from "@/components/ExperienceDetails";
 import { GroupBookingPanel } from "@/components/GroupBookingPanel";
+import { PrivateBookingPanel } from "@/components/PrivateBookingPanel";
 import { MapPinIcon } from "@/components/icons";
 import { PriceTag } from "@/components/PriceTag";
 import { JsonLd } from "@/components/JsonLd";
@@ -16,7 +17,10 @@ import {
   groups,
   hasLiveBooking,
 } from "@/data/experiences";
-import { withDepositPolicyFaq } from "@/lib/booking-policy";
+import {
+  withDepositPolicyFaq,
+  withPrivateBookingPolicyFaq,
+} from "@/lib/booking-policy";
 import { pageSeo } from "@/lib/seo";
 import {
   breadcrumbSchema,
@@ -54,7 +58,10 @@ export default async function ExperienceDetailPage({
   if (!exp) notFound();
 
   const group = groups[exp.group];
-  const faq = withDepositPolicyFaq(exp.faq);
+  const faq =
+    exp.group === "private"
+      ? withPrivateBookingPolicyFaq(exp.faq)
+      : withDepositPolicyFaq(exp.faq);
 
   return (
     <>
@@ -150,7 +157,9 @@ export default async function ExperienceDetailPage({
         {/* Booking sidebar */}
         <aside className="lg:sticky lg:top-24">
           <div className="rounded-2xl border border-sand-dark bg-white p-5 shadow-sm sm:p-6">
-            {hasLiveBooking(exp) || exp.group === "experiences" ? (
+            {exp.group === "private" ? (
+              <PrivateBookingPanel experience={exp} />
+            ) : hasLiveBooking(exp) || exp.group === "experiences" ? (
               <GroupBookingPanel experience={exp} />
             ) : (
               <>

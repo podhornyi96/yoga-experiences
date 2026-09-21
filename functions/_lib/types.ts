@@ -24,13 +24,20 @@ export interface Env {
   SITE_URL?: string;
 }
 
-/** Group experiences that support a public schedule in v1. */
+/**
+ * Experiences with a public admin schedule.
+ * Private / Tandem share inventory slug `private-yoga-session` (1 or 2 guests).
+ */
 export const SCHEDULED_SLUGS = [
   "sunrise-yoga-lisbon",
   "sunset-yoga-ocean",
   "yoga-cascais-wooden-house",
   "yoga-sintra-forest",
+  "private-yoga-session",
 ] as const;
+
+/** Single inventory slug for Private (€45) and Tandem (€80). */
+export const PRIVATE_INVENTORY_SLUG = "private-yoga-session" as const;
 
 export type ScheduledSlug = (typeof SCHEDULED_SLUGS)[number];
 

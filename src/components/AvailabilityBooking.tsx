@@ -11,6 +11,7 @@ import {
   depositEur as calcDepositEur,
   remainingEur as calcRemainingEur,
 } from "@/lib/group-pricing";
+import { PRIVATE_FULL_PAY_POLICY_SHORT } from "@/lib/booking-policy";
 import {
   createCheckoutSession,
   createHold,
@@ -31,6 +32,15 @@ type Props = {
   totalEur: number;
   /** Extra CTA classes for primary buttons. */
   className?: string;
+  /**
+   * Slot inventory slug (defaults to experience.slug).
+   * Private + Tandem both use private-yoga-session.
+   */
+  scheduleSlug?: string;
+  /** Fraction charged online (default group deposit 0.3; private = 1). */
+  depositRate?: number;
+  /** Required for private inventory checkout. */
+  locationId?: string | null;
 };
 
 function formatMoney(amount: number): string {
@@ -83,19 +93,24 @@ export function AvailabilityBooking({
   mats,
   totalEur,
   className = "",
+  scheduleSlug,
+  depositRate = DEPOSIT_RATE,
+  locationId = null,
 }: Props) {
+  const inventorySlug = scheduleSlug ?? experience.slug;
   const [slots, setSlots] = useState<PublicSlot[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const payments = siteConfig.paymentsEnabled;
-  const deposit = calcDepositEur(totalEur);
+  const fullPay = depositRate >= 1;
+  const charge = calcDepositEur(totalEur, depositRate);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const pending = readPendingHold(experience.slug);
+      const pending = readPendingHold(inventorySlug);
       const data = await fetchAvailableSlots(
-        experience.slug,
+        inventorySlug,
         pending?.holdToken,
       );
       if (cancelled) return;
@@ -105,7 +120,7 @@ export function AvailabilityBooking({
     return () => {
       cancelled = true;
     };
-  }, [experience.slug]);
+  }, [inventorySlug]);
 
   if (loading) {
     return (
@@ -150,18 +165,23 @@ export function AvailabilityBooking({
       </button>
       <p className="mt-2 text-center text-xs text-muted">
         {payments
-          ? `Pick a date, then pay a ${formatMoney(deposit)} deposit (30%).`
+          ? fullPay
+            ? `Pick a date, then pay ${formatMoney(charge)} in full.`
+            : `Pick a date, then pay a ${formatMoney(charge)} deposit (${Math.round(depositRate * 100)}%).`
           : "Pick a date, then continue on WhatsApp."}
       </p>
       {open ? (
         <AvailabilityModal
           experience={experience}
+          inventorySlug={inventorySlug}
           slots={slots!}
           bookingMessageBase={bookingMessageBase}
           people={people}
           mats={mats}
           totalEur={totalEur}
           payments={payments}
+          depositRate={depositRate}
+          locationId={locationId}
           onClose={() => setOpen(false)}
           onSlotsChange={setSlots}
         />
@@ -172,29 +192,36 @@ export function AvailabilityBooking({
 
 function AvailabilityModal({
   experience,
+  inventorySlug,
   slots,
   bookingMessageBase,
   people,
   mats,
   totalEur,
   payments,
+  depositRate,
+  locationId,
   onClose,
   onSlotsChange,
 }: {
   experience: Experience;
+  inventorySlug: string;
   slots: PublicSlot[];
   bookingMessageBase: string;
   people: number;
   mats: number;
   totalEur: number;
   payments: boolean;
+  depositRate: number;
+  locationId: string | null;
   onClose: () => void;
   onSlotsChange: (slots: PublicSlot[] | null) => void;
 }) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
+  const fullPay = depositRate >= 1;
   const [selectedId, setSelectedId] = useState<string | null>(() => {
-    const pending = readPendingHold(experience.slug);
+    const pending = readPendingHold(inventorySlug);
     if (pending && slots.some((s) => s.id === pending.slotId)) {
       return pending.slotId;
     }
@@ -202,8 +229,8 @@ function AvailabilityModal({
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const deposit = calcDepositEur(totalEur);
-  const remaining = calcRemainingEur(totalEur);
+  const charge = calcDepositEur(totalEur, depositRate);
+  const remaining = calcRemainingEur(totalEur, depositRate);
 
   useEffect(() => {
     closeRef.current?.focus();
@@ -232,9 +259,9 @@ function AvailabilityModal({
   );
 
   async function refreshSlots() {
-    const pending = readPendingHold(experience.slug);
+    const pending = readPendingHold(inventorySlug);
     const refreshed = await fetchAvailableSlots(
-      experience.slug,
+      inventorySlug,
       pending?.holdToken,
     );
     onSlotsChange(refreshed?.slots ?? []);
@@ -251,7 +278,7 @@ function AvailabilityModal({
     if (!selected) return;
     setBusy(true);
     setError(null);
-    const pending = readPendingHold(experience.slug);
+    const pending = readPendingHold(inventorySlug);
     const result = await createHold(
       selected.id,
       pending?.slotId === selected.id ? pending.holdToken : null,
@@ -279,12 +306,16 @@ function AvailabilityModal({
     onClose();
   }
 
-  async function payDeposit() {
+  async function payOnline() {
     if (!selected) return;
+    if (inventorySlug === "private-yoga-session" && !locationId) {
+      setError("Choose a park location before paying.");
+      return;
+    }
     setBusy(true);
     setError(null);
 
-    const pending = readPendingHold(experience.slug);
+    const pending = readPendingHold(inventorySlug);
     const hold = await createHold(
       selected.id,
       pending?.slotId === selected.id ? pending.holdToken : null,
@@ -299,18 +330,20 @@ function AvailabilityModal({
     savePendingHold({
       holdToken: hold.data.holdToken,
       slotId: hold.data.slot.id,
-      slug: experience.slug,
+      slug: inventorySlug,
       people,
       mats,
       expiresAt: hold.data.expiresAt,
+      locationId,
     });
 
     const checkout = await createCheckoutSession({
       holdToken: hold.data.holdToken,
       slotId: hold.data.slot.id,
-      slug: experience.slug,
+      slug: inventorySlug,
       people,
       mats,
+      locationId,
     });
 
     if (!checkout.ok) {
@@ -403,23 +436,42 @@ function AvailabilityModal({
         <div className="shrink-0 border-t border-sand px-6 pb-6 pt-4">
           {payments ? (
             <div className="space-y-1 text-sm">
-              <p className="font-medium text-forest">
-                Deposit today: {formatMoney(deposit)} (
-                {Math.round(DEPOSIT_RATE * 100)}%)
-              </p>
-              <p className="text-muted">
-                Due later: {formatMoney(remaining)} — paid on arrival or as
-                agreed
-              </p>
-              <p className="text-xs text-muted">
-              {DEPOSIT_POLICY_SHORT}{" "}
-              <a
-                href="/terms/"
-                className="font-medium text-forest underline-offset-2 hover:underline"
-              >
-                Terms
-              </a>
-            </p>
+              {fullPay ? (
+                <>
+                  <p className="font-medium text-forest">
+                    Pay today: {formatMoney(charge)} (in full)
+                  </p>
+                  <p className="text-xs text-muted">
+                    {PRIVATE_FULL_PAY_POLICY_SHORT}{" "}
+                    <a
+                      href="/terms/"
+                      className="font-medium text-forest underline-offset-2 hover:underline"
+                    >
+                      Terms
+                    </a>
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="font-medium text-forest">
+                    Deposit today: {formatMoney(charge)} (
+                    {Math.round(depositRate * 100)}%)
+                  </p>
+                  <p className="text-muted">
+                    Due later: {formatMoney(remaining)} — paid on arrival or as
+                    agreed
+                  </p>
+                  <p className="text-xs text-muted">
+                    {DEPOSIT_POLICY_SHORT}{" "}
+                    <a
+                      href="/terms/"
+                      className="font-medium text-forest underline-offset-2 hover:underline"
+                    >
+                      Terms
+                    </a>
+                  </p>
+                </>
+              )}
             </div>
           ) : null}
 
@@ -433,7 +485,7 @@ function AvailabilityModal({
             type="button"
             disabled={!selected || busy}
             onClick={() =>
-              void (payments ? payDeposit() : continueOnWhatsApp())
+              void (payments ? payOnline() : continueOnWhatsApp())
             }
             className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-clay px-6 py-3.5 text-sm font-semibold text-cream shadow-sm transition-colors hover:bg-clay-dark disabled:cursor-not-allowed disabled:opacity-60"
           >
@@ -443,7 +495,9 @@ function AvailabilityModal({
                 ? "Starting checkout…"
                 : "Holding slot…"
               : payments
-                ? `Pay ${formatMoney(deposit)} deposit`
+                ? fullPay
+                  ? `Pay ${formatMoney(charge)}`
+                  : `Pay ${formatMoney(charge)} deposit`
                 : "Continue on WhatsApp"}
           </button>
 

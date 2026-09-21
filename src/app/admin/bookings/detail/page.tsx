@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { AdminNav } from "@/components/AdminNav";
 import { Container } from "@/components/Container";
 import { getExperiencesByGroup } from "@/data/experiences";
+import { getPrivateLocation } from "@/data/private-locations";
 import {
   adminApi,
   formatMoney,
@@ -15,7 +16,10 @@ import {
 } from "@/lib/admin-client";
 import { formatSlotLabel } from "@/lib/schedule-api";
 
-const scheduled = getExperiencesByGroup("experiences");
+const scheduled = [
+  ...getExperiencesByGroup("experiences"),
+  ...getExperiencesByGroup("private"),
+];
 
 function BookingDetailInner() {
   const searchParams = useSearchParams();
@@ -67,12 +71,14 @@ function BookingDetailInner() {
     setBooking(null);
   }
 
-  async function patch(action: "mark_paid" | "cancel" | "refund") {
+  async function patch(
+    action: "mark_paid" | "cancel" | "refund" | "resend_email",
+  ) {
     if (!booking) return;
     setBusy(true);
     setMessage(null);
     setError(null);
-    const res = await adminApi<{ booking: AdminBooking }>(
+    const res = await adminApi<{ booking: AdminBooking; email?: unknown }>(
       `/api/admin/bookings/${encodeURIComponent(booking.id)}`,
       {
         method: "PATCH",
@@ -84,15 +90,19 @@ function BookingDetailInner() {
       setError(res.error);
       return;
     }
-    setBooking(res.data.booking);
+    if (action !== "resend_email") {
+      setBooking(res.data.booking);
+    }
     setMessage(
       action === "mark_paid"
         ? "Marked paid in full."
         : action === "refund"
           ? "Marked refunded · slot reopened if it was booked."
-          : "Cancelled · slot reopened if it was booked.",
+          : action === "resend_email"
+            ? `Confirmation email sent to ${booking.guestEmail}.`
+            : "Cancelled · slot reopened if it was booked.",
     );
-    await load();
+    if (action !== "resend_email") await load();
   }
 
   if (authed === null) {
@@ -135,6 +145,13 @@ function BookingDetailInner() {
   }
 
   const title = titleBySlug.get(booking.experienceSlug) ?? booking.experienceSlug;
+  const displayTitle =
+    booking.experienceSlug === "private-yoga-session"
+      ? booking.people >= 2
+        ? "Tandem Yoga"
+        : "Private Yoga Session"
+      : title;
+  const park = getPrivateLocation(booking.locationId);
 
   return (
     <Container className="py-12">
@@ -146,7 +163,7 @@ function BookingDetailInner() {
             </Link>{" "}
             / detail
           </p>
-          <h1 className="mt-1 text-3xl text-forest">{title}</h1>
+          <h1 className="mt-1 text-3xl text-forest">{displayTitle}</h1>
           <p className="mt-1 text-sm text-muted">
             {formatSlotLabel(booking.startsAt)}
             {slotStatus ? ` · slot ${slotStatus}` : ""}
@@ -201,9 +218,26 @@ function BookingDetailInner() {
               <dt className="text-muted">People</dt>
               <dd className="font-medium text-ink">{booking.people}</dd>
             </div>
-            <div className="flex justify-between gap-4">
+            <div className="flex justify-between gap-4 border-b border-sand pb-2">
               <dt className="text-muted">Mats</dt>
               <dd className="font-medium text-ink">{booking.mats}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted">Park</dt>
+              <dd className="font-medium text-ink">
+                {park ? (
+                  <a
+                    href={park.mapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline-offset-2 hover:underline"
+                  >
+                    {park.label}
+                  </a>
+                ) : (
+                  booking.locationId || "—"
+                )}
+              </dd>
             </div>
           </dl>
         </section>
@@ -259,6 +293,17 @@ function BookingDetailInner() {
       </div>
 
       <div className="mt-6 flex flex-wrap gap-3">
+        {booking.paymentStatus === "deposit_paid" ||
+        booking.paymentStatus === "paid_in_full" ? (
+          <button
+            type="button"
+            disabled={busy || !booking.guestEmail}
+            onClick={() => void patch("resend_email")}
+            className="rounded-full border border-forest/30 bg-white px-5 py-2.5 text-sm font-medium text-forest hover:bg-sand disabled:opacity-60"
+          >
+            Resend confirmation email
+          </button>
+        ) : null}
         {booking.paymentStatus === "deposit_paid" ? (
           <button
             type="button"

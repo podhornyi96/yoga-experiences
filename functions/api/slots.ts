@@ -1,7 +1,9 @@
 import { error, json } from "../_lib/http";
+import { slotsConflict } from "../_lib/capacity";
 import {
   expireHolds,
   isFutureStartsAt,
+  listBusySlotsOnDay,
   nowIso,
   publicSlot,
 } from "../_lib/slots";
@@ -9,9 +11,9 @@ import { isScheduledSlug, type Env, type SlotRow } from "../_lib/types";
 
 /**
  * GET /api/slots?slug=<experience-slug>&holdToken=<optional>
- * Returns available (open + future) slots. Days with any booked session are
- * excluded (siblings are also marked blocked on book). Soft holds do not
- * hide other experiences on the same day.
+ * Returns available (open + future) slots that do not conflict with any
+ * booked/held session (session duration + post buffer). Soft holds hide
+ * conflicting siblings while active.
  *
  * Optional holdToken: also include the caller's still-valid held slot so they
  * can resume checkout after backing out of Stripe.
@@ -44,19 +46,39 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
            AND s.hold_expires_at >= ?
          )
        )
-       AND NOT EXISTS (
-         SELECT 1 FROM slots b
-         WHERE b.day = s.day
-           AND b.status = 'booked'
-       )
      ORDER BY s.starts_at ASC`,
   )
     .bind(slug, holdToken, holdToken, nowIso())
     .all<SlotRow>();
 
-  const slots = (results ?? [])
-    .filter((row) => isFutureStartsAt(row.starts_at))
-    .map(publicSlot);
+  const candidates = (results ?? []).filter((row) =>
+    isFutureStartsAt(row.starts_at),
+  );
+
+  const byDay = new Map<string, SlotRow[]>();
+  for (const row of candidates) {
+    const list = byDay.get(row.day) ?? [];
+    list.push(row);
+    byDay.set(row.day, list);
+  }
+
+  const slots = [];
+  for (const [day, daySlots] of byDay) {
+    const busy = await listBusySlotsOnDay(env.DB, day);
+    for (const row of daySlots) {
+      const ownHold =
+        row.status === "held" &&
+        holdToken !== "" &&
+        row.hold_token === holdToken;
+      const conflicts = busy.some(
+        (b) => b.id !== row.id && slotsConflict(row, b),
+      );
+      if (conflicts && !ownHold) continue;
+      slots.push(publicSlot(row));
+    }
+  }
+
+  slots.sort((a, b) => (a.startsAt < b.startsAt ? -1 : 1));
 
   return json({ slots, holdMinutes: Number(env.SCHEDULE_HOLD_MINUTES) || 20 });
 };

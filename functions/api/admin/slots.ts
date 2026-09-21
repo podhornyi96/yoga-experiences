@@ -3,13 +3,13 @@ import { cancelActiveBookingsForSlot } from "../../_lib/bookings";
 import { error, json, readJson } from "../../_lib/http";
 import {
   adminSlot,
-  blockSiblingSlotsOnDay,
+  blockConflictingSlots,
   createOpenSlot,
-  dayHasBookedSlot,
   expireHolds,
+  findConflictingBusySlot,
   getSlotById,
   nowIso,
-  unblockSiblingSlotsOnDay,
+  recomputeBlockedSlotsOnDay,
 } from "../../_lib/slots";
 import {
   isScheduledSlug,
@@ -71,8 +71,8 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
  * POST /api/admin/slots
  * Body: { experienceSlug, date: YYYY-MM-DD, time: HH:mm }
  *
- * Multiple different experiences may share a day. Same experience twice that day
- * is rejected. Cannot add offers on a day that is already booked.
+ * Multiple overlapping *offers* may share a day. Rejected only when the new
+ * window conflicts with an existing booked/held session (+ buffer).
  */
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
@@ -113,8 +113,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
  * PATCH /api/admin/slots
  * Body: { id, action: 'book' | 'release' | 'cancel' }
  *
- * Marking booked blocks other open/held slots that day.
- * Releasing/cancelling a booked slot reopens blocked siblings.
+ * Marking booked blocks conflicting open/held slots (session + buffer).
+ * Releasing/cancelling recomputes blocked siblings for that day.
  */
 export const onRequestPatch: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
@@ -144,10 +144,10 @@ export const onRequestPatch: PagesFunction<Env> = async (context) => {
     if (slot.status !== "open" && slot.status !== "held") {
       return error("Only open or held slots can be marked booked.", 409);
     }
-    const otherBooked = await dayHasBookedSlot(env.DB, slot.day, id);
-    if (otherBooked) {
+    const conflict = await findConflictingBusySlot(env.DB, slot, id);
+    if (conflict) {
       return error(
-        `Another session is already booked on ${slot.day} (${otherBooked.experience_slug}).`,
+        `Conflicts with ${conflict.experience_slug} at ${conflict.starts_at}.`,
         409,
       );
     }
@@ -162,7 +162,8 @@ export const onRequestPatch: PagesFunction<Env> = async (context) => {
     )
       .bind(ts, id)
       .run();
-    await blockSiblingSlotsOnDay(env.DB, slot.day, id, ts);
+    const booked = await getSlotById(env.DB, id);
+    if (booked) await blockConflictingSlots(env.DB, booked, ts);
   } else if (action === "release") {
     if (slot.status !== "held" && slot.status !== "booked") {
       return error("Only held or booked slots can be released.", 409);
@@ -181,8 +182,8 @@ export const onRequestPatch: PagesFunction<Env> = async (context) => {
       .run();
     if (wasBooked) {
       await cancelActiveBookingsForSlot(env.DB, id, "cancelled");
-      await unblockSiblingSlotsOnDay(env.DB, slot.day, ts);
     }
+    await recomputeBlockedSlotsOnDay(env.DB, slot.day, ts);
   } else if (action === "cancel") {
     const wasBooked = slot.status === "booked";
     nextStatus = "cancelled";
@@ -198,8 +199,8 @@ export const onRequestPatch: PagesFunction<Env> = async (context) => {
       .run();
     if (wasBooked) {
       await cancelActiveBookingsForSlot(env.DB, id, "cancelled");
-      await unblockSiblingSlotsOnDay(env.DB, slot.day, ts);
     }
+    await recomputeBlockedSlotsOnDay(env.DB, slot.day, ts);
   } else {
     return error("Unknown action.", 400);
   }

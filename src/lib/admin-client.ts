@@ -10,13 +10,26 @@ export async function adminApi<T>(
       headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
       ...init,
     });
-    const data = (await res.json()) as T & { error?: string };
+    const raw = await res.text();
+    let data: (T & { error?: string }) | null = null;
+    try {
+      data = raw ? (JSON.parse(raw) as T & { error?: string }) : null;
+    } catch {
+      /* non-JSON (e.g. Cloudflare HTML error page) */
+    }
     if (!res.ok) {
       return {
         ok: false,
         status: res.status,
-        error: data.error ?? `Request failed (${res.status})`,
+        error:
+          data?.error ??
+          (raw && !raw.trimStart().startsWith("<")
+            ? raw.slice(0, 300)
+            : `Request failed (${res.status}). Redeploy if this persists, then check Resend / secrets.`),
       };
+    }
+    if (!data) {
+      return { ok: false, status: res.status, error: "Empty response." };
     }
     return { ok: true, data };
   } catch {
@@ -42,6 +55,7 @@ export type AdminBooking = {
   stripePaymentIntentId: string | null;
   notes: string | null;
   paidInFullAt: string | null;
+  locationId: string | null;
   createdAt: string;
   updatedAt: string;
 };

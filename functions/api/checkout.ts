@@ -1,9 +1,9 @@
 /**
  * POST /api/checkout
- * Create a Stripe Checkout Session for a 30% deposit against a valid soft-hold.
+ * Create a Stripe Checkout Session against a valid soft-hold.
  *
- * Body: { holdToken, slotId, slug, people, mats }
- * Returns: { url }
+ * Body: { holdToken, slotId, slug, people, mats, locationId? }
+ * Returns: { url, depositEur, remainingEur, totalEur, fullPay }
  */
 
 import { error, json, readJson } from "../_lib/http";
@@ -15,12 +15,19 @@ import {
   nowIso,
 } from "../_lib/slots";
 import { createCheckoutSession } from "../_lib/stripe";
-import type { Env as ScheduleEnv } from "../_lib/types";
+import { PRIVATE_INVENTORY_SLUG, type Env as ScheduleEnv } from "../_lib/types";
 
 interface Env extends ScheduleEnv {
   STRIPE_SECRET_KEY?: string;
   SITE_URL?: string;
 }
+
+const PRIVATE_LOCATION_IDS = new Set([
+  "estrela",
+  "graca",
+  "nacoes",
+  "eduardo-vii",
+]);
 
 type CheckoutBody = {
   holdToken?: string;
@@ -28,6 +35,7 @@ type CheckoutBody = {
   slug?: string;
   people?: number;
   mats?: number;
+  locationId?: string;
 };
 
 function siteOrigin(request: Request, env: Env): string {
@@ -70,6 +78,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   const slug = body?.slug?.trim();
   const people = Number(body?.people);
   const mats = Number(body?.mats ?? 0);
+  const locationId = body?.locationId?.trim() ?? "";
 
   if (!holdToken || !slotId || !slug) {
     return error("holdToken, slotId and slug are required.");
@@ -77,6 +86,12 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
   const quote = quoteCheckout({ slug, people, mats });
   if (!quote.ok) return error(quote.error);
+
+  if (slug === PRIVATE_INVENTORY_SLUG) {
+    if (!locationId || !PRIVATE_LOCATION_IDS.has(locationId)) {
+      return error("Choose a park location to continue.");
+    }
+  }
 
   await expireHolds(env.DB);
 
@@ -94,7 +109,12 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     return error("This slot is already booked.", 409);
   }
   if (slot.status !== "held") {
-    return error("Hold this date before paying the deposit.", 409);
+    return error(
+      quote.fullPay
+        ? "Hold this date before paying."
+        : "Hold this date before paying the deposit.",
+      409,
+    );
   }
   if (slot.hold_token !== holdToken) {
     return error("Invalid hold token.", 409);
@@ -105,8 +125,12 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
   const origin = siteOrigin(request, env);
   const slotLabel = formatSlotLabel(slot.starts_at);
-  const productName = `Deposit 30% — ${quote.title}`;
-  const productDescription = `${slotLabel} (Lisbon time) · Total €${quote.totalEur} · Remaining €${quote.remainingEur} due later`;
+  const productName = quote.fullPay
+    ? quote.title
+    : `Deposit ${Math.round(quote.depositRate * 100)}% — ${quote.title}`;
+  const productDescription = quote.fullPay
+    ? `${slotLabel} (Lisbon time) · Paid in full €${quote.totalEur}`
+    : `${slotLabel} (Lisbon time) · Total €${quote.totalEur} · Remaining €${quote.remainingEur} due later`;
 
   try {
     const session = await createCheckoutSession(env.STRIPE_SECRET_KEY, {
@@ -125,6 +149,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         totalEur: String(quote.totalEur),
         depositEur: String(quote.depositEur),
         remainingEur: String(quote.remainingEur),
+        fullPay: quote.fullPay ? "1" : "0",
+        ...(locationId ? { locationId } : {}),
       },
     });
 
@@ -138,6 +164,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       depositEur: quote.depositEur,
       remainingEur: quote.remainingEur,
       totalEur: quote.totalEur,
+      fullPay: quote.fullPay,
     });
   } catch (err) {
     const message =

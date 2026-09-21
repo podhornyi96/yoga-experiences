@@ -25,6 +25,7 @@ export type CheckoutResponse = {
   depositEur: number;
   remainingEur: number;
   totalEur: number;
+  fullPay?: boolean;
 };
 
 /** Survives Stripe redirect so the guest can resume their held slot. */
@@ -35,6 +36,7 @@ export type PendingHold = {
   people: number;
   mats: number;
   expiresAt: string;
+  locationId?: string | null;
 };
 
 const PENDING_HOLD_KEY = "yoga.pendingHold";
@@ -129,6 +131,7 @@ export async function createCheckoutSession(input: {
   slug: string;
   people: number;
   mats: number;
+  locationId?: string | null;
 }): Promise<
   | { ok: true; data: CheckoutResponse }
   | { ok: false; error: string; status: number }
@@ -138,7 +141,14 @@ export async function createCheckoutSession(input: {
       method: "POST",
       headers: { "content-type": "application/json" },
       credentials: "same-origin",
-      body: JSON.stringify(input),
+      body: JSON.stringify({
+        holdToken: input.holdToken,
+        slotId: input.slotId,
+        slug: input.slug,
+        people: input.people,
+        mats: input.mats,
+        ...(input.locationId ? { locationId: input.locationId } : {}),
+      }),
     });
     const data = (await res.json()) as CheckoutResponse & { error?: string };
     if (!res.ok) {

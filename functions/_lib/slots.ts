@@ -1,4 +1,9 @@
 import {
+  isBusyStatus,
+  POST_SESSION_BUFFER_MIN,
+  slotsConflict,
+} from "./capacity";
+import {
   DEFAULT_HOLD_MINUTES,
   type Env,
   type SlotRow,
@@ -74,8 +79,18 @@ export function adminSlot(row: SlotRow) {
   };
 }
 
-/** Release expired holds (lazy). */
+/** Release expired holds (lazy), then reopen blocked slots that are free again. */
 export async function expireHolds(db: D1Database, now = nowIso()): Promise<void> {
+  const { results: expired } = await db
+    .prepare(
+      `SELECT day FROM slots
+       WHERE status = 'held'
+         AND hold_expires_at IS NOT NULL
+         AND hold_expires_at < ?`,
+    )
+    .bind(now)
+    .all<{ day: string }>();
+
   await db
     .prepare(
       `UPDATE slots
@@ -89,6 +104,11 @@ export async function expireHolds(db: D1Database, now = nowIso()): Promise<void>
     )
     .bind(now, now)
     .run();
+
+  const days = [...new Set((expired ?? []).map((r) => r.day))];
+  for (const day of days) {
+    await recomputeBlockedSlotsOnDay(db, day, now);
+  }
 }
 
 export async function getSlotById(
@@ -103,99 +123,146 @@ export async function getSlotById(
   );
 }
 
-/** Same experience already has a non-cancelled/non-blocked slot that day. */
-export async function dayHasSameExperienceSlot(
+export async function listSlotsOnDay(
   db: D1Database,
   day: string,
-  experienceSlug: string,
-): Promise<SlotRow | null> {
-  return (
-    (await db
-      .prepare(
-        `SELECT * FROM slots
-         WHERE day = ?
-           AND experience_slug = ?
-           AND status NOT IN ('cancelled', 'blocked')
-         LIMIT 1`,
-      )
-      .bind(day, experienceSlug)
-      .first<SlotRow>()) ?? null
+): Promise<SlotRow[]> {
+  const { results } = await db
+    .prepare(`SELECT * FROM slots WHERE day = ?`)
+    .bind(day)
+    .all<SlotRow>();
+  return results ?? [];
+}
+
+/** Busy = booked or held (teacher calendar occupied). */
+export async function listBusySlotsOnDay(
+  db: D1Database,
+  day: string,
+  exceptId?: string,
+): Promise<SlotRow[]> {
+  const rows = await listSlotsOnDay(db, day);
+  return rows.filter(
+    (row) =>
+      isBusyStatus(row.status) && (!exceptId || row.id !== exceptId),
   );
 }
 
-/** True when any slot on this day is already booked (teacher capacity used). */
+/**
+ * True when `candidate` overlaps a busy (booked/held) window on the same day.
+ */
+export async function findConflictingBusySlot(
+  db: D1Database,
+  candidate: SlotRow,
+  exceptId?: string,
+): Promise<SlotRow | null> {
+  const busy = await listBusySlotsOnDay(db, candidate.day, exceptId);
+  return busy.find((other) => slotsConflict(candidate, other)) ?? null;
+}
+
+/**
+ * After hold/book: mark open/held siblings whose busy windows overlap as blocked.
+ * Does not touch the source slot.
+ */
+export async function blockConflictingSlots(
+  db: D1Database,
+  source: SlotRow,
+  updatedAt: string,
+): Promise<void> {
+  const rows = await listSlotsOnDay(db, source.day);
+  for (const row of rows) {
+    if (row.id === source.id) continue;
+    if (row.status !== "open" && row.status !== "held") continue;
+    if (!slotsConflict(source, row)) continue;
+    await db
+      .prepare(
+        `UPDATE slots
+         SET status = 'blocked',
+             hold_token = NULL,
+             hold_expires_at = NULL,
+             updated_at = ?
+         WHERE id = ?
+           AND status IN ('open', 'held')`,
+      )
+      .bind(updatedAt, row.id)
+      .run();
+  }
+}
+
+/**
+ * Re-evaluate blocked slots on a day: reopen if they no longer conflict with
+ * any booked/held session; keep blocked (or re-block open) if they do.
+ */
+export async function recomputeBlockedSlotsOnDay(
+  db: D1Database,
+  day: string,
+  updatedAt: string,
+): Promise<void> {
+  const rows = await listSlotsOnDay(db, day);
+  const busy = rows.filter((row) => isBusyStatus(row.status));
+
+  for (const row of rows) {
+    if (row.status === "cancelled" || isBusyStatus(row.status)) continue;
+
+    const conflicts = busy.some((b) => slotsConflict(row, b));
+    if (conflicts && row.status === "open") {
+      await db
+        .prepare(
+          `UPDATE slots
+           SET status = 'blocked',
+               hold_token = NULL,
+               hold_expires_at = NULL,
+               updated_at = ?
+           WHERE id = ?
+             AND status = 'open'`,
+        )
+        .bind(updatedAt, row.id)
+        .run();
+    } else if (!conflicts && row.status === "blocked") {
+      await db
+        .prepare(
+          `UPDATE slots
+           SET status = 'open',
+               hold_token = NULL,
+               hold_expires_at = NULL,
+               updated_at = ?
+           WHERE id = ?
+             AND status = 'blocked'`,
+        )
+        .bind(updatedAt, row.id)
+        .run();
+    }
+  }
+}
+
+/** @deprecated Prefer findConflictingBusySlot — kept for any leftover imports. */
 export async function dayHasBookedSlot(
   db: D1Database,
   day: string,
   exceptId?: string,
 ): Promise<SlotRow | null> {
-  if (exceptId) {
-    return (
-      (await db
-        .prepare(
-          `SELECT * FROM slots
-           WHERE day = ?
-             AND status = 'booked'
-             AND id != ?
-           LIMIT 1`,
-        )
-        .bind(day, exceptId)
-        .first<SlotRow>()) ?? null
-    );
-  }
-  return (
-    (await db
-      .prepare(
-        `SELECT * FROM slots
-         WHERE day = ?
-           AND status = 'booked'
-         LIMIT 1`,
-      )
-      .bind(day)
-      .first<SlotRow>()) ?? null
-  );
+  const busy = await listBusySlotsOnDay(db, day, exceptId);
+  return busy.find((row) => row.status === "booked") ?? null;
 }
 
-/** After booking one slot, close other open/held offers that day. */
+/** @deprecated Prefer blockConflictingSlots. */
 export async function blockSiblingSlotsOnDay(
   db: D1Database,
   day: string,
   bookedId: string,
   updatedAt: string,
 ): Promise<void> {
-  await db
-    .prepare(
-      `UPDATE slots
-       SET status = 'blocked',
-           hold_token = NULL,
-           hold_expires_at = NULL,
-           updated_at = ?
-       WHERE day = ?
-         AND id != ?
-         AND status IN ('open', 'held')`,
-    )
-    .bind(updatedAt, day, bookedId)
-    .run();
+  const source = await getSlotById(db, bookedId);
+  if (!source) return;
+  await blockConflictingSlots(db, source, updatedAt);
 }
 
-/** When the booked session is released/cancelled, reopen blocked siblings. */
+/** @deprecated Prefer recomputeBlockedSlotsOnDay. */
 export async function unblockSiblingSlotsOnDay(
   db: D1Database,
   day: string,
   updatedAt: string,
 ): Promise<void> {
-  await db
-    .prepare(
-      `UPDATE slots
-       SET status = 'open',
-           hold_token = NULL,
-           hold_expires_at = NULL,
-           updated_at = ?
-       WHERE day = ?
-         AND status = 'blocked'`,
-    )
-    .bind(updatedAt, day)
-    .run();
+  await recomputeBlockedSlotsOnDay(db, day, updatedAt);
 }
 
 export type CreateOpenSlotResult =
@@ -221,21 +288,25 @@ export async function createOpenSlot(
     };
   }
 
-  const booked = await dayHasBookedSlot(db, parsed.day);
-  if (booked) {
+  // Overlapping *offers* are allowed. Only reject if the new window already
+  // conflicts with a booked/held session (teacher is busy).
+  const probe: SlotRow = {
+    id: "__probe__",
+    experience_slug: experienceSlug,
+    starts_at: parsed.starts_at,
+    day: parsed.day,
+    status: "open",
+    hold_token: null,
+    hold_expires_at: null,
+    created_at: "",
+    updated_at: "",
+  };
+  const conflict = await findConflictingBusySlot(db, probe);
+  if (conflict) {
     return {
       ok: false,
       day: parsed.day,
-      reason: `Day already booked (${booked.experience_slug} at ${booked.starts_at}).`,
-    };
-  }
-
-  const same = await dayHasSameExperienceSlot(db, parsed.day, experienceSlug);
-  if (same) {
-    return {
-      ok: false,
-      day: parsed.day,
-      reason: `Same experience already has a slot (${same.starts_at}).`,
+      reason: `Conflicts with ${conflict.experience_slug} at ${conflict.starts_at} (session + ${POST_SESSION_BUFFER_MIN} min buffer).`,
     };
   }
 

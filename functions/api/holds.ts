@@ -1,7 +1,8 @@
 import { error, json, readJson } from "../_lib/http";
 import {
-  dayHasBookedSlot,
+  blockConflictingSlots,
   expireHolds,
+  findConflictingBusySlot,
   getSlotById,
   holdMinutes,
   isFutureStartsAt,
@@ -15,11 +16,7 @@ import type { Env } from "../_lib/types";
  * Soft-hold an open slot for SCHEDULE_HOLD_MINUTES (default 20).
  * Body: { slotId: string, holdToken?: string }
  *
- * If holdToken matches an existing non-expired hold on that slot, renews it
- * (same token) so the guest can resume checkout after leaving Stripe.
- *
- * Soft hold does NOT close other experiences on the same day — only Mark booked does.
- * Returns holdToken for the WhatsApp message (fallback) and Stripe checkout.
+ * Soft hold blocks conflicting open/held siblings (session + buffer).
  */
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
@@ -69,6 +66,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const updated = await getSlotById(env.DB, slotId);
     if (!updated) return error("Slot not found after hold.", 500);
 
+    await blockConflictingSlots(env.DB, updated, heldAt);
+
     return json({
       holdToken: existingToken,
       expiresAt: holdExpiresAt,
@@ -87,9 +86,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     return error("Slot is not available.", 409);
   }
 
-  const dayBooked = await dayHasBookedSlot(env.DB, slot.day);
-  if (dayBooked) {
-    return error("This day is no longer available.", 409);
+  const conflict = await findConflictingBusySlot(env.DB, slot);
+  if (conflict) {
+    return error("This time is no longer available.", 409);
   }
 
   const holdToken = crypto.randomUUID();
@@ -112,6 +111,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
   const updated = await getSlotById(env.DB, slotId);
   if (!updated) return error("Slot not found after hold.", 500);
+
+  await blockConflictingSlots(env.DB, updated, heldAt);
 
   return json({
     holdToken,

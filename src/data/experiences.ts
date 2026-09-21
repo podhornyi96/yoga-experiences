@@ -337,15 +337,15 @@ export const experiences: Experience[] = [
     bookingType: "request",
     duration: "75 min",
     groupSize: "1:1",
-    locationLabel: "Outdoor or your custom place in Lisbon",
+    locationLabel: "Lisbon parks (Estrela, Graça, Nações, Eduardo VII)",
     tags: { location: "onsite", level: "all-levels" },
     highlights: [
       "Fully personalised",
-      "In person across Lisbon",
+      "Choose a Lisbon park online",
       "Flexible scheduling",
     ],
     includes: [
-      "Pre-session consultation",
+      "75-minute session",
       "Tailored sequence",
       "Follow-up tips",
       "Yoga mat (€5, on request)",
@@ -355,9 +355,9 @@ export const experiences: Experience[] = [
     ],
     faq: [
       {
-        question: "Can the session take place at my home?",
+        question: "Where do private sessions take place?",
         answer:
-          "Yes — sessions can take place at your home, in a park, or at another location we agree on in the Lisbon area.",
+          "You can instantly book at Park Estrela, Park Graça, Park Nações or Park Eduardo VII. For your home or another custom spot, message on WhatsApp so we can agree travel and price.",
       },
       {
         question: "Do I need to bring a mat?",
@@ -381,15 +381,15 @@ export const experiences: Experience[] = [
     bookingType: "request",
     duration: "75 min",
     groupSize: "2 people",
-    locationLabel: "Outdoor or your custom place in Lisbon",
+    locationLabel: "Lisbon parks (Estrela, Graça, Nações, Eduardo VII)",
     tags: { location: "onsite", level: "all-levels" },
     highlights: [
       "Just the two of you",
-      "In person across Lisbon",
+      "Choose a Lisbon park online",
       "Tailored to both levels",
     ],
     includes: [
-      "Pre-session consultation",
+      "75-minute session",
       "Shared tailored sequence",
       "Follow-up tips",
       "Yoga mat (€5, on request)",
@@ -402,6 +402,11 @@ export const experiences: Experience[] = [
         question: "Do we need to be at the same level?",
         answer:
           "Not at all — I'll adapt the session so you both feel supported and challenged in the right way.",
+      },
+      {
+        question: "Where do tandem sessions take place?",
+        answer:
+          "You can instantly book at Park Estrela, Park Graça, Park Nações or Park Eduardo VII. Custom locations are arranged on WhatsApp.",
       },
       {
         question: "Do we need to bring mats?",

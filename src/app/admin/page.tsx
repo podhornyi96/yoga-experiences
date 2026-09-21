@@ -19,7 +19,17 @@ type AdminSlot = {
   updatedAt: string;
 };
 
-const scheduled = getExperiencesByGroup("experiences");
+const groupExperiences = getExperiencesByGroup("experiences");
+const privateInventory = getExperiencesByGroup("private").filter(
+  (e) => e.slug === "private-yoga-session",
+);
+const scheduled = [
+  ...groupExperiences,
+  ...privateInventory.map((e) => ({
+    ...e,
+    title: "Private / Tandem",
+  })),
+];
 
 const WEEKDAYS: { iso: number; label: string }[] = [
   { iso: 1, label: "Mon" },
@@ -309,8 +319,9 @@ export default function AdminPage() {
         <div>
           <h1 className="text-3xl text-forest">Schedule admin</h1>
           <p className="mt-1 text-sm text-muted">
-            Several experiences can share a day until one is marked booked ·
-            Lisbon time · soft hold {siteConfig.scheduleHoldMinutes} min
+            Overlapping offers are OK until booked · then conflicting times
+            (session + 75 min buffer) are blocked · Lisbon time · soft hold{" "}
+            {siteConfig.scheduleHoldMinutes} min
           </p>
         </div>
         <AdminNav active="schedule" onLogout={() => void onLogout()} />
@@ -503,10 +514,10 @@ export default function AdminPage() {
               .
             </p>
             <p className="mt-3 text-sm leading-relaxed text-muted">
-              If you approve, all other experience slots on this day become
-              unavailable for guests
+              Conflicting open/held slots in the same time window (session
+              length + 75 min buffer) will be blocked
               {siblingsOnBookDay.length > 0
-                ? ` (${siblingsOnBookDay.length} other slot${siblingsOnBookDay.length === 1 ? "" : "s"} will be blocked)`
+                ? ` — up to ${siblingsOnBookDay.length} other slot${siblingsOnBookDay.length === 1 ? "" : "s"} on this day may be affected`
                 : ""}
               . Soft holds on those slots will be cleared.
             </p>

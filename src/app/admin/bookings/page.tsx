@@ -14,7 +14,10 @@ import {
 } from "@/lib/admin-client";
 import { formatSlotLabel } from "@/lib/schedule-api";
 
-const scheduled = getExperiencesByGroup("experiences");
+const scheduled = [
+  ...getExperiencesByGroup("experiences"),
+  ...getExperiencesByGroup("private"),
+];
 
 export default function AdminBookingsPage() {
   const [authed, setAuthed] = useState<boolean | null>(null);
