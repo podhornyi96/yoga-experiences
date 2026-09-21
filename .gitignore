@@ -35,6 +35,14 @@ yarn-error.log*
 .dev.vars
 .wrangler/
 
+# credentials — OAuth clients, service accounts, ADC (belong in ~/.config, never here)
+client_secret*.json
+*-oauth-client.json
+service-account*.json
+application_default_credentials.json
+gcloud-*.json
+google-ads.yaml
+
 
 # vercel
 .vercel

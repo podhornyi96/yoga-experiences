@@ -76,6 +76,18 @@ export const siteConfig = {
   // Microsoft Clarity project ID. Leave empty to skip loading.
   // Can also be overridden via NEXT_PUBLIC_CLARITY_ID (Cloudflare Pages build env).
   clarityId: process.env.NEXT_PUBLIC_CLARITY_ID ?? "yc4t014jn9",
+
+  // Cloudflare Web Analytics token (cookieless pageviews). Leave empty to skip.
+  // Override via NEXT_PUBLIC_CF_WEB_ANALYTICS_TOKEN in Pages build env if needed.
+  cfWebAnalyticsToken:
+    process.env.NEXT_PUBLIC_CF_WEB_ANALYTICS_TOKEN ??
+    "17f2f796ec024b94937b4962236cbdcd",
+
+  // Google Ads tag (gtag.js). Leave empty to skip loading.
+  // Conversion label is the send_to suffix from the Purchase action tag setup.
+  googleAdsId: process.env.NEXT_PUBLIC_GOOGLE_ADS_ID ?? "AW-18460763664",
+  googleAdsPurchaseLabel:
+    process.env.NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL ?? "",
 };
 
 export type SiteConfig = typeof siteConfig;

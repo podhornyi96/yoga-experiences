@@ -86,14 +86,31 @@ export default function PrivacyPage() {
 
             <div>
               <h2 className="text-xl text-forest sm:text-2xl">
+                Privacy-friendly analytics
+              </h2>
+              <p className="mt-3">
+                We use Cloudflare Web Analytics to see which pages are visited.
+                It does not use cookies and does not identify individual
+                visitors. It loads whether or not you accept cookies below.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-xl text-forest sm:text-2xl">
                 Analytics cookies
               </h2>
               <p className="mt-3">
-                If you accept cookies, we load two analytics tools. They are not
-                loaded until you choose Accept. Declining leaves the site fully
-                usable.
+                If you accept cookies, we also load optional tools. They are
+                not loaded until you choose Accept. Declining leaves the site
+                fully usable.
               </p>
               <ul className="mt-4 list-disc space-y-3 pl-5">
+                <li>
+                  <span className="font-medium text-ink">Google Ads</span>{" "}
+                  (Google Ireland) measures visits and completed bookings from
+                  search ads. The tag is present on every page with advertising
+                  cookies off until you choose Accept (Consent Mode).
+                </li>
                 <li>
                   <span className="font-medium text-ink">Meta Pixel</span>{" "}
                   (Meta Platforms Ireland) helps us understand how people find

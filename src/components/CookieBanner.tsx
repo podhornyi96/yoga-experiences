@@ -41,9 +41,9 @@ export function CookieBanner() {
                   id="cookie-banner-copy"
                   className="mt-2 text-sm leading-relaxed text-muted"
                 >
-                  We use cookies to understand how people use the site and to
-                  improve the experience. Some visits may be recorded in
-                  anonymised form. You can change this anytime.{" "}
+                  Optional cookies help with ads and heatmaps. Declining turns
+                  those off; basic pageview stats stay cookieless. You can
+                  change this anytime.{" "}
                   <Link
                     href="/privacy/"
                     className="font-medium text-forest underline decoration-sand-dark underline-offset-2 hover:text-clay-dark"

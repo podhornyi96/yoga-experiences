@@ -7,6 +7,14 @@
     "stripe": {
       "url": "https://mcp.stripe.com"
     },
+    "google-ads": {
+      "command": "pipx",
+      "args": ["run", "--spec", "git+https://github.com/googleads/google-ads-mcp.git", "google-ads-mcp"],
+      "env": {
+        "GOOGLE_PROJECT_ID": "ivanna-yoga",
+        "GOOGLE_APPLICATION_CREDENTIALS": "/Users/vladyslavpodhornyi/.config/gcloud/application_default_credentials.json"
+      }
+    },
     "cloudflare": { "url": "https://mcp.cloudflare.com/mcp" },
     "cloudflare-docs": { "url": "https://docs.mcp.cloudflare.com/mcp" },
     "cloudflare-bindings": { "url": "https://bindings.mcp.cloudflare.com/mcp" },

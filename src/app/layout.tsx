@@ -7,10 +7,15 @@ import { Footer } from "@/components/Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { JsonLd } from "@/components/JsonLd";
 import { CookieBanner } from "@/components/CookieBanner";
+import { CloudflareWebAnalytics } from "@/components/CloudflareWebAnalytics";
+import { GoogleAdsSnippet } from "@/components/GoogleAdsSnippet";
+import { GoogleAdsTag } from "@/components/GoogleAdsTag";
 import { MetaPixel } from "@/components/MetaPixel";
 import { MicrosoftClarity } from "@/components/MicrosoftClarity";
 import { localBusinessSchema } from "@/lib/structured-data";
+import { isValidCfWebAnalyticsToken } from "@/lib/cloudflare-web-analytics";
 import { isValidClarityId } from "@/lib/clarity";
+import { isValidGoogleAdsId } from "@/lib/google-ads";
 import { isValidPixelId } from "@/lib/pixel";
 
 const body = Inter({
@@ -87,12 +92,26 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col bg-cream">
         <JsonLd data={localBusinessSchema()} />
         {process.env.NODE_ENV === "production" &&
+        isValidCfWebAnalyticsToken(siteConfig.cfWebAnalyticsToken) ? (
+          <CloudflareWebAnalytics token={siteConfig.cfWebAnalyticsToken} />
+        ) : null}
+        {process.env.NODE_ENV === "production" &&
         isValidPixelId(siteConfig.metaPixelId) ? (
           <MetaPixel pixelId={siteConfig.metaPixelId} />
         ) : null}
         {process.env.NODE_ENV === "production" &&
         isValidClarityId(siteConfig.clarityId) ? (
           <MicrosoftClarity projectId={siteConfig.clarityId} />
+        ) : null}
+        {process.env.NODE_ENV === "production" &&
+        isValidGoogleAdsId(siteConfig.googleAdsId) ? (
+          <>
+            <GoogleAdsSnippet conversionId={siteConfig.googleAdsId} />
+            <GoogleAdsTag
+              conversionId={siteConfig.googleAdsId}
+              purchaseLabel={siteConfig.googleAdsPurchaseLabel}
+            />
+          </>
         ) : null}
         <Header />
         <main className="flex-1">{children}</main>
