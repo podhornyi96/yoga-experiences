@@ -23,11 +23,10 @@ export function coastalPriceForPeople(people: number): number {
   return 100 + (people - 5) * 15;
 }
 
-/** Yoga in Sintra Forest: €299 for 1–6 people, then +€40 per extra person. */
+/** Yoga in Sintra Forest: €299 for 1 person, then +€15 per extra person. */
 export function sintraPriceForPeople(people: number): number {
   if (people < 1) return 0;
-  if (people <= 6) return 299;
-  return 299 + (people - 6) * 40;
+  return 299 + (people - 1) * 15;
 }
 
 /** Wooden House Cascais: €120 for 1 person, then +€15 per extra person. */

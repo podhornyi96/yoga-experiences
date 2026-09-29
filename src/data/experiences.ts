@@ -296,7 +296,8 @@ export const experiences: Experience[] = [
     bookingType: "whatsapp",
     duration: "2.5 hrs",
     groupSize: "Up to 20 people",
-    groupPricing: { maxGuests: 20, schedule: "sintra" },
+    /** Live quote only — book on WhatsApp (no online deposit). */
+    groupPricing: { maxGuests: 20, schedule: "sintra", whatsappOnly: true },
     locationLabel: "Sintra",
     tags: { timeOfDay: "day", location: "sintra", level: "all-levels" },
     highlights: [
@@ -325,6 +326,11 @@ export const experiences: Experience[] = [
     cardImagePosition: "50% 70%",
     coverImagePosition: "50% 70%",
     faq: [
+      {
+        question: "How much does it cost?",
+        answer:
+          "€299 for one person, then €15 for each additional guest (up to 20). Exact total updates as you change the group size on this page.",
+      },
       {
         question: "Is equipment really included?",
         answer:

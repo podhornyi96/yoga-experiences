@@ -5,10 +5,10 @@ import { Section, SectionHeading } from "@/components/Section";
 import { GroupCard } from "@/components/GroupCard";
 import { ExperienceCard } from "@/components/ExperienceCard";
 import { BehindTheScenes } from "@/components/BehindTheScenes";
-import { BookingCTA } from "@/components/BookingCTA";
+import { BookingCTA, WhatsAppIcon } from "@/components/BookingCTA";
 import { Testimonials } from "@/components/Testimonials";
 import { getFeatured } from "@/data/experiences";
-import { siteConfig } from "@/config/site";
+import { siteConfig, whatsappLink } from "@/config/site";
 
 const steps = [
   {
@@ -16,8 +16,8 @@ const steps = [
     text: "Sunrise, sunset, forest, private or corporate — pick what fits you.",
   },
   {
-    title: "Message on WhatsApp",
-    text: "Tap “Book on WhatsApp” and we’ll confirm the next available date.",
+    title: "Pick a date & pay",
+    text: "Choose an open slot and secure it online. Cascais, custom dates or special requests — we’ll arrange on WhatsApp.",
   },
   {
     title: "Show up and breathe",
@@ -69,7 +69,7 @@ export default function HomePage() {
               </Link>
             </div>
             <p className="mt-4 text-sm text-cream/75 lg:text-muted">
-              All levels welcome · Groups of any size · Book by WhatsApp
+              All levels welcome · Online booking · WhatsApp for custom dates
             </p>
           </div>
 
@@ -148,7 +148,7 @@ export default function HomePage() {
         <SectionHeading
           eyebrow="How it works"
           title="Booking is simple"
-          description="Pick a session, message me, show up."
+          description="Most sessions book online in a few taps."
         />
         <div className="mt-12 grid gap-8 md:grid-cols-3">
           {steps.map((step, i) => (
@@ -171,10 +171,27 @@ export default function HomePage() {
             Ready to roll out your mat in Lisbon?
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-cream/80">
-            Message me on WhatsApp and let’s find the perfect session for you.
+            Browse experiences and book your next session online — or message
+            me on WhatsApp for a custom date.
           </p>
-          <div className="mt-8 flex justify-center">
-            <BookingCTA size="lg" variant="primary" />
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
+            <Link
+              href="/experiences/"
+              className="inline-flex items-center justify-center rounded-full bg-clay px-8 py-4 text-base font-semibold text-cream shadow-sm transition-colors hover:bg-clay-dark"
+            >
+              Browse experiences
+            </Link>
+            <Link
+              href={whatsappLink(
+                `Hi ${siteConfig.teacher.name}! I'd like to know more about your yoga experiences in Lisbon.`,
+              )}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-cream px-8 py-4 text-base font-semibold text-cream transition-colors hover:bg-cream hover:text-forest"
+            >
+              <WhatsAppIcon className="h-5 w-5" />
+              Book on WhatsApp
+            </Link>
           </div>
         </div>
       </Section>

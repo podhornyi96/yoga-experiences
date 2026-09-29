@@ -31,7 +31,7 @@ export type CheckoutCatalogEntry = {
 
 /**
  * Experiences that can be paid via Stripe checkout.
- * Cascais is WhatsApp-only (venue must be confirmed with the host).
+ * Cascais and Sintra are WhatsApp-only (no online deposit).
  */
 export const CHECKOUT_CATALOG: Record<string, CheckoutCatalogEntry> = {
   "sunrise-yoga-lisbon": {
@@ -48,12 +48,7 @@ export const CHECKOUT_CATALOG: Record<string, CheckoutCatalogEntry> = {
     schedule: "coastal",
     mats: true,
   },
-  "yoga-sintra-forest": {
-    title: "Yoga in Sintra Forest",
-    maxGuests: 20,
-    schedule: "sintra",
-    mats: false,
-  },
+  // Sintra is WhatsApp-only (no online deposit) — keep pricing helpers below.
   "private-yoga-session": {
     title: "Private Yoga Session",
     maxGuests: 2,
@@ -72,10 +67,10 @@ export function coastalPriceForPeople(people: number): number {
   return 100 + (people - 5) * 15;
 }
 
+/** Yoga in Sintra Forest: €299 for 1 person, then +€15 per extra person. */
 export function sintraPriceForPeople(people: number): number {
   if (people < 1) return 0;
-  if (people <= 6) return 299;
-  return 299 + (people - 6) * 40;
+  return 299 + (people - 1) * 15;
 }
 
 /** Wooden House Cascais: €120 for 1 person, then +€15 per extra person. */

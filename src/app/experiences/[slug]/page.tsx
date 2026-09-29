@@ -57,7 +57,9 @@ export default async function ExperienceDetailPage({
   if (!exp) notFound();
 
   const group = groups[exp.group];
-  const faq = withDepositPolicyFaq(exp.faq);
+  const faq = exp.groupPricing?.whatsappOnly
+    ? exp.faq
+    : withDepositPolicyFaq(exp.faq);
 
   return (
     <>
