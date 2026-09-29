@@ -32,6 +32,24 @@ const PRIVATE_LOCATIONS: Record<
   },
 };
 
+const SUNRISE_LOCATIONS: Record<
+  string,
+  { label: string; mapsUrl: string }
+> = {
+  "portas-do-sol": {
+    label: "Portas do Sol (Largo Portas do Sol)",
+    mapsUrl: "https://maps.app.goo.gl/NyVbTeYwjc7KskRX8?g_st=ic",
+  },
+  beato: {
+    label: "Beato — park by the river Tejo",
+    mapsUrl: "https://maps.app.goo.gl/GgxSx1faztYB6xmx9?g_st=ic",
+  },
+  "vasco-da-gama": {
+    label: "Vasco da Gama — by the river Tejo (near the tower)",
+    mapsUrl: "https://maps.app.goo.gl/oTBnX8WdYdHDsAL17?g_st=ic",
+  },
+};
+
 /** Titles / duration / meeting point for confirmation emails. */
 const EXPERIENCE_EMAIL: Record<
   string,
@@ -45,8 +63,6 @@ const EXPERIENCE_EMAIL: Record<
   "sunrise-yoga-lisbon": {
     title: "Sunrise Yoga",
     duration: "60 minutes",
-    locationLabel: "Largo Portas do Sol",
-    locationUrl: "https://maps.app.goo.gl/NyVbTeYwjc7KskRX8?g_st=ic",
   },
   "sunset-yoga-ocean": {
     title: "Sunset Yoga by the Ocean",
@@ -114,6 +130,17 @@ function sessionMeta(booking: BookingRow) {
       locationUrl: park?.mapsUrl,
     };
   }
+  if (booking.experience_slug === "sunrise-yoga-lisbon") {
+    const spot = booking.location_id
+      ? SUNRISE_LOCATIONS[booking.location_id]
+      : null;
+    return {
+      title: "Sunrise Yoga",
+      duration: "60 minutes",
+      locationLabel: spot?.label ?? base?.locationLabel,
+      locationUrl: spot?.mapsUrl ?? base?.locationUrl,
+    };
+  }
   if (base) return base;
   return {
     title: booking.experience_slug
@@ -152,7 +179,7 @@ export function buildBookingConfirmationEmail(
         : "";
 
   const policy = fullPay
-    ? `Cancellation: free full refund or reschedule with at least 24 hours' notice (message us on WhatsApp or email). Less than 24 hours: no refund or reschedule.\n\nWeather: if outdoor conditions make the spot unsafe, we'll contact you to reschedule (or refund if you prefer).`
+    ? `Your payment is non-refundable. Reschedule free with at least 48 hours' notice — message us on WhatsApp.`
     : `Your deposit is non-refundable. Reschedule free with at least 48 hours' notice — message us on WhatsApp.`;
 
   const text = [

@@ -74,7 +74,8 @@ professor, barato, preço, clothes, mat buy, leggings
 - [ ] Sitelinks: Sunrise Yoga · Sunset by the Ocean · Sintra Forest · About Ivanna
 - [ ] Callouts: All Levels Welcome · Instant Online Booking · Classes in English · Small Groups · Certified RYT-300
 - [ ] Structured snippet — header **Types**: Sunrise Yoga, Sunset Yoga, Forest Yoga, Private Yoga, Corporate Yoga
-- [ ] Price: Sunrise €50 · Sunset €50 · Cascais €180 · Sintra €299
+- [ ] Price: Sunrise €50 · Sunset €50 · Cascais from €120 · Sintra €299
+- [ ] Cascais: WhatsApp-only (no instant booking — venue confirmation)
 - [ ] Location — после создания Google Business Profile (п.6)
 - [ ] Call — **не добавлять** (звонки не связываются с бронью и портят статистику)
 
@@ -127,7 +128,7 @@ professor, barato, preço, clothes, mat buy, leggings
 `SCHEDULED_SLUGS` в `functions/_lib/types.ts` содержат все четыре экспириенса, админка даёт
 создавать слоты для любого. Не бронируются они только потому, что слотов не создано.
 
-- [ ] Создать слоты на Sintra (€299) и Cascais (€180) в админке
+- [ ] Создать слоты на Sintra (€299) в админке (Cascais — только WhatsApp, слоты не нужны)
 
 Мгновенно бронируются сейчас только самые дешёвые офферы. Это перевёрнутая логика: реклама
 должна вести к дорогим, а они как раз требуют переписки.

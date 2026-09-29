@@ -47,7 +47,7 @@ learning phase. Плюс практическое правило: дневной
 
 **Следствия, которые важнее настроек кампаний:**
 
-1. Каждое рекламное евро идёт в **Sintra (€299) и Cascais (€180)**, а не в Sunrise
+1. Каждое рекламное евро идёт в **Sintra (€299) и Cascais (from €120)**, а не в Sunrise
    и тем более не в Private.
 2. Private 1:1 за €45 при дефиците слотов — убыточный оффер: он занимает тот же
    слот, что Sintra за €299. Его стоит **убрать из рекламы совсем** и оставить
@@ -110,7 +110,7 @@ Google Search на ручной ставке / Maximise clicks **не требу
 |---|---|---|---|
 | Sunrise Yoga (Portas do Sol) | 1 чел €50 / 2 €90 / 3–5 €100 / 6+ +€15 | до 30 | **€90–100** (пара или компания) |
 | Sunset Yoga by the Ocean (Avencas) | та же сетка | до 8 | **€90–100** |
-| Wooden House Cascais | €180 за сессию | до 6 | **€180** |
+| Wooden House Cascais | from €120 (1 чел.), +€15 за каждого | до 6 | **€120+** |
 | Sintra Forest | €299 за 1–6, далее +€40 | до 20 | **€299–380** |
 | Private 1:1 | €45 | 1 | €45 |
 | Tandem | €80 | 2 | €80 |
@@ -125,7 +125,7 @@ Private за €45 — этот оффер не выдержит никакой 
 **Целевой CAC (25–30% от выручки):**
 
 - Coastal (Sunrise/Sunset, ср. €95) → CAC ≤ **€25**
-- Cascais (€180) → CAC ≤ **€45**
+- Cascais (from €120) → CAC ≤ **€30**
 - Sintra (€299) → CAC ≤ **€75**
 
 При конверсии «диалог → бронь» 20% это даёт целевую **цену диалога €5 (coastal) и
@@ -280,7 +280,7 @@ Sunrise за €50, Meta зальёт весь бюджет в дешёвый о
 - Languages: English (All/UK/US).
 - Suggestions: Yoga retreat, Sound bath, Meditation retreat, Spirituality, Breathwork,
   Wellness travel, Forest bathing.
-- Офферы: Sintra Forest €299, Wooden House Cascais €180.
+- Офферы: Sintra Forest €299, Wooden House Cascais from €120.
 
 #### Ad set 2.2 — `EN_Lisbon_CouplesAndGroups`
 
@@ -427,7 +427,7 @@ Pre-fill: `Hi Ivanna! We'd like to book the Sintra forest experience — what da
 > Hatha-inspired movement, conscious breathwork, guided meditation and sound healing.
 > All mats and equipment provided.
 >
-> €180 for the whole group · 30 min by train from Lisbon
+> From €120 · +€15 per extra person · 30 min by train from Lisbon
 >
 > Message me for available dates.
 

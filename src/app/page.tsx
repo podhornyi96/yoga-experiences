@@ -124,7 +124,7 @@ export default function HomePage() {
         <SectionHeading
           eyebrow="Reviews"
           title="What people say"
-          description="Real messages from Instagram — tap View original review to see the screenshot."
+          description="Real Google reviews and messages from people who practised with Ivanna."
         />
         <div className="mt-12">
           <Testimonials />

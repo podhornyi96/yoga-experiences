@@ -1,17 +1,22 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { BookingCTA, WhatsAppIcon } from "@/components/BookingCTA";
 import { siteConfig, whatsappLink } from "@/config/site";
 import type { Experience } from "@/data/experiences";
-import { DEPOSIT_POLICY_SHORT } from "@/lib/booking-policy";
+import {
+  SUNRISE_INVENTORY_SLUG,
+  SUNRISE_LOCATIONS,
+  type SunriseLocationId,
+} from "@/data/sunrise-locations";
+import { DEPOSIT_POLICY_SHORT, FULL_PAY_POLICY_SHORT } from "@/lib/booking-policy";
 import {
   DEPOSIT_RATE,
   depositEur as calcDepositEur,
   remainingEur as calcRemainingEur,
 } from "@/lib/group-pricing";
-import { PRIVATE_FULL_PAY_POLICY_SHORT } from "@/lib/booking-policy";
 import {
   createCheckoutSession,
   createHold,
@@ -37,11 +42,14 @@ type Props = {
    * Private + Tandem both use private-yoga-session.
    */
   scheduleSlug?: string;
-  /** Fraction charged online (default group deposit 0.3; private = 1). */
+  /** Fraction charged online (default 0.3 deposit). */
   depositRate?: number;
   /** Required for private inventory checkout. */
   locationId?: string | null;
 };
+
+type LocationChoice = SunriseLocationId | "custom";
+type Step = "when" | "where";
 
 function formatMoney(amount: number): string {
   return Number.isInteger(amount) ? `€${amount}` : `€${amount.toFixed(2)}`;
@@ -85,6 +93,7 @@ function groupSlotsByMonth(slots: PublicSlot[]): {
  * - Loads slots; if none / API down → classic Book on WhatsApp.
  * - If slots exist + paymentsEnabled → soft hold → Stripe deposit checkout.
  * - If slots exist + payments off → soft hold → WhatsApp.
+ * - Sunrise: When → Where (spot picker + custom via WhatsApp).
  */
 export function AvailabilityBooking({
   experience,
@@ -98,6 +107,7 @@ export function AvailabilityBooking({
   locationId = null,
 }: Props) {
   const inventorySlug = scheduleSlug ?? experience.slug;
+  const pickLocation = inventorySlug === SUNRISE_INVENTORY_SLUG;
   const [slots, setSlots] = useState<PublicSlot[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -166,9 +176,15 @@ export function AvailabilityBooking({
       <p className="mt-2 text-center text-xs text-muted">
         {payments
           ? fullPay
-            ? `Pick a date, then pay ${formatMoney(charge)} in full.`
-            : `Pick a date, then pay a ${formatMoney(charge)} deposit (${Math.round(depositRate * 100)}%).`
-          : "Pick a date, then continue on WhatsApp."}
+            ? pickLocation
+              ? `Pick a date and spot, then pay ${formatMoney(charge)} in full.`
+              : `Pick a date, then pay ${formatMoney(charge)} in full.`
+            : pickLocation
+              ? `Pick a date and spot, then pay a ${formatMoney(charge)} deposit (${Math.round(depositRate * 100)}%).`
+              : `Pick a date, then pay a ${formatMoney(charge)} deposit (${Math.round(depositRate * 100)}%).`
+          : pickLocation
+            ? "Pick a date and spot, then continue on WhatsApp."
+            : "Pick a date, then continue on WhatsApp."}
       </p>
       {open ? (
         <AvailabilityModal
@@ -182,6 +198,7 @@ export function AvailabilityBooking({
           payments={payments}
           depositRate={depositRate}
           locationId={locationId}
+          pickLocation={pickLocation}
           onClose={() => setOpen(false)}
           onSlotsChange={setSlots}
         />
@@ -200,7 +217,8 @@ function AvailabilityModal({
   totalEur,
   payments,
   depositRate,
-  locationId,
+  locationId: locationIdProp,
+  pickLocation,
   onClose,
   onSlotsChange,
 }: {
@@ -214,12 +232,14 @@ function AvailabilityModal({
   payments: boolean;
   depositRate: number;
   locationId: string | null;
+  pickLocation: boolean;
   onClose: () => void;
   onSlotsChange: (slots: PublicSlot[] | null) => void;
 }) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
   const fullPay = depositRate >= 1;
+  const [step, setStep] = useState<Step>("when");
   const [selectedId, setSelectedId] = useState<string | null>(() => {
     const pending = readPendingHold(inventorySlug);
     if (pending && slots.some((s) => s.id === pending.slotId)) {
@@ -227,6 +247,9 @@ function AvailabilityModal({
     }
     return slots[0]?.id ?? null;
   });
+  const [location, setLocation] = useState<LocationChoice | null>(
+    pickLocation ? (SUNRISE_LOCATIONS[0]?.id ?? null) : null,
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const charge = calcDepositEur(totalEur, depositRate);
@@ -249,6 +272,15 @@ function AvailabilityModal({
   const selected = slots.find((s) => s.id === selectedId) ?? null;
   const monthGroups = useMemo(() => groupSlotsByMonth(slots), [slots]);
   const [mounted, setMounted] = useState(false);
+  const spot =
+    pickLocation && location && location !== "custom"
+      ? (SUNRISE_LOCATIONS.find((p) => p.id === location) ?? null)
+      : null;
+  const resolvedLocationId = pickLocation
+    ? location && location !== "custom"
+      ? location
+      : null
+    : locationIdProp;
 
   useEffect(() => {
     setMounted(true);
@@ -274,8 +306,25 @@ function AvailabilityModal({
     }
   }
 
+  function appendLocationToMessage(base: string, label: string): string {
+    const withSlot = base.replace(
+      /Could you share the next available dates\?$/,
+      `I'd like the slot on ${label} (Lisbon time).`,
+    );
+    const withDate =
+      withSlot === base
+        ? `${base} Preferred slot: ${label} (Lisbon time).`
+        : withSlot;
+    if (!spot) return withDate;
+    return `${withDate} Location: ${spot.label} (${spot.placeName}).`;
+  }
+
   async function continueOnWhatsApp() {
     if (!selected) return;
+    if (pickLocation && !spot) {
+      setError("Choose a location to continue.");
+      return;
+    }
     setBusy(true);
     setError(null);
     const pending = readPendingHold(inventorySlug);
@@ -291,15 +340,7 @@ function AvailabilityModal({
     }
 
     const label = formatSlotLabel(result.data.slot.startsAt);
-    const message = bookingMessageBase.replace(
-      /Could you share the next available dates\?$/,
-      `I'd like the slot on ${label} (Lisbon time).`,
-    );
-    const finalMessage =
-      message === bookingMessageBase
-        ? `${bookingMessageBase} Preferred slot: ${label} (Lisbon time).`
-        : message;
-
+    const finalMessage = appendLocationToMessage(bookingMessageBase, label);
     const href = whatsappLink(finalMessage);
     window.open(href, "_blank", "noopener,noreferrer");
     setBusy(false);
@@ -308,8 +349,15 @@ function AvailabilityModal({
 
   async function payOnline() {
     if (!selected) return;
-    if (inventorySlug === "private-yoga-session" && !locationId) {
-      setError("Choose a park location before paying.");
+    if (
+      (inventorySlug === "private-yoga-session" || pickLocation) &&
+      !resolvedLocationId
+    ) {
+      setError(
+        pickLocation
+          ? "Choose a location before paying."
+          : "Choose a park location before paying.",
+      );
       return;
     }
     setBusy(true);
@@ -334,7 +382,7 @@ function AvailabilityModal({
       people,
       mats,
       expiresAt: hold.data.expiresAt,
-      locationId,
+      locationId: resolvedLocationId,
     });
 
     const checkout = await createCheckoutSession({
@@ -343,7 +391,7 @@ function AvailabilityModal({
       slug: inventorySlug,
       people,
       mats,
-      locationId,
+      locationId: resolvedLocationId,
     });
 
     if (!checkout.ok) {
@@ -356,7 +404,18 @@ function AvailabilityModal({
     window.location.assign(checkout.data.url);
   }
 
+  function openCustomWhatsApp() {
+    if (!selected) return;
+    const label = formatSlotLabel(selected.startsAt);
+    const href = whatsappLink(
+      `Hi ${siteConfig.teacher.name}! I'd like to book "${experience.title}" on ${label} (Lisbon time) at a custom location. Total from the site: ${formatMoney(totalEur)}.`,
+    );
+    window.open(href, "_blank", "noopener,noreferrer");
+  }
+
   if (!mounted) return null;
+
+  const showWhere = pickLocation && step === "where";
 
   return createPortal(
     <div
@@ -375,12 +434,37 @@ function AvailabilityModal({
         <div className="flex shrink-0 items-start justify-between gap-3 border-b border-sand px-6 pb-4 pt-6">
           <div>
             <h2 id={titleId} className="text-xl text-forest">
-              Available dates
+              {showWhere ? "Choose a spot" : "Available dates"}
             </h2>
             <p className="mt-1 text-sm text-muted">
-              {experience.title} · Lisbon time · held for{" "}
-              {siteConfig.scheduleHoldMinutes} min after you continue
+              {experience.title} · Lisbon time
+              {pickLocation ? null : (
+                <>
+                  {" "}
+                  · held for {siteConfig.scheduleHoldMinutes} min after you
+                  continue
+                </>
+              )}
             </p>
+            {pickLocation ? (
+              <div className="mt-3 flex items-center gap-2 text-xs font-medium">
+                <span
+                  className={
+                    step === "when" ? "text-clay-dark" : "text-muted"
+                  }
+                >
+                  1. When
+                </span>
+                <span className="text-sand-dark">→</span>
+                <span
+                  className={
+                    step === "where" ? "text-clay-dark" : "text-muted"
+                  }
+                >
+                  2. Where
+                </span>
+              </div>
+            ) : null}
           </div>
           <button
             ref={closeRef}
@@ -394,47 +478,94 @@ function AvailabilityModal({
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
-          <div className="space-y-5">
-            {monthGroups.map((group) => (
-              <section key={group.key}>
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
-                  {group.label}
-                </h3>
-                <ul className="mt-2 space-y-1.5">
-                  {group.slots.map((slot) => {
-                    const active = slot.id === selectedId;
-                    const yours = slot.status === "held";
-                    return (
-                      <li key={slot.id}>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedId(slot.id)}
-                          className={`w-full rounded-lg border px-3 py-2 text-left text-sm font-medium transition-colors ${
-                            active
-                              ? "border-clay bg-white text-forest ring-2 ring-clay/30"
-                              : "border-sand-dark bg-white/60 text-ink hover:border-clay/50"
-                          }`}
-                        >
-                          <span className="flex items-baseline justify-between gap-2">
-                            <span>{formatSlotLabel(slot.startsAt)}</span>
-                            {yours ? (
-                              <span className="shrink-0 text-xs font-normal text-clay-dark">
-                                Your hold
-                              </span>
-                            ) : null}
+          {showWhere ? (
+            <div className="space-y-3">
+              {selected ? (
+                <p className="rounded-lg bg-sand/60 px-3 py-2 text-sm text-ink">
+                  <span className="text-muted">Time · </span>
+                  {formatSlotLabel(selected.startsAt)}
+                </p>
+              ) : null}
+              <ul className="space-y-2.5">
+                {SUNRISE_LOCATIONS.map((loc) => {
+                  const active = location === loc.id;
+                  return (
+                    <li key={loc.id}>
+                      <button
+                        type="button"
+                        onClick={() => setLocation(loc.id)}
+                        className={`flex w-full gap-3 overflow-hidden rounded-xl border text-left transition-colors ${
+                          active
+                            ? "border-clay bg-white ring-2 ring-clay/30"
+                            : "border-sand-dark bg-white/60 hover:border-clay/40"
+                        }`}
+                      >
+                        <div className="relative h-20 w-24 shrink-0 bg-sand sm:h-[5.5rem] sm:w-28">
+                          <Image
+                            src={loc.image}
+                            alt=""
+                            fill
+                            sizes="112px"
+                            className="object-cover"
+                          />
+                        </div>
+                        <span className="flex min-w-0 flex-1 flex-col justify-center py-2 pr-3">
+                          <span className="text-sm font-semibold text-forest">
+                            {loc.label}
                           </span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </section>
-            ))}
-          </div>
+                          <span className="mt-0.5 text-xs leading-snug text-muted">
+                            {loc.vibe}
+                          </span>
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ) : (
+            <div className="space-y-5">
+              {monthGroups.map((group) => (
+                <section key={group.key}>
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
+                    {group.label}
+                  </h3>
+                  <ul className="mt-2 space-y-1.5">
+                    {group.slots.map((slot) => {
+                      const active = slot.id === selectedId;
+                      const yours = slot.status === "held";
+                      return (
+                        <li key={slot.id}>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedId(slot.id)}
+                            className={`w-full rounded-lg border px-3 py-2 text-left text-sm font-medium transition-colors ${
+                              active
+                                ? "border-clay bg-white text-forest ring-2 ring-clay/30"
+                                : "border-sand-dark bg-white/60 text-ink hover:border-clay/50"
+                            }`}
+                          >
+                            <span className="flex items-baseline justify-between gap-2">
+                              <span>{formatSlotLabel(slot.startsAt)}</span>
+                              {yours ? (
+                                <span className="shrink-0 text-xs font-normal text-clay-dark">
+                                  Your hold
+                                </span>
+                              ) : null}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="shrink-0 border-t border-sand px-6 pb-6 pt-4">
-          {payments ? (
+          {!showWhere && payments ? (
             <div className="space-y-1 text-sm">
               {fullPay ? (
                 <>
@@ -442,7 +573,7 @@ function AvailabilityModal({
                     Pay today: {formatMoney(charge)} (in full)
                   </p>
                   <p className="text-xs text-muted">
-                    {PRIVATE_FULL_PAY_POLICY_SHORT}{" "}
+                    {FULL_PAY_POLICY_SHORT}{" "}
                     <a
                       href="/terms/"
                       className="font-medium text-forest underline-offset-2 hover:underline"
@@ -481,34 +612,100 @@ function AvailabilityModal({
             </p>
           ) : null}
 
-          <button
-            type="button"
-            disabled={!selected || busy}
-            onClick={() =>
-              void (payments ? payOnline() : continueOnWhatsApp())
-            }
-            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-clay px-6 py-3.5 text-sm font-semibold text-cream shadow-sm transition-colors hover:bg-clay-dark disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {payments ? null : <WhatsAppIcon className="h-5 w-5" />}
-            {busy
-              ? payments
-                ? "Starting checkout…"
-                : "Holding slot…"
-              : payments
-                ? fullPay
-                  ? `Pay ${formatMoney(charge)}`
-                  : `Pay ${formatMoney(charge)} deposit`
-                : "Continue on WhatsApp"}
-          </button>
+          {pickLocation && step === "when" ? (
+            <>
+              <button
+                type="button"
+                disabled={!selected}
+                onClick={() => {
+                  setError(null);
+                  setStep("where");
+                }}
+                className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-clay px-6 py-3.5 text-sm font-semibold text-cream shadow-sm transition-colors hover:bg-clay-dark disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Continue
+              </button>
+              <a
+                href={alternativeHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 block text-center text-sm font-medium text-forest underline-offset-2 hover:text-clay-dark hover:underline"
+              >
+                None of these dates work?
+              </a>
+            </>
+          ) : pickLocation && step === "where" ? (
+            <>
+              <button
+                type="button"
+                disabled={!spot || busy}
+                onClick={() =>
+                  void (payments ? payOnline() : continueOnWhatsApp())
+                }
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-clay px-6 py-3.5 text-sm font-semibold text-cream shadow-sm transition-colors hover:bg-clay-dark disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {payments ? null : <WhatsAppIcon className="h-5 w-5" />}
+                {busy
+                  ? payments
+                    ? "Starting checkout…"
+                    : "Holding slot…"
+                  : payments
+                    ? fullPay
+                      ? `Pay ${formatMoney(charge)}`
+                      : `Pay ${formatMoney(charge)} deposit`
+                    : "Continue on WhatsApp"}
+              </button>
+              <button
+                type="button"
+                onClick={openCustomWhatsApp}
+                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full border border-sand-dark bg-white px-6 py-3 text-sm font-medium text-forest transition-colors hover:border-clay/50 hover:bg-cream"
+              >
+                <WhatsAppIcon className="h-4 w-4" />
+                Custom location — WhatsApp
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setError(null);
+                  setStep("when");
+                }}
+                className="mt-3 block w-full text-center text-sm font-medium text-muted underline-offset-2 hover:text-forest hover:underline"
+              >
+                Back to dates
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                disabled={!selected || busy}
+                onClick={() =>
+                  void (payments ? payOnline() : continueOnWhatsApp())
+                }
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-clay px-6 py-3.5 text-sm font-semibold text-cream shadow-sm transition-colors hover:bg-clay-dark disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {payments ? null : <WhatsAppIcon className="h-5 w-5" />}
+                {busy
+                  ? payments
+                    ? "Starting checkout…"
+                    : "Holding slot…"
+                  : payments
+                    ? fullPay
+                      ? `Pay ${formatMoney(charge)}`
+                      : `Pay ${formatMoney(charge)} deposit`
+                    : "Continue on WhatsApp"}
+              </button>
 
-          <a
-            href={alternativeHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-3 block text-center text-sm font-medium text-forest underline-offset-2 hover:text-clay-dark hover:underline"
-          >
-            None of these dates work?
-          </a>
+              <a
+                href={alternativeHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 block text-center text-sm font-medium text-forest underline-offset-2 hover:text-clay-dark hover:underline"
+              >
+                None of these dates work?
+              </a>
+            </>
+          )}
         </div>
       </div>
     </div>,

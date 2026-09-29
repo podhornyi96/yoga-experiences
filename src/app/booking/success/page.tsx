@@ -5,10 +5,7 @@ import { ClearPendingHold } from "@/components/ClearPendingHold";
 import { Container } from "@/components/Container";
 import { SectionHeading } from "@/components/Section";
 import { siteConfig } from "@/config/site";
-import {
-  DEPOSIT_POLICY_SUCCESS,
-  PRIVATE_FULL_PAY_POLICY_SUCCESS,
-} from "@/lib/booking-policy";
+import { DEPOSIT_POLICY_SUCCESS } from "@/lib/booking-policy";
 import { pageSeo } from "@/lib/seo";
 
 export const metadata: Metadata = pageSeo({
@@ -36,14 +33,7 @@ export default function BookingSuccessPage() {
             anything needs confirming. If anything looks off, message right
             away.
           </p>
-          <p className="text-muted">
-            <span className="font-medium text-ink">Group experiences:</span>{" "}
-            {DEPOSIT_POLICY_SUCCESS}
-          </p>
-          <p className="text-muted">
-            <span className="font-medium text-ink">Private / Tandem:</span>{" "}
-            {PRIVATE_FULL_PAY_POLICY_SUCCESS}
-          </p>
+          <p className="text-muted">{DEPOSIT_POLICY_SUCCESS}</p>
           <p className="text-muted">
             <Link
               href="/terms/"

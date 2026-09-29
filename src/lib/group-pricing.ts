@@ -3,13 +3,16 @@
 export const MAT_PRICE_EUR = 5;
 export const MAT_MAX = 6;
 
-/** Default fraction charged online for group experiences (deposit). */
+/** Default fraction charged online for deposit bookings (Sunset, Private, Tandem). */
 export const DEPOSIT_RATE = 0.3;
 
-/** Private / Tandem inventory always charges in full online (v1). */
-export const PRIVATE_DEPOSIT_RATE = 1;
+/** Sunrise Yoga: full prepay online (early session / no-show risk). */
+export const SUNRISE_DEPOSIT_RATE = 1;
 
-export type GroupPriceSchedule = "coastal" | "sintra";
+/** Private / Tandem: same 30% deposit as Sunset. */
+export const PRIVATE_DEPOSIT_RATE = DEPOSIT_RATE;
+
+export type GroupPriceSchedule = "coastal" | "sintra" | "cascais";
 
 /** Sunrise Yoga and Sunset Yoga by the Ocean. */
 export function coastalPriceForPeople(people: number): number {
@@ -27,13 +30,19 @@ export function sintraPriceForPeople(people: number): number {
   return 299 + (people - 6) * 40;
 }
 
+/** Wooden House Cascais: €120 for 1 person, then +€15 per extra person. */
+export function cascaisPriceForPeople(people: number): number {
+  if (people < 1) return 0;
+  return 120 + (people - 1) * 15;
+}
+
 export function priceForSchedule(
   schedule: GroupPriceSchedule,
   people: number,
 ): number {
-  return schedule === "sintra"
-    ? sintraPriceForPeople(people)
-    : coastalPriceForPeople(people);
+  if (schedule === "sintra") return sintraPriceForPeople(people);
+  if (schedule === "cascais") return cascaisPriceForPeople(people);
+  return coastalPriceForPeople(people);
 }
 
 export function matsSubtotal(mats: number): number {
@@ -47,6 +56,12 @@ export function groupBookingTotal(people: number, mats: number): number {
 export function privateSessionEur(people: number): number {
   if (people >= 2) return 80;
   return 45;
+}
+
+/** Online charge fraction for a catalog slug (keep in sync with functions/_lib/pricing). */
+export function depositRateForSlug(slug: string): number {
+  if (slug === "sunrise-yoga-lisbon") return SUNRISE_DEPOSIT_RATE;
+  return DEPOSIT_RATE;
 }
 
 /** Stripe amount in the smallest currency unit (EUR cents). */

@@ -8,14 +8,13 @@ export const MAT_MAX = 6;
 /** Default online charge for group experiences (30% deposit). */
 export const DEPOSIT_RATE = 0.3;
 
-export type GroupPriceSchedule = "coastal" | "sintra";
+export type GroupPriceSchedule = "coastal" | "sintra" | "cascais";
 
 export type CheckoutCatalogEntry = {
   title: string;
   maxGuests: number;
-  /** Variable schedule pricing, or fixed session price (Cascais). */
+  /** Variable schedule pricing. */
   schedule?: GroupPriceSchedule;
-  fixedSessionEur?: number;
   /**
    * Private inventory: price depends on party size (1 = Private, 2 = Tandem).
    */
@@ -30,25 +29,24 @@ export type CheckoutCatalogEntry = {
   depositRate?: number;
 };
 
-/** Experiences that can be paid via Stripe checkout. */
+/**
+ * Experiences that can be paid via Stripe checkout.
+ * Cascais is WhatsApp-only (venue must be confirmed with the host).
+ */
 export const CHECKOUT_CATALOG: Record<string, CheckoutCatalogEntry> = {
   "sunrise-yoga-lisbon": {
     title: "Sunrise Yoga",
     maxGuests: 30,
     schedule: "coastal",
     mats: true,
+    /** Early sessions: full prepay (hard to confirm morning attendance). */
+    depositRate: 1,
   },
   "sunset-yoga-ocean": {
     title: "Sunset Yoga by the Ocean",
     maxGuests: 8,
     schedule: "coastal",
     mats: true,
-  },
-  "yoga-cascais-wooden-house": {
-    title: "Wooden House Yoga in Cascais",
-    maxGuests: 6,
-    fixedSessionEur: 180,
-    mats: false,
   },
   "yoga-sintra-forest": {
     title: "Yoga in Sintra Forest",
@@ -62,7 +60,7 @@ export const CHECKOUT_CATALOG: Record<string, CheckoutCatalogEntry> = {
     priceByPeople: { 1: 45, 2: 80 },
     titleByPeople: { 1: "Private Yoga Session", 2: "Tandem Yoga" },
     mats: true,
-    depositRate: 1,
+    // Default DEPOSIT_RATE (30%) — confirm via WhatsApp before the session.
   },
 };
 
@@ -80,13 +78,19 @@ export function sintraPriceForPeople(people: number): number {
   return 299 + (people - 6) * 40;
 }
 
+/** Wooden House Cascais: €120 for 1 person, then +€15 per extra person. */
+export function cascaisPriceForPeople(people: number): number {
+  if (people < 1) return 0;
+  return 120 + (people - 1) * 15;
+}
+
 export function priceForSchedule(
   schedule: GroupPriceSchedule,
   people: number,
 ): number {
-  return schedule === "sintra"
-    ? sintraPriceForPeople(people)
-    : coastalPriceForPeople(people);
+  if (schedule === "sintra") return sintraPriceForPeople(people);
+  if (schedule === "cascais") return cascaisPriceForPeople(people);
+  return coastalPriceForPeople(people);
 }
 
 export function matsSubtotal(mats: number): number {
@@ -162,16 +166,18 @@ export function quoteCheckout(input: {
       return { ok: false, error: "Unsupported party size for this session." };
     }
     sessionEur = priced;
-  } else if (entry.fixedSessionEur != null) {
-    sessionEur = entry.fixedSessionEur;
+  } else if (entry.schedule) {
+    sessionEur = priceForSchedule(entry.schedule, people);
   } else {
-    sessionEur = priceForSchedule(entry.schedule!, people);
+    return { ok: false, error: "This experience cannot be paid online." };
   }
 
   const title = entry.titleByPeople?.[people] ?? entry.title;
   const totalEur = sessionEur + (entry.mats ? matsSubtotal(mats) : 0);
   const rate = entry.depositRate ?? DEPOSIT_RATE;
-  const cents = depositCents(totalEur, rate);
+  const depEur = depositEur(totalEur, rate);
+  const cents = Math.round(depEur * 100);
+  const rem = Math.round((totalEur - depEur) * 100) / 100;
   if (cents < 50) {
     return { ok: false, error: "Payment amount is too small." };
   }
@@ -182,10 +188,10 @@ export function quoteCheckout(input: {
     people,
     mats,
     totalEur,
-    depositEur: depositEur(totalEur, rate),
+    depositEur: depEur,
     depositCents: cents,
-    remainingEur: remainingEur(totalEur, rate),
+    remainingEur: rem,
     depositRate: rate,
-    fullPay: rate >= 1 || remainingEur(totalEur, rate) <= 0,
+    fullPay: rem <= 0 || rate >= 1,
   };
 }

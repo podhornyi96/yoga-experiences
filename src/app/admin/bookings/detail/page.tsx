@@ -7,6 +7,7 @@ import { AdminNav } from "@/components/AdminNav";
 import { Container } from "@/components/Container";
 import { getExperiencesByGroup } from "@/data/experiences";
 import { getPrivateLocation } from "@/data/private-locations";
+import { getSunriseLocation } from "@/data/sunrise-locations";
 import {
   adminApi,
   formatMoney,
@@ -151,7 +152,9 @@ function BookingDetailInner() {
         ? "Tandem Yoga"
         : "Private Yoga Session"
       : title;
-  const park = getPrivateLocation(booking.locationId);
+  const park =
+    getPrivateLocation(booking.locationId) ??
+    getSunriseLocation(booking.locationId);
 
   return (
     <Container className="py-12">
@@ -223,7 +226,7 @@ function BookingDetailInner() {
               <dd className="font-medium text-ink">{booking.mats}</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-muted">Park</dt>
+              <dt className="text-muted">Location</dt>
               <dd className="font-medium text-ink">
                 {park ? (
                   <a

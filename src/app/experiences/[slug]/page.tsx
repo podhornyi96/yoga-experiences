@@ -19,7 +19,6 @@ import {
 } from "@/data/experiences";
 import {
   withDepositPolicyFaq,
-  withPrivateBookingPolicyFaq,
 } from "@/lib/booking-policy";
 import { pageSeo } from "@/lib/seo";
 import {
@@ -58,10 +57,7 @@ export default async function ExperienceDetailPage({
   if (!exp) notFound();
 
   const group = groups[exp.group];
-  const faq =
-    exp.group === "private"
-      ? withPrivateBookingPolicyFaq(exp.faq)
-      : withDepositPolicyFaq(exp.faq);
+  const faq = withDepositPolicyFaq(exp.faq);
 
   return (
     <>

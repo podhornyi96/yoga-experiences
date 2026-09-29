@@ -85,6 +85,11 @@ export interface Experience {
     schedule: GroupPriceSchedule;
     /** Offer optional yoga-mat rental (€5 each, max 6). */
     mats?: boolean;
+    /**
+     * Quote + WhatsApp only — no slot picker / Stripe
+     * (e.g. Cascais needs venue confirmation with the host).
+     */
+    whatsappOnly?: boolean;
   };
   /** Yoga-mat add-on on the detail page (€5 each, max 6). Implied by groupPricing. */
   matRental?: boolean;
@@ -134,9 +139,7 @@ export const experiences: Experience[] = [
     duration: "60 min",
     groupSize: "Up to 30 people",
     groupPricing: { maxGuests: 30, schedule: "coastal", mats: true },
-    locationLabel: "Largo Portas do Sol",
-    locationUrl:
-      "https://maps.app.goo.gl/NyVbTeYwjc7KskRX8?g_st=ic",
+    locationLabel: "Lisbon — Portas do Sol, Beato & Vasco da Gama",
     tags: { timeOfDay: "sunrise", location: "graca", level: "all-levels" },
     highlights: [
       "Beat the heat and the crowds",
@@ -228,10 +231,12 @@ export const experiences: Experience[] = [
       "A 2-hour immersion in a cosy wooden house — movement, breathwork, meditation and sound healing by the coast.",
     description:
       "Step into a warm wooden house in Cascais for a slow, nourishing yoga experience designed for a small group. Over two hours you'll move through mindful Hatha-inspired sequences, conscious breathwork and guided meditation, ending with a calming sound healing session. All mats and equipment are provided — just arrive, settle in, and let the natural wood and coastal calm do the rest. An intimate alternative to the city — perfect if you want depth, quiet and personal attention.",
-    price: { amount: 180, currency: "EUR", unit: "per_session" },
+    price: { amount: 120, currency: "EUR", unit: "from" },
     bookingType: "whatsapp",
     duration: "2 hrs",
     groupSize: "Up to 6 people",
+    /** Live quote only — booking stays on WhatsApp (venue confirmation). */
+    groupPricing: { maxGuests: 6, schedule: "cascais", whatsappOnly: true },
     locationLabel: "Cascais",
     tags: { timeOfDay: "day", location: "cascais", level: "all-levels" },
     highlights: [
@@ -257,6 +262,11 @@ export const experiences: Experience[] = [
     cardImagePosition: "50% 70%",
     faq: [
       {
+        question: "How much does it cost?",
+        answer:
+          "From €120 for one person, then €15 for each additional guest (up to 6). Exact total updates as you change the group size on this page.",
+      },
+      {
         question: "Is equipment included?",
         answer:
           "Yes — yoga mats and everything you need for the session are provided. Just wear comfortable clothes and bring water.",
@@ -265,6 +275,11 @@ export const experiences: Experience[] = [
         question: "How do I get to Cascais?",
         answer:
           "Cascais is an easy train ride from Lisbon. The exact address is shared on WhatsApp after you book, along with directions.",
+      },
+      {
+        question: "Why book on WhatsApp?",
+        answer:
+          "The wooden house belongs to a local host — we confirm the date with them before locking your booking. Message us with your preferred day and group size.",
       },
     ],
     featured: true,

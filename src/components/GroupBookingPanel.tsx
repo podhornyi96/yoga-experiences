@@ -2,15 +2,17 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AvailabilityBooking } from "@/components/AvailabilityBooking";
+import { BookingCTA } from "@/components/BookingCTA";
 import { ExperienceDetails } from "@/components/ExperienceDetails";
-import { siteConfig } from "@/config/site";
+import { siteConfig, whatsappLink } from "@/config/site";
 import type { Experience } from "@/data/experiences";
-import { DEPOSIT_POLICY_SHORT } from "@/lib/booking-policy";
+import { SUNRISE_INVENTORY_SLUG } from "@/data/sunrise-locations";
+import { DEPOSIT_POLICY_SHORT, FULL_PAY_POLICY_SHORT } from "@/lib/booking-policy";
 import {
-  DEPOSIT_RATE,
   MAT_MAX,
   MAT_PRICE_EUR,
   depositEur,
+  depositRateForSlug,
   priceForSchedule,
   remainingEur,
 } from "@/lib/group-pricing";
@@ -161,7 +163,18 @@ export function GroupBookingPanel({ experience }: { experience: Experience }) {
   const showMats = Boolean(experience.matRental || groupPricing?.mats);
   const [people, setPeople] = useState(1);
   const [mats, setMats] = useState(0);
+  const peopleOverLimit = Boolean(
+    groupPricing && people > groupPricing.maxGuests,
+  );
+  const peopleError = peopleOverLimit
+    ? `Maximum ${groupPricing!.maxGuests} people.`
+    : undefined;
+  /** Raw people count from the field (may exceed maxGuests while showing an error). */
   const peopleCount = groupPricing ? people : (experience.fixedGuests ?? 1);
+  /** Capped for price, deposit, and checkout. */
+  const bookingPeople = groupPricing
+    ? Math.min(people, groupPricing.maxGuests)
+    : peopleCount;
   const matSelectMax = Math.min(MAT_MAX, peopleCount);
   const matsOverPeople = showMats && mats > peopleCount;
   const matsOverLimit = showMats && mats > MAT_MAX;
@@ -170,36 +183,47 @@ export function GroupBookingPanel({ experience }: { experience: Experience }) {
     : matsOverLimit
       ? `Maximum ${MAT_MAX} yoga mats.`
       : undefined;
-  const effectiveMats = showMats ? Math.min(mats, MAT_MAX, peopleCount) : 0;
+  const effectiveMats = showMats
+    ? Math.min(mats, MAT_MAX, bookingPeople)
+    : 0;
   const sessionPrice = groupPricing
-    ? priceForSchedule(groupPricing.schedule, people)
+    ? priceForSchedule(groupPricing.schedule, bookingPeople)
     : experience.price.amount;
   const total = sessionPrice + effectiveMats * MAT_PRICE_EUR;
-  const deposit = depositEur(total);
-  const remaining = remainingEur(total);
-  const showDeposit = siteConfig.paymentsEnabled;
+  const depositRate = depositRateForSlug(experience.slug);
+  const fullPay = depositRate >= 1;
+  const deposit = depositEur(total, depositRate);
+  const remaining = remainingEur(total, depositRate);
+  const showDeposit =
+    siteConfig.paymentsEnabled && !groupPricing?.whatsappOnly;
 
   const formatMoney = (amount: number) =>
     Number.isInteger(amount) ? `€${amount}` : `€${amount.toFixed(2)}`;
 
   const summary = useMemo(() => {
     const sessionLabel = groupPricing
-      ? people === 1
+      ? bookingPeople === 1
         ? "1 person"
-        : `${people} people`
+        : `${bookingPeople} people`
       : experience.price.unit === "per_session"
         ? "per session"
         : null;
     if (!showMats || effectiveMats === 0) return sessionLabel;
     const matLabel = effectiveMats === 1 ? "1 mat" : `${effectiveMats} mats`;
     return sessionLabel ? `${sessionLabel} · ${matLabel}` : matLabel;
-  }, [groupPricing, people, showMats, effectiveMats, experience.price.unit]);
+  }, [
+    groupPricing,
+    bookingPeople,
+    showMats,
+    effectiveMats,
+    experience.price.unit,
+  ]);
 
   const message = useMemo(() => {
     const who = groupPricing
-      ? people === 1
+      ? bookingPeople === 1
         ? " for 1 person"
-        : ` for ${people} people`
+        : ` for ${bookingPeople} people`
       : "";
     const matSuffix = !showMats
       ? ""
@@ -209,7 +233,14 @@ export function GroupBookingPanel({ experience }: { experience: Experience }) {
           ? " (1 yoga mat)"
           : ` (${effectiveMats} yoga mats)`;
     return `Hi ${siteConfig.teacher.name}! I'd like to book "${experience.title}"${who}${matSuffix}. Total: €${total}. Could you share the next available dates?`;
-  }, [experience.title, groupPricing, people, showMats, effectiveMats, total]);
+  }, [
+    experience.title,
+    groupPricing,
+    bookingPeople,
+    showMats,
+    effectiveMats,
+    total,
+  ]);
 
   return (
     <>
@@ -217,22 +248,42 @@ export function GroupBookingPanel({ experience }: { experience: Experience }) {
       <p className="mt-0.5 text-sm text-muted">{summary}</p>
       {showDeposit ? (
         <div className="mt-2 space-y-0.5 text-sm leading-snug">
-          <p className="font-medium text-forest">
-            Deposit today: {formatMoney(deposit)} ({Math.round(DEPOSIT_RATE * 100)}
-            %)
-          </p>
-          <p className="text-muted">
-            Due later: {formatMoney(remaining)} — paid on arrival or as agreed
-          </p>
-          <p className="text-xs text-muted">
-            {DEPOSIT_POLICY_SHORT}{" "}
-            <a
-              href="/terms/"
-              className="font-medium text-forest underline-offset-2 hover:underline"
-            >
-              Terms
-            </a>
-          </p>
+          {fullPay ? (
+            <>
+              <p className="font-medium text-forest">
+                Pay today: {formatMoney(deposit)} (in full)
+              </p>
+              <p className="text-xs text-muted">
+                {FULL_PAY_POLICY_SHORT}{" "}
+                <a
+                  href="/terms/"
+                  className="font-medium text-forest underline-offset-2 hover:underline"
+                >
+                  Terms
+                </a>
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="font-medium text-forest">
+                Deposit today: {formatMoney(deposit)} (
+                {Math.round(depositRate * 100)}%)
+              </p>
+              <p className="text-muted">
+                Due later: {formatMoney(remaining)} — paid on arrival or as
+                agreed
+              </p>
+              <p className="text-xs text-muted">
+                {DEPOSIT_POLICY_SHORT}{" "}
+                <a
+                  href="/terms/"
+                  className="font-medium text-forest underline-offset-2 hover:underline"
+                >
+                  Terms
+                </a>
+              </p>
+            </>
+          )}
         </div>
       ) : null}
 
@@ -250,6 +301,8 @@ export function GroupBookingPanel({ experience }: { experience: Experience }) {
             value={people}
             min={1}
             max={groupPricing.maxGuests}
+            clampMax={false}
+            error={peopleError}
             onChange={setPeople}
           />
         ) : null}
@@ -289,14 +342,44 @@ export function GroupBookingPanel({ experience }: { experience: Experience }) {
       </div>
 
       <ExperienceDetails experience={experience} />
-      <AvailabilityBooking
-        experience={experience}
-        bookingMessageBase={message}
-        people={peopleCount}
-        mats={effectiveMats}
-        totalEur={total}
-        className="mt-4"
-      />
+      {groupPricing?.whatsappOnly ? (
+        <div className="mt-4">
+          <BookingCTA
+            experience={experience}
+            message={message}
+            size="lg"
+            className="w-full"
+          />
+          <p className="mt-2 text-center text-xs text-muted">
+            You&apos;ll be redirected to WhatsApp to confirm a date.
+          </p>
+        </div>
+      ) : (
+        <AvailabilityBooking
+          experience={experience}
+          bookingMessageBase={message}
+          people={bookingPeople}
+          mats={effectiveMats}
+          totalEur={total}
+          depositRate={depositRate}
+          className="mt-4"
+        />
+      )}
+      {experience.slug === SUNRISE_INVENTORY_SLUG ? (
+        <p className="mt-3 text-center text-xs text-muted">
+          Custom location or different date?{" "}
+          <a
+            href={whatsappLink(
+              `Hi ${siteConfig.teacher.name}! I'd like to book "${experience.title}" at a custom location (or another time). Total from the site: ${formatMoney(total)}.`,
+            )}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-forest underline-offset-2 hover:underline"
+          >
+            WhatsApp
+          </a>
+        </p>
+      ) : null}
     </>
   );
 }

@@ -29,6 +29,13 @@ const PRIVATE_LOCATION_IDS = new Set([
   "eduardo-vii",
 ]);
 
+const SUNRISE_INVENTORY_SLUG = "sunrise-yoga-lisbon";
+const SUNRISE_LOCATION_IDS = new Set([
+  "portas-do-sol",
+  "beato",
+  "vasco-da-gama",
+]);
+
 type CheckoutBody = {
   holdToken?: string;
   slotId?: string;
@@ -90,6 +97,11 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   if (slug === PRIVATE_INVENTORY_SLUG) {
     if (!locationId || !PRIVATE_LOCATION_IDS.has(locationId)) {
       return error("Choose a park location to continue.");
+    }
+  }
+  if (slug === SUNRISE_INVENTORY_SLUG) {
+    if (!locationId || !SUNRISE_LOCATION_IDS.has(locationId)) {
+      return error("Choose a location to continue.");
     }
   }
 

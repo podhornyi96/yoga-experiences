@@ -2,7 +2,25 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { testimonials, type Testimonial } from "@/data/testimonials";
+import {
+  googleReviewsUrl,
+  testimonials,
+  type Testimonial,
+} from "@/data/testimonials";
+
+function StarRating({ rating }: { rating: number }) {
+  return (
+    <p
+      className="mb-3 text-sm tracking-wide text-clay"
+      aria-label={`${rating} out of 5 stars`}
+    >
+      {"★".repeat(rating)}
+      <span className="text-sand-dark" aria-hidden>
+        {"★".repeat(Math.max(0, 5 - rating))}
+      </span>
+    </p>
+  );
+}
 
 export function Testimonials() {
   const [open, setOpen] = useState<Testimonial | null>(null);
@@ -24,36 +42,73 @@ export function Testimonials() {
 
   return (
     <>
+      <div className="mb-10 flex flex-col items-center gap-3 text-center sm:flex-row sm:justify-center sm:gap-5">
+        <p className="text-sm font-semibold text-forest">
+          <span className="text-clay" aria-hidden>
+            ★
+          </span>{" "}
+          5.0 on Google
+        </p>
+        <a
+          href={googleReviewsUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm font-semibold text-clay underline-offset-4 transition-colors hover:text-clay-dark hover:underline"
+        >
+          Read reviews on Google
+        </a>
+      </div>
+
       <div className="grid gap-6 md:grid-cols-3">
         {testimonials.map((t) => (
           <figure
-            key={`${t.name}-${t.originalSrc}-${t.quote.slice(0, 24)}`}
+            key={`${t.name}-${t.source}-${t.quote.slice(0, 24)}`}
             className="flex flex-col rounded-2xl border border-sand-dark bg-white p-7 shadow-sm"
           >
+            {t.source === "google" && t.rating ? (
+              <StarRating rating={t.rating} />
+            ) : null}
             <blockquote className="flex-1 text-base leading-relaxed text-ink">
               “{t.quote}”
             </blockquote>
             <figcaption className="mt-5 border-t border-sand pt-4">
               <span className="block font-semibold text-forest">{t.name}</span>
-              <span className="text-sm text-muted">{t.role}</span>
+              {t.source === "instagram" ? (
+                <span className="text-sm text-muted">{t.role}</span>
+              ) : null}
               {t.translatedFrom ? (
                 <span className="mt-1 block text-xs text-muted">
                   Translated from Ukrainian
                 </span>
               ) : null}
-              <button
-                type="button"
-                onClick={() => setOpen(t)}
-                className="mt-3 text-sm font-semibold text-clay underline-offset-4 transition-colors hover:text-clay-dark hover:underline"
-              >
-                View original review
-              </button>
+              {t.source === "google" && t.url ? (
+                <a
+                  href={t.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-flex items-center gap-1 text-sm text-muted transition-colors hover:text-clay"
+                >
+                  Google review
+                  <span aria-hidden className="text-clay">
+                    ↗
+                  </span>
+                </a>
+              ) : null}
+              {t.source === "instagram" && t.originalSrc ? (
+                <button
+                  type="button"
+                  onClick={() => setOpen(t)}
+                  className="mt-2 text-sm text-muted transition-colors hover:text-clay"
+                >
+                  View original
+                </button>
+              ) : null}
             </figcaption>
           </figure>
         ))}
       </div>
 
-      {open ? (
+      {open?.originalSrc ? (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 p-4 sm:p-8"
           onClick={() => setOpen(null)}
@@ -77,7 +132,7 @@ export function Testimonials() {
             <div className="relative min-h-0 w-full flex-1">
               <Image
                 src={open.originalSrc}
-                alt={open.originalAlt}
+                alt={open.originalAlt ?? `Original review from ${open.name}`}
                 fill
                 sizes="(max-width: 640px) 100vw, 32rem"
                 className="object-contain"

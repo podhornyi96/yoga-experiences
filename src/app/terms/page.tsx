@@ -4,7 +4,7 @@ import { Container } from "@/components/Container";
 import { SectionHeading } from "@/components/Section";
 import { JsonLd } from "@/components/JsonLd";
 import { siteConfig } from "@/config/site";
-import { RESCHEDULE_NOTICE_HOURS, PRIVATE_CANCEL_NOTICE_HOURS } from "@/lib/booking-policy";
+import { RESCHEDULE_NOTICE_HOURS } from "@/lib/booking-policy";
 import { DEPOSIT_RATE } from "@/lib/group-pricing";
 import { pageSeo } from "@/lib/seo";
 import { breadcrumbSchema } from "@/lib/structured-data";
@@ -60,13 +60,23 @@ export default function TermsPage() {
             </div>
 
             <div>
-              <h2 className="text-xl text-forest sm:text-2xl">Deposits</h2>
+              <h2 className="text-xl text-forest sm:text-2xl">
+                Online payment
+              </h2>
               <p className="mt-3">
-                For experiences with online booking, a deposit of about{" "}
-                {depositPercent}% of the total is paid via Stripe Checkout to hold
-                your date. The deposit is non-refundable once payment succeeds.
+                <strong className="text-ink">Sunrise Yoga</strong> is paid in
+                full at Stripe Checkout (early sessions are hard to confirm on
+                the day).
               </p>
               <p className="mt-3">
+                <strong className="text-ink">Sunset Yoga</strong> and{" "}
+                <strong className="text-ink">private / tandem</strong> park
+                sessions take a deposit of about {depositPercent}% of the total
+                online; the balance is due later — typically on arrival or as
+                agreed on WhatsApp.
+              </p>
+              <p className="mt-3">
+                Once payment succeeds, the amount paid online is non-refundable.
                 Completing Stripe checkout means you accept these terms and our{" "}
                 <Link
                   href="/privacy/"
@@ -91,13 +101,13 @@ export default function TermsPage() {
               <p className="mt-3">
                 If you cancel, reschedule with less than{" "}
                 {RESCHEDULE_NOTICE_HOURS} hours’ notice, or do not attend, the
-                deposit is forfeited. We do not offer cash or card refunds of the
-                deposit in those cases.
+                online payment is forfeited. We do not offer cash or card refunds
+                of that payment in those cases.
               </p>
               <p className="mt-3">
                 If we must cancel or move a session (weather, illness, or similar),
                 we will offer a new date or, if that is not possible, a refund of
-                the deposit.
+                the amount paid online.
               </p>
             </div>
 
@@ -106,30 +116,21 @@ export default function TermsPage() {
                 Remaining balance
               </h2>
               <p className="mt-3">
-                The balance after the deposit is due later — typically on arrival
-                or as agreed when you book. Payment methods for the balance are
-                confirmed on WhatsApp.
+                Where only a deposit was paid online, the balance is due later —
+                typically on arrival or as agreed when you book. Payment methods
+                for the balance are confirmed on WhatsApp.
               </p>
             </div>
 
             <div>
               <h2 className="text-xl text-forest sm:text-2xl">
-                Private &amp; tandem (full payment)
+                Private &amp; tandem
               </h2>
               <p className="mt-3">
-                Private and tandem park sessions booked online are paid in full
-                at checkout. You may cancel for a full refund or reschedule if
-                you notify us at least {PRIVATE_CANCEL_NOTICE_HOURS} hours before
-                the start (Europe/Lisbon). Contact us on WhatsApp or email — we
-                will confirm a new date subject to availability.
-              </p>
-              <p className="mt-3">
-                With less than {PRIVATE_CANCEL_NOTICE_HOURS} hours’ notice, or if
-                you do not attend, no refund or reschedule is offered.
-              </p>
-              <p className="mt-3">
-                Sessions are outdoors at the park you choose. If weather makes
-                the spot unsafe, we will contact you to reschedule or refund.
+                Private and tandem park sessions use the same {depositPercent}%
+                deposit and reschedule rules as Sunset above. Sessions are
+                outdoors at the park you choose. If weather makes the spot
+                unsafe, we will contact you to reschedule or refund the deposit.
                 Custom locations (home or elsewhere) are arranged on WhatsApp
                 and are not available for instant booking.
               </p>

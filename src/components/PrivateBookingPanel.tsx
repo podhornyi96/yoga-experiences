@@ -12,10 +12,13 @@ import {
   PRIVATE_LOCATIONS,
   type PrivateLocationId,
 } from "@/data/private-locations";
-import { PRIVATE_FULL_PAY_POLICY_SHORT } from "@/lib/booking-policy";
+import { DEPOSIT_POLICY_SHORT } from "@/lib/booking-policy";
 import {
   MAT_PRICE_EUR,
+  PRIVATE_DEPOSIT_RATE,
+  depositEur,
   privateSessionEur,
+  remainingEur,
 } from "@/lib/group-pricing";
 import {
   createCheckoutSession,
@@ -69,6 +72,8 @@ export function PrivateBookingPanel({
 
   const effectiveMats = Math.min(mats, people);
   const total = privateSessionEur(people) + effectiveMats * MAT_PRICE_EUR;
+  const deposit = depositEur(total, PRIVATE_DEPOSIT_RATE);
+  const remaining = remainingEur(total, PRIVATE_DEPOSIT_RATE);
   const title = people === 2 ? "Tandem Yoga" : "Private Yoga Session";
 
   const summary = useMemo(() => {
@@ -113,10 +118,14 @@ export function PrivateBookingPanel({
       {siteConfig.paymentsEnabled ? (
         <div className="mt-2 space-y-0.5 text-sm leading-snug">
           <p className="font-medium text-forest">
-            Pay today: {formatMoney(total)} (in full)
+            Deposit today: {formatMoney(deposit)} (
+            {Math.round(PRIVATE_DEPOSIT_RATE * 100)}%)
+          </p>
+          <p className="text-muted">
+            Due later: {formatMoney(remaining)} — paid on arrival or as agreed
           </p>
           <p className="text-xs text-muted">
-            {PRIVATE_FULL_PAY_POLICY_SHORT}{" "}
+            {DEPOSIT_POLICY_SHORT}{" "}
             <a
               href="/terms/"
               className="font-medium text-forest underline-offset-2 hover:underline"
@@ -190,7 +199,8 @@ export function PrivateBookingPanel({
               Book this session
             </button>
             <p className="mt-2 text-center text-xs text-muted">
-              Pick a time and park, then pay {formatMoney(total)} in full.
+              Pick a time and park, then pay a {formatMoney(deposit)} deposit (
+              {Math.round(PRIVATE_DEPOSIT_RATE * 100)}%).
             </p>
           </>
         ) : (
@@ -230,6 +240,7 @@ export function PrivateBookingPanel({
           people={people}
           mats={effectiveMats}
           totalEur={total}
+          depositEur={deposit}
           onClose={() => setOpen(false)}
           onSlotsChange={setSlots}
         />
@@ -245,6 +256,7 @@ function PrivateBookingModal({
   people,
   mats,
   totalEur,
+  depositEur: depositAmount,
   onClose,
   onSlotsChange,
 }: {
@@ -254,6 +266,7 @@ function PrivateBookingModal({
   people: number;
   mats: number;
   totalEur: number;
+  depositEur: number;
   onClose: () => void;
   onSlotsChange: (slots: PublicSlot[] | null) => void;
 }) {
@@ -562,7 +575,7 @@ function PrivateBookingModal({
                 {busy
                   ? "Starting checkout…"
                   : payments
-                    ? `Pay ${formatMoney(totalEur)}`
+                    ? `Pay ${formatMoney(depositAmount)} deposit`
                     : "Continue on WhatsApp"}
               </button>
               <button
