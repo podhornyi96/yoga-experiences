@@ -7,11 +7,16 @@ import {
   testimonials,
   type Testimonial,
 } from "@/data/testimonials";
+import { GoogleIcon, InstagramIcon, TelegramIcon } from "@/components/icons";
+
+/** Google Maps star gold */
+const GOOGLE_STAR = "#fbbc04";
 
 function StarRating({ rating }: { rating: number }) {
   return (
     <p
-      className="mb-3 text-sm tracking-wide text-clay"
+      className="text-[15px] leading-none tracking-[0.12em]"
+      style={{ color: GOOGLE_STAR }}
       aria-label={`${rating} out of 5 stars`}
     >
       {"★".repeat(rating)}
@@ -19,6 +24,33 @@ function StarRating({ rating }: { rating: number }) {
         {"★".repeat(Math.max(0, 5 - rating))}
       </span>
     </p>
+  );
+}
+
+function SourceMark({ source }: { source: Testimonial["source"] }) {
+  if (source === "google") {
+    return (
+      <span className="inline-flex items-center gap-1.5" title="Google review">
+        <GoogleIcon className="h-4 w-4 shrink-0" />
+        <span className="sr-only">Google review</span>
+      </span>
+    );
+  }
+
+  if (source === "telegram") {
+    return (
+      <span className="inline-flex items-center gap-1.5" title="Telegram">
+        <TelegramIcon className="h-4 w-4 shrink-0 text-[#2AABEE]" />
+        <span className="sr-only">Telegram</span>
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1.5" title="Instagram">
+      <InstagramIcon className="h-4 w-4 shrink-0 text-muted" />
+      <span className="sr-only">Instagram</span>
+    </span>
   );
 }
 
@@ -44,7 +76,7 @@ export function Testimonials() {
     <>
       <div className="mb-10 flex flex-col items-center gap-3 text-center sm:flex-row sm:justify-center sm:gap-5">
         <p className="text-sm font-semibold text-forest">
-          <span className="text-clay" aria-hidden>
+          <span style={{ color: GOOGLE_STAR }} aria-hidden>
             ★
           </span>{" "}
           5.0 on Google
@@ -65,15 +97,18 @@ export function Testimonials() {
             key={`${t.name}-${t.source}-${t.quote.slice(0, 24)}`}
             className="flex flex-col rounded-2xl border border-sand-dark bg-white p-7 shadow-sm"
           >
-            {t.source === "google" && t.rating ? (
-              <StarRating rating={t.rating} />
-            ) : null}
+            <div className="mb-3 flex items-center gap-2">
+              <SourceMark source={t.source} />
+              {t.source === "google" && t.rating ? (
+                <StarRating rating={t.rating} />
+              ) : null}
+            </div>
             <blockquote className="flex-1 text-base leading-relaxed text-ink">
               “{t.quote}”
             </blockquote>
             <figcaption className="mt-5 border-t border-sand pt-4">
               <span className="block font-semibold text-forest">{t.name}</span>
-              {t.source === "instagram" ? (
+              {t.source !== "google" ? (
                 <span className="text-sm text-muted">{t.role}</span>
               ) : null}
               {t.translatedFrom ? (
@@ -88,13 +123,13 @@ export function Testimonials() {
                   rel="noopener noreferrer"
                   className="mt-2 inline-flex items-center gap-1 text-sm text-muted transition-colors hover:text-clay"
                 >
-                  Google review
+                  View on Google
                   <span aria-hidden className="text-clay">
                     ↗
                   </span>
                 </a>
               ) : null}
-              {t.source === "instagram" && t.originalSrc ? (
+              {t.source !== "google" && t.originalSrc ? (
                 <button
                   type="button"
                   onClick={() => setOpen(t)}

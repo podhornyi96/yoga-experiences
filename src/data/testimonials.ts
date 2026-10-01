@@ -2,14 +2,14 @@ export interface Testimonial {
   quote: string;
   name: string;
   role: string;
-  source: "google" | "instagram";
+  source: "google" | "instagram" | "telegram";
   /** Star rating 1–5. Shown on Google cards. */
   rating?: number;
   /** Direct Google Maps link to this review. */
   url?: string;
   /** When set, show a “Translated from …” note on the card. */
   translatedFrom?: "uk";
-  /** Instagram screenshot — only for Instagram testimonials. */
+  /** Screenshot of the original message — Instagram / Telegram. */
   originalSrc?: string;
   originalAlt?: string;
 }
@@ -68,11 +68,11 @@ export const testimonials: Testimonial[] = [
     quote:
       "Starting practice with shavasana is such a joy — I'd never experienced that before. My body responds beautifully to every movement and stretch. Thank you!",
     name: "Ganna B.",
-    role: "via Instagram",
-    source: "instagram",
+    role: "via Telegram",
+    source: "telegram",
     translatedFrom: "uk",
     originalSrc: "/images/reviews/review-ua-shavasana.jpg",
-    originalAlt: "Instagram message about starting practice with shavasana",
+    originalAlt: "Telegram message about starting practice with shavasana",
   },
   {
     quote:
