@@ -56,6 +56,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       description: template.description,
       locationLabel: template.locationLabel,
       locationUrl: template.locationUrl ?? null,
+      accessDirections: template.accessDirections ?? [],
       startsAt: slot.starts_at,
       day: slot.day,
       status: slot.status,

@@ -1005,15 +1005,6 @@ export default function AdminEventsPage() {
                       ? ` (${slot.seatsTaken})`
                       : ""}
                   </button>
-                  {(slot.status === "open" || slot.status === "held") && (
-                    <button
-                      type="button"
-                      onClick={() => void patch(slot.id, "book")}
-                      className="rounded-full bg-forest px-4 py-2 text-xs font-semibold text-cream hover:bg-forest-deep"
-                    >
-                      Mark booked
-                    </button>
-                  )}
                   {(slot.status === "held" || slot.status === "booked") && (
                     <button
                       type="button"

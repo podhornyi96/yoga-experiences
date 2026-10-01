@@ -231,6 +231,7 @@ export type PublicEventDetail = {
   description: string;
   locationLabel: string;
   locationUrl: string | null;
+  accessDirections?: string[];
   startsAt: string;
   day: string;
   status: string;

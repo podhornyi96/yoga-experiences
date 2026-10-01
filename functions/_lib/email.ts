@@ -209,9 +209,18 @@ export function buildBookingConfirmationEmail(
         ? `Location: ${meta.locationLabel}\n`
         : "";
 
-  const policy = fullPay
-    ? `Your payment is non-refundable. Reschedule free with at least 48 hours' notice — message us on WhatsApp.`
-    : `Your deposit is non-refundable. Reschedule free with at least 48 hours' notice — message us on WhatsApp.`;
+  const isEvent = Boolean(getServerEventTemplate(booking.experience_slug));
+  const policy = isEvent
+    ? `Your payment is non-refundable. Scheduled events cannot be rescheduled or refunded.`
+    : fullPay
+      ? `Your payment is non-refundable. Reschedule free with at least 48 hours' notice — message us on WhatsApp.`
+      : `Your deposit is non-refundable. Reschedule free with at least 48 hours' notice — message us on WhatsApp.`;
+  const contactLine = isEvent
+    ? `Questions: WhatsApp ${waLink} or ${contactEmail}`
+    : `Questions or reschedule: WhatsApp ${waLink} or ${contactEmail}`;
+  const contactHtml = isEvent
+    ? `Questions: <a href="${waLink}">WhatsApp</a> or <a href="mailto:${contactEmail}">${contactEmail}</a>`
+    : `Questions or reschedule: <a href="${waLink}">WhatsApp</a> or <a href="mailto:${contactEmail}">${contactEmail}</a>`;
 
   const text = [
     `Hi${booking.guest_name ? ` ${booking.guest_name.split(" ")[0]}` : ""},`,
@@ -220,6 +229,7 @@ export function buildBookingConfirmationEmail(
       ? `Your ${meta.title} is booked and paid in full.`
       : `We've received your deposit for ${meta.title}.`,
     ``,
+    `Booking #: ${booking.id}`,
     `When: ${when} (Lisbon time)`,
     `Duration: ${meta.duration}`,
     locationBlock.trimEnd(),
@@ -232,7 +242,7 @@ export function buildBookingConfirmationEmail(
     ``,
     policy,
     ``,
-    `Questions or reschedule: WhatsApp ${waLink} or ${contactEmail}`,
+    contactLine,
     `Terms: ${site}/terms/`,
     ``,
     `— Ivanna Yoga Lisbon`,
@@ -251,6 +261,7 @@ export function buildBookingConfirmationEmail(
       : `We've received your deposit for <strong>${escapeHtml(meta.title)}</strong>.`
   }</p>
   <table style="width:100%; border-collapse: collapse; margin: 20px 0;">
+    <tr><td style="padding: 6px 0; color: #5c6b5c;">Booking #</td><td style="padding: 6px 0; font-family: ui-monospace, monospace; font-size: 13px;">${escapeHtml(booking.id)}</td></tr>
     <tr><td style="padding: 6px 0; color: #5c6b5c;">When</td><td style="padding: 6px 0;"><strong>${escapeHtml(when)}</strong> (Lisbon time)</td></tr>
     <tr><td style="padding: 6px 0; color: #5c6b5c;">Duration</td><td style="padding: 6px 0;">${escapeHtml(meta.duration)}</td></tr>
     ${
@@ -272,7 +283,7 @@ export function buildBookingConfirmationEmail(
   </table>
   <p style="font-size: 14px; color: #5c6b5c;">Sessions are beginner-friendly and taught in English.</p>
   <p style="font-size: 14px;">${escapeHtml(policy).replace(/\n\n/g, "</p><p style=\"font-size: 14px;\">").replace(/\n/g, "<br/>")}</p>
-  <p style="font-size: 14px;">Questions or reschedule: <a href="${waLink}">WhatsApp</a> or <a href="mailto:${contactEmail}">${contactEmail}</a></p>
+  <p style="font-size: 14px;">${contactHtml}</p>
   <p style="font-size: 13px; color: #5c6b5c;"><a href="${site}/terms/">Terms of booking</a></p>
   <p>— Ivanna Yoga Lisbon</p>
 </body>
@@ -331,6 +342,7 @@ function buildTeacherNotifyEmail(
   const text = [
     `New booking paid${fullPay ? " in full" : " (deposit)"}.`,
     ``,
+    `Booking #: ${booking.id}`,
     `Experience: ${meta.title}`,
     `When: ${when} (Lisbon time)`,
     `Duration: ${meta.duration}`,
@@ -357,6 +369,7 @@ function buildTeacherNotifyEmail(
 <body style="font-family: Georgia, serif; color: #1a2e1a; line-height: 1.5; max-width: 560px; margin: 0 auto; padding: 24px;">
   <p><strong>New booking</strong> — ${fullPay ? "paid in full" : "deposit paid"}.</p>
   <table style="width:100%; border-collapse: collapse; margin: 16px 0;">
+    <tr><td style="padding: 6px 0; color: #5c6b5c;">Booking #</td><td style="padding: 6px 0; font-family: ui-monospace, monospace; font-size: 13px;">${escapeHtml(booking.id)}</td></tr>
     <tr><td style="padding: 6px 0; color: #5c6b5c;">Experience</td><td style="padding: 6px 0;">${escapeHtml(meta.title)}</td></tr>
     <tr><td style="padding: 6px 0; color: #5c6b5c;">When</td><td style="padding: 6px 0;"><strong>${escapeHtml(when)}</strong> (Lisbon time)</td></tr>
     <tr><td style="padding: 6px 0; color: #5c6b5c;">Duration</td><td style="padding: 6px 0;">${escapeHtml(meta.duration)}</td></tr>

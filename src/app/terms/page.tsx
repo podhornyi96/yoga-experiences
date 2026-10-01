@@ -69,6 +69,11 @@ export default function TermsPage() {
                 the day).
               </p>
               <p className="mt-3">
+                <strong className="text-ink">Scheduled events</strong> (studio
+                classes, Cascais wooden house, Sintra forest, and similar
+                dated sessions) are paid in full online and are non-refundable.
+              </p>
+              <p className="mt-3">
                 <strong className="text-ink">Sunset Yoga</strong> and{" "}
                 <strong className="text-ink">private / tandem</strong> park
                 sessions take a deposit of about {depositPercent}% of the total
@@ -93,10 +98,19 @@ export default function TermsPage() {
                 Rescheduling &amp; cancellation
               </h2>
               <p className="mt-3">
-                You may reschedule to another available date at no extra charge if
-                you notify us at least {RESCHEDULE_NOTICE_HOURS} hours before the
-                scheduled start (Europe/Lisbon time). Contact us on WhatsApp or
-                email; we will confirm a new date subject to availability.
+                <strong className="text-ink">Scheduled events</strong> (studio,
+                Cascais, Sintra, and other dated group sessions listed as
+                events) cannot be rescheduled. Payment is non-refundable. If you
+                cannot attend, the place is forfeited.
+              </p>
+              <p className="mt-3">
+                For <strong className="text-ink">Sunrise</strong>,{" "}
+                <strong className="text-ink">Sunset</strong>, and{" "}
+                <strong className="text-ink">private / tandem</strong> bookings,
+                you may reschedule to another available date at no extra charge
+                if you notify us at least {RESCHEDULE_NOTICE_HOURS} hours before
+                the scheduled start (Europe/Lisbon time). Contact us on WhatsApp
+                or email; we will confirm a new date subject to availability.
               </p>
               <p className="mt-3">
                 If you cancel, reschedule with less than{" "}

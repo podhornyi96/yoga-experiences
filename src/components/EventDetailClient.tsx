@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { WhatsAppIcon } from "@/components/BookingCTA";
 import { Container } from "@/components/Container";
 import { EventBookingPanel } from "@/components/EventBookingPanel";
@@ -27,10 +28,90 @@ function durationLabel(minutes: number): string {
   return `${minutes} min`;
 }
 
+function AccessDirectionsModal({
+  title,
+  directions,
+  mapsUrl,
+  onClose,
+}: {
+  title: string;
+  directions: string[];
+  mapsUrl: string | null;
+  onClose: () => void;
+}) {
+  const titleId = useId();
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    closeRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50 p-4 sm:items-center"
+      role="presentation"
+      onMouseDown={(ev) => {
+        if (ev.target === ev.currentTarget) onClose();
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="w-full max-w-md overflow-hidden rounded-2xl bg-cream shadow-xl"
+      >
+        <div className="flex items-start justify-between gap-3 border-b border-sand-dark px-5 py-4">
+          <div>
+            <h2 id={titleId} className="text-xl text-forest">
+              How to get inside?
+            </h2>
+            <p className="mt-1 text-sm text-muted">{title}</p>
+          </div>
+          <button
+            ref={closeRef}
+            type="button"
+            onClick={onClose}
+            className="rounded-full border border-sand-dark px-3 py-1 text-sm text-ink hover:bg-sand"
+          >
+            Close
+          </button>
+        </div>
+        <div className="space-y-4 px-5 py-5 text-sm leading-relaxed text-ink">
+          {directions.map((step, i) => (
+            <p key={step} className="flex gap-3">
+              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-forest text-xs font-semibold text-cream">
+                {i + 1}
+              </span>
+              <span>{step}</span>
+            </p>
+          ))}
+          {mapsUrl ? (
+            <a
+              href={mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex font-semibold text-clay-dark hover:underline"
+            >
+              Open in Google Maps
+            </a>
+          ) : null}
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 export function EventDetailClient({ slotId }: { slotId: string }) {
   const [event, setEvent] = useState<PublicEventDetail | null | undefined>(
     undefined,
   );
+  const [directionsOpen, setDirectionsOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,6 +155,7 @@ export function EventDetailClient({ slotId }: { slotId: string }) {
       : "See booking";
 
   const askMessage = `Hi ${siteConfig.teacher.name}! I have a question about ${event.title} on ${formatSlotLabel(event.startsAt)}.`;
+  const accessDirections = event.accessDirections ?? [];
 
   return (
     <>
@@ -118,7 +200,7 @@ export function EventDetailClient({ slotId }: { slotId: string }) {
             <p className="mt-3 text-lg font-medium text-ink">
               {formatSlotLabel(event.startsAt)}
             </p>
-            <p className="mt-2 flex items-center gap-1.5 text-sm text-muted">
+            <p className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-muted">
               <MapPinIcon className="h-4 w-4 shrink-0" />
               {event.locationUrl ? (
                 <a
@@ -132,6 +214,15 @@ export function EventDetailClient({ slotId }: { slotId: string }) {
               ) : (
                 event.locationLabel
               )}
+              {accessDirections.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setDirectionsOpen(true)}
+                  className="ml-1 font-semibold text-clay-dark hover:underline"
+                >
+                  How to get inside?
+                </button>
+              ) : null}
             </p>
             <p className="mt-4 text-sm leading-relaxed text-muted">
               {event.description}
@@ -184,6 +275,15 @@ export function EventDetailClient({ slotId }: { slotId: string }) {
       </Container>
 
       <EventBookingPanel event={event} />
+
+      {directionsOpen ? (
+        <AccessDirectionsModal
+          title={event.locationLabel}
+          directions={accessDirections}
+          mapsUrl={event.locationUrl}
+          onClose={() => setDirectionsOpen(false)}
+        />
+      ) : null}
     </>
   );
 }

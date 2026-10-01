@@ -10,6 +10,7 @@ export type ServerEventTemplate = {
   description: string;
   locationLabel: string;
   locationUrl?: string;
+  accessDirections?: string[];
   durationMinutes: number;
   maxGuests: number;
   images: string[];
@@ -30,9 +31,13 @@ export const SERVER_EVENT_TEMPLATES: Record<string, ServerEventTemplate> = {
     summary:
       "A grounded studio session in Lisbon — accessible yoga for all levels.",
     description:
-      "Join Ivanna for a one-hour yoga class at Yoga Studio Saldanha. Clear guidance, steady pacing, and a calm room to move and breathe. All levels welcome.",
+      "A one-hour yoga class at Yoga Studio Saldanha. Clear guidance, steady pacing, and a calm room to move and breathe. All levels welcome.",
     locationLabel: "Yoga Studio Saldanha, Lisbon",
     locationUrl: SALDANHA_MAPS,
+    accessDirections: [
+      "Enter the building — at the entrance there’s a round button; just touch it and the main door will open.",
+      "Then take the elevator to floor 5C (the elevator opens the same way as the main door).",
+    ],
     durationMinutes: 60,
     maxGuests: 7,
     pricePerPersonEur: 20,
@@ -43,6 +48,7 @@ export const SERVER_EVENT_TEMPLATES: Record<string, ServerEventTemplate> = {
     includes: [
       "Studio space",
       "Yoga mats included",
+      "Dynamic morning Hatha yoga",
       "Guided yoga class",
       "All levels welcome",
     ],

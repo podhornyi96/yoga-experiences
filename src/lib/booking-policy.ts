@@ -13,6 +13,13 @@ export const DEPOSIT_POLICY_SHORT =
 export const FULL_PAY_POLICY_SHORT =
   "Payment is non-refundable. Reschedule free with 48 hours’ notice.";
 
+/** Scheduled events (studio / Cascais / Sintra dates): no reschedule, no refund. */
+export const EVENT_POLICY_SHORT =
+  "Payment is non-refundable. Scheduled events cannot be rescheduled.";
+
+export const EVENT_POLICY_SUCCESS =
+  "Your payment is non-refundable. Scheduled events cannot be rescheduled or refunded.";
+
 /** Slightly fuller line for the post-checkout success page. */
 export const DEPOSIT_POLICY_SUCCESS =
   "Your payment is non-refundable. Need to change the date? Message us at least 48 hours before the session and we’ll move you to another available time at no extra charge.";
