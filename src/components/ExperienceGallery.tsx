@@ -66,7 +66,6 @@ export function ExperienceGallery({
   const [index, setIndex] = useState(0);
   const [lightbox, setLightbox] = useState<number | null>(null);
   const multiple = images.length > 1;
-  const rest = images.slice(1);
 
   const scrollTo = useCallback(
     (next: number, behavior: ScrollBehavior = "smooth") => {
@@ -235,32 +234,29 @@ export function ExperienceGallery({
       </div>
 
       <div className={`mt-4 min-w-0 max-w-full ${stripScrollClass}`}>
-        {rest.map((src, i) => {
-          const photoIndex = i + 1;
-          return (
-            <button
-              key={src}
-              type="button"
-              onClick={() => scrollTo(photoIndex)}
-              className={`shrink-0 rounded-lg outline-none [-webkit-tap-highlight-color:transparent] ${
-                photoIndex === index
-                  ? "ring-2 ring-clay ring-offset-2 ring-offset-cream"
-                  : ""
-              }`}
-              aria-label={`Show ${title} — photo ${photoIndex + 1}`}
-            >
-              <span className="relative block h-20 w-28 overflow-hidden rounded-lg sm:h-24 sm:w-32">
-                <Image
-                  src={src}
-                  alt={`${title} — photo ${photoIndex + 1}`}
-                  fill
-                  sizes="128px"
-                  className="object-cover"
-                />
-              </span>
-            </button>
-          );
-        })}
+        {images.map((src, i) => (
+          <button
+            key={src}
+            type="button"
+            onClick={() => scrollTo(i)}
+            className={`shrink-0 rounded-lg outline-none [-webkit-tap-highlight-color:transparent] ${
+              i === index
+                ? "ring-2 ring-clay ring-offset-2 ring-offset-cream"
+                : ""
+            }`}
+            aria-label={`Show ${title} — photo ${i + 1}`}
+          >
+            <span className="relative block h-20 w-28 overflow-hidden rounded-lg sm:h-24 sm:w-32">
+              <Image
+                src={src}
+                alt={`${title} — photo ${i + 1}`}
+                fill
+                sizes="128px"
+                className="object-cover"
+              />
+            </span>
+          </button>
+        ))}
       </div>
 
       {lightbox !== null ? (

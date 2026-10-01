@@ -372,7 +372,7 @@ export const experiences: Experience[] = [
       "Yoga mat (€5, on request)",
     ],
     images: [
-      "/images/experiences/private-yoga-session/private-yoga-session-1.jpg",
+      "/images/experiences/private-yoga-session/private-yoga-session-cover.jpg",
     ],
     faq: [
       {
@@ -415,7 +415,10 @@ export const experiences: Experience[] = [
       "Follow-up tips",
       "Yoga mat (€5, on request)",
     ],
-    images: ["/images/tandem/tandem-1.jpg"],
+    images: [
+      "/images/tandem/tandem-cover.jpg",
+      "/images/tandem/tandem-duo.jpg",
+    ],
     cardImagePosition: "50% 70%",
     coverImagePosition: "50% 70%",
     faq: [
