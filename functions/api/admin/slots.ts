@@ -1,5 +1,8 @@
 import { isAdminAuthenticated } from "../../_lib/auth";
-import { cancelActiveBookingsForSlot } from "../../_lib/bookings";
+import {
+  cancelActiveBookingsForSlot,
+  listActiveBookingsForSlot,
+} from "../../_lib/bookings";
 import { error, json, readJson } from "../../_lib/http";
 import {
   adminSlot,
@@ -12,9 +15,10 @@ import {
   recomputeBlockedSlotsOnDay,
 } from "../../_lib/slots";
 import {
+  isEventSlug,
   isScheduledSlug,
   type Env,
-  type SlotRow,
+  type SlotKind,
   type SlotStatus,
 } from "../../_lib/types";
 
@@ -30,8 +34,8 @@ async function requireAdmin(
 }
 
 /**
- * GET /api/admin/slots?slug=optional
- * Lists non-cancelled slots for admin (includes blocked siblings).
+ * GET /api/admin/slots?slug=&kind=inventory|event
+ * Default kind=inventory (Schedule tab).
  */
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
@@ -42,25 +46,33 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
   const url = new URL(request.url);
   const slug = url.searchParams.get("slug")?.trim();
+  const kindParam = url.searchParams.get("kind")?.trim() ?? "inventory";
+  const kind: SlotKind = kindParam === "event" ? "event" : "inventory";
 
   let rows: SlotRow[];
   if (slug) {
-    if (!isScheduledSlug(slug)) return error("Unknown experience slug.", 400);
+    if (kind === "event" ? !isEventSlug(slug) : !isScheduledSlug(slug)) {
+      return error("Unknown experience slug.", 400);
+    }
     const { results } = await env.DB.prepare(
       `SELECT * FROM slots
        WHERE experience_slug = ?
+         AND kind = ?
          AND status != 'cancelled'
        ORDER BY starts_at ASC`,
     )
-      .bind(slug)
+      .bind(slug, kind)
       .all<SlotRow>();
     rows = results ?? [];
   } else {
     const { results } = await env.DB.prepare(
       `SELECT * FROM slots
-       WHERE status != 'cancelled'
+       WHERE kind = ?
+         AND status != 'cancelled'
        ORDER BY starts_at ASC`,
-    ).all<SlotRow>();
+    )
+      .bind(kind)
+      .all<SlotRow>();
     rows = results ?? [];
   }
 
@@ -69,10 +81,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
 /**
  * POST /api/admin/slots
- * Body: { experienceSlug, date: YYYY-MM-DD, time: HH:mm }
- *
- * Multiple overlapping *offers* may share a day. Rejected only when the new
- * window conflicts with an existing booked/held session (+ buffer).
+ * Body: { experienceSlug, date, time, kind?, priceEur?, durationMinutes? }
  */
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
@@ -83,10 +92,19 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     experienceSlug?: string;
     date?: string;
     time?: string;
+    kind?: SlotKind;
+    priceEur?: number | null;
+    durationMinutes?: number | null;
   }>(request);
 
   const experienceSlug = body?.experienceSlug?.trim() ?? "";
-  if (!isScheduledSlug(experienceSlug)) {
+  const kind: SlotKind = body?.kind === "event" ? "event" : "inventory";
+
+  if (kind === "event") {
+    if (!isEventSlug(experienceSlug)) {
+      return error("Unsupported event template.", 400);
+    }
+  } else if (!isScheduledSlug(experienceSlug)) {
     return error("Unsupported experience slug.", 400);
   }
 
@@ -95,6 +113,11 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     experienceSlug,
     body?.date ?? "",
     body?.time ?? "",
+    {
+      priceEur: kind === "event" ? body?.priceEur : null,
+      durationMinutes: kind === "event" ? body?.durationMinutes : null,
+      kind,
+    },
   );
   if (!result.ok) {
     if (result.reason === "Invalid date or time.") {
@@ -112,9 +135,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 /**
  * PATCH /api/admin/slots
  * Body: { id, action: 'book' | 'release' | 'cancel' }
- *
- * Marking booked blocks conflicting open/held slots (session + buffer).
- * Releasing/cancelling recomputes blocked siblings for that day.
  */
 export const onRequestPatch: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
@@ -185,6 +205,17 @@ export const onRequestPatch: PagesFunction<Env> = async (context) => {
     }
     await recomputeBlockedSlotsOnDay(env.DB, slot.day, ts);
   } else if (action === "cancel") {
+    if (slot.kind === "event") {
+      const participants = await listActiveBookingsForSlot(env.DB, id);
+      if (participants.length > 0) {
+        return error(
+          `Cannot cancel: ${participants.length} participant${
+            participants.length === 1 ? "" : "s"
+          } still booked. Remove or cancel their bookings first.`,
+          409,
+        );
+      }
+    }
     const wasBooked = slot.status === "booked";
     nextStatus = "cancelled";
     await env.DB.prepare(

@@ -10,7 +10,7 @@ import {
 } from "../../../_lib/bookings";
 import { isAdminAuthenticated } from "../../../_lib/auth";
 import { error, json } from "../../../_lib/http";
-import { isScheduledSlug, type Env } from "../../../_lib/types";
+import { isBookableSlug, type Env } from "../../../_lib/types";
 
 const STATUSES: BookingPaymentStatus[] = [
   "deposit_paid",
@@ -44,7 +44,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   if (status && !STATUSES.includes(status)) {
     return error("Invalid payment status filter.", 400);
   }
-  if (slug && !isScheduledSlug(slug)) {
+  if (slug && !isBookableSlug(slug)) {
     return error("Unknown experience slug.", 400);
   }
 

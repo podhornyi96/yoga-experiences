@@ -7,6 +7,7 @@ import { ExperienceCard } from "@/components/ExperienceCard";
 import { BehindTheScenes } from "@/components/BehindTheScenes";
 import { BookingCTA, WhatsAppIcon } from "@/components/BookingCTA";
 import { Testimonials } from "@/components/Testimonials";
+import { UpcomingHomeSection } from "@/components/UpcomingHomeSection";
 import { getFeatured } from "@/data/experiences";
 import { siteConfig, whatsappLink } from "@/config/site";
 
@@ -106,6 +107,8 @@ export default function HomePage() {
           </Link>
         </div>
       </Section>
+
+      <UpcomingHomeSection />
 
       <Section className="bg-sand/50">
         <SectionHeading

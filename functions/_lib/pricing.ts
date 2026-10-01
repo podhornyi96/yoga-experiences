@@ -15,6 +15,8 @@ export type CheckoutCatalogEntry = {
   maxGuests: number;
   /** Variable schedule pricing. */
   schedule?: GroupPriceSchedule;
+  /** Fixed € per person (studio / event templates). */
+  pricePerPerson?: number;
   /**
    * Private inventory: price depends on party size (1 = Private, 2 = Tandem).
    */
@@ -30,10 +32,31 @@ export type CheckoutCatalogEntry = {
 };
 
 /**
- * Experiences that can be paid via Stripe checkout.
- * Cascais and Sintra are WhatsApp-only (no online deposit).
+ * Experiences / events that can be paid via Stripe checkout.
+ * Sintra & Cascais *marketing* pages stay WhatsApp-only; dated *events* use full pay.
  */
 export const CHECKOUT_CATALOG: Record<string, CheckoutCatalogEntry> = {
+  "yoga-studio-saldanha": {
+    title: "Yoga Studio Saldanha",
+    maxGuests: 7,
+    pricePerPerson: 20,
+    mats: false,
+    depositRate: 1,
+  },
+  "yoga-cascais-wooden-house": {
+    title: "Wooden House Yoga in Cascais",
+    maxGuests: 6,
+    pricePerPerson: 35,
+    mats: false,
+    depositRate: 1,
+  },
+  "yoga-sintra-forest": {
+    title: "Yoga in Sintra Forest",
+    maxGuests: 20,
+    pricePerPerson: 40,
+    mats: false,
+    depositRate: 1,
+  },
   "sunrise-yoga-lisbon": {
     title: "Sunrise Yoga",
     maxGuests: 30,
@@ -48,7 +71,6 @@ export const CHECKOUT_CATALOG: Record<string, CheckoutCatalogEntry> = {
     schedule: "coastal",
     mats: true,
   },
-  // Sintra is WhatsApp-only (no online deposit) — keep pricing helpers below.
   "private-yoga-session": {
     title: "Private Yoga Session",
     maxGuests: 2,
@@ -130,6 +152,8 @@ export function quoteCheckout(input: {
   slug: string;
   people: number;
   mats: number;
+  /** Per-person override from the slot (fixed-price templates). */
+  pricePerPersonOverride?: number | null;
 }): QuoteResult {
   const entry = CHECKOUT_CATALOG[input.slug];
   if (!entry) {
@@ -155,7 +179,18 @@ export function quoteCheckout(input: {
   }
 
   let sessionEur: number;
-  if (entry.priceByPeople) {
+  const override =
+    input.pricePerPersonOverride != null &&
+    Number.isFinite(input.pricePerPersonOverride) &&
+    input.pricePerPersonOverride > 0
+      ? input.pricePerPersonOverride
+      : null;
+
+  if (override != null && entry.pricePerPerson != null) {
+    sessionEur = override * people;
+  } else if (entry.pricePerPerson != null) {
+    sessionEur = entry.pricePerPerson * people;
+  } else if (entry.priceByPeople) {
     const priced = entry.priceByPeople[people];
     if (priced == null) {
       return { ok: false, error: "Unsupported party size for this session." };

@@ -5,6 +5,7 @@
  */
 
 import type { BookingRow } from "./bookings";
+import { getServerEventTemplate } from "./event-templates";
 
 const PRIVATE_LOCATIONS: Record<
   string,
@@ -64,6 +65,13 @@ const EXPERIENCE_EMAIL: Record<
     title: "Sunrise Yoga",
     duration: "60 minutes",
   },
+  "yoga-studio-saldanha": {
+    title: "Yoga Studio Saldanha",
+    duration: "60 minutes",
+    locationLabel: "Yoga Studio Saldanha, Lisbon",
+    locationUrl:
+      "https://www.google.com/maps/place//data=!4m2!3m1!1s0xd19330267ebcd11:0x1e1e5d6ced79b02e?sa=X&ved=1t:8290&ictx=111",
+  },
   "sunset-yoga-ocean": {
     title: "Sunset Yoga by the Ocean",
     duration: "60 minutes",
@@ -117,7 +125,30 @@ function money(amount: number): string {
   return Number.isInteger(amount) ? `€${amount}` : `€${amount.toFixed(2)}`;
 }
 
+function durationLabelMinutes(minutes: number): string {
+  if (minutes % 60 === 0) {
+    const h = minutes / 60;
+    return h === 1 ? "1 hour" : `${h} hours`;
+  }
+  if (minutes > 60) {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return `${h}h ${m}m`;
+  }
+  return `${minutes} minutes`;
+}
+
 function sessionMeta(booking: BookingRow) {
+  const eventTemplate = getServerEventTemplate(booking.experience_slug);
+  if (eventTemplate) {
+    return {
+      title: eventTemplate.title,
+      duration: durationLabelMinutes(eventTemplate.durationMinutes),
+      locationLabel: eventTemplate.locationLabel,
+      locationUrl: eventTemplate.locationUrl,
+    };
+  }
+
   const base = EXPERIENCE_EMAIL[booking.experience_slug];
   if (booking.experience_slug === "private-yoga-session") {
     const park = booking.location_id
@@ -408,24 +439,42 @@ export async function sendBookingConfirmation(
   booking: BookingRow,
   env: EmailEnv,
   options?: { notifyTeacher?: boolean },
-): Promise<{ sent: boolean; reason?: string; teacherNotified?: boolean }> {
-  const payload = buildBookingConfirmationEmail(booking, env);
-  if (!payload) return { sent: false, reason: "no_guest_email" };
+): Promise<{
+  sent: boolean;
+  reason?: string;
+  teacherNotified?: boolean;
+}> {
+  const to = booking.guest_email?.trim() ?? "";
+  let guestSent = false;
+  let guestReason: string | undefined;
 
-  const to = booking.guest_email!.trim();
-  const guest = await sendResendEmail(env, {
-    to,
-    subject: payload.subject,
-    html: payload.html,
-    text: payload.text,
-  });
-  if (!guest.sent) return guest;
+  if (!to) {
+    guestReason = "no_guest_email";
+    console.warn("[email] guest confirmation skipped", {
+      bookingId: booking.id,
+      reason: guestReason,
+    });
+  } else {
+    const payload = buildBookingConfirmationEmail(booking, env);
+    if (!payload) {
+      guestReason = "no_guest_email";
+    } else {
+      const guest = await sendResendEmail(env, {
+        to,
+        subject: payload.subject,
+        html: payload.html,
+        text: payload.text,
+      });
+      guestSent = guest.sent;
+      guestReason = guest.reason;
+    }
+  }
 
   let teacherNotified = false;
   if (options?.notifyTeacher) {
     const teacherTo = teacherNotifyAddress(env);
     // Don't email the teacher twice if they booked themselves.
-    if (teacherTo.toLowerCase() !== to.toLowerCase()) {
+    if (!to || teacherTo.toLowerCase() !== to.toLowerCase()) {
       const teacherPayload = buildTeacherNotifyEmail(booking, env);
       const teacher = await sendResendEmail(env, {
         to: teacherTo,
@@ -435,9 +484,22 @@ export async function sendBookingConfirmation(
       });
       teacherNotified = teacher.sent;
       if (!teacher.sent) {
-        console.warn("[email] teacher notify failed", teacher);
+        console.warn("[email] teacher notify failed", {
+          bookingId: booking.id,
+          ...teacher,
+        });
       }
+    } else {
+      teacherNotified = guestSent;
     }
+  }
+
+  if (!guestSent) {
+    return {
+      sent: false,
+      reason: guestReason ?? "guest_email_failed",
+      teacherNotified,
+    };
   }
 
   return { sent: true, teacherNotified };

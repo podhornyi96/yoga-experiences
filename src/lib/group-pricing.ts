@@ -59,7 +59,9 @@ export function privateSessionEur(people: number): number {
 
 /** Online charge fraction for a catalog slug (keep in sync with functions/_lib/pricing). */
 export function depositRateForSlug(slug: string): number {
-  if (slug === "sunrise-yoga-lisbon") return SUNRISE_DEPOSIT_RATE;
+  if (slug === "sunrise-yoga-lisbon" || slug === "yoga-studio-saldanha") {
+    return SUNRISE_DEPOSIT_RATE;
+  }
   return DEPOSIT_RATE;
 }
 

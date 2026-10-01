@@ -1,4 +1,7 @@
 import {
+  expireEventReservations,
+} from "./event-capacity";
+import {
   isBusyStatus,
   POST_SESSION_BUFFER_MIN,
   slotsConflict,
@@ -6,9 +9,14 @@ import {
 import {
   DEFAULT_HOLD_MINUTES,
   type Env,
+  type SlotKind,
   type SlotRow,
   type SlotStatus,
 } from "./types";
+
+function normalizeKind(value: string | null | undefined): SlotKind {
+  return value === "event" ? "event" : "inventory";
+}
 
 export function nowIso(): string {
   return new Date().toISOString();
@@ -67,6 +75,10 @@ export function publicSlot(row: SlotRow) {
     day: row.day,
     status: row.status as SlotStatus,
     holdExpiresAt: row.hold_expires_at,
+    priceEur: row.price_eur ?? null,
+    durationMinutes: row.duration_minutes ?? null,
+    kind: normalizeKind(row.kind),
+    seatsTaken: Number(row.seats_taken) || 0,
   };
 }
 
@@ -81,6 +93,8 @@ export function adminSlot(row: SlotRow) {
 
 /** Release expired holds (lazy), then reopen blocked slots that are free again. */
 export async function expireHolds(db: D1Database, now = nowIso()): Promise<void> {
+  await expireEventReservations(db, now);
+
   const { results: expired } = await db
     .prepare(
       `SELECT day FROM slots
@@ -115,12 +129,12 @@ export async function getSlotById(
   db: D1Database,
   id: string,
 ): Promise<SlotRow | null> {
-  return (
-    (await db
-      .prepare(`SELECT * FROM slots WHERE id = ?`)
-      .bind(id)
-      .first<SlotRow>()) ?? null
-  );
+  const row = await db
+    .prepare(`SELECT * FROM slots WHERE id = ?`)
+    .bind(id)
+    .first<SlotRow>();
+  if (!row) return null;
+  return { ...row, kind: normalizeKind(row.kind) };
 }
 
 export async function listSlotsOnDay(
@@ -269,12 +283,35 @@ export type CreateOpenSlotResult =
   | { ok: true; slot: SlotRow }
   | { ok: false; day: string; reason: string };
 
+export type SlotOverrides = {
+  priceEur?: number | null;
+  durationMinutes?: number | null;
+  kind?: SlotKind;
+};
+
+function normalizeOverridePrice(value: number | null | undefined): number | null {
+  if (value == null) return null;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return Math.round(n * 100) / 100;
+}
+
+function normalizeOverrideDuration(
+  value: number | null | undefined,
+): number | null {
+  if (value == null) return null;
+  const n = Math.floor(Number(value));
+  if (!Number.isFinite(n) || n < 15 || n > 480) return null;
+  return n;
+}
+
 /** Insert an open slot, or return a skip reason (conflicts / invalid). */
 export async function createOpenSlot(
   db: D1Database,
   experienceSlug: string,
   date: string,
   time: string,
+  overrides: SlotOverrides = {},
 ): Promise<CreateOpenSlotResult> {
   const parsed = parseLocalDateTime(date, time);
   if (!parsed) {
@@ -288,6 +325,10 @@ export async function createOpenSlot(
     };
   }
 
+  const priceEur = normalizeOverridePrice(overrides.priceEur);
+  const durationMinutes = normalizeOverrideDuration(overrides.durationMinutes);
+  const kind: SlotKind = overrides.kind === "event" ? "event" : "inventory";
+
   // Overlapping *offers* are allowed. Only reject if the new window already
   // conflicts with a booked/held session (teacher is busy).
   const probe: SlotRow = {
@@ -298,6 +339,10 @@ export async function createOpenSlot(
     status: "open",
     hold_token: null,
     hold_expires_at: null,
+    price_eur: priceEur,
+    duration_minutes: durationMinutes,
+    kind,
+    seats_taken: 0,
     created_at: "",
     updated_at: "",
   };
@@ -316,10 +361,21 @@ export async function createOpenSlot(
     .prepare(
       `INSERT INTO slots (
         id, experience_slug, starts_at, day, status,
-        hold_token, hold_expires_at, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, 'open', NULL, NULL, ?, ?)`,
+        hold_token, hold_expires_at, price_eur, duration_minutes, kind,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, 'open', NULL, NULL, ?, ?, ?, ?, ?)`,
     )
-    .bind(id, experienceSlug, parsed.starts_at, parsed.day, ts, ts)
+    .bind(
+      id,
+      experienceSlug,
+      parsed.starts_at,
+      parsed.day,
+      priceEur,
+      durationMinutes,
+      kind,
+      ts,
+      ts,
+    )
     .run();
 
   const row = await getSlotById(db, id);

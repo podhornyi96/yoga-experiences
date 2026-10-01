@@ -25,6 +25,8 @@ export interface BookingRow {
   notes: string | null;
   paid_in_full_at: string | null;
   location_id: string | null;
+  /** 1 when trainer added the guest offline (no Stripe). */
+  added_manually: number;
   created_at: string;
   updated_at: string;
 }
@@ -49,6 +51,7 @@ export function publicBooking(row: BookingRow) {
     notes: row.notes,
     paidInFullAt: row.paid_in_full_at,
     locationId: row.location_id,
+    addedManually: Boolean(row.added_manually),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -114,6 +117,7 @@ export type InsertBookingInput = {
   notes?: string | null;
   locationId?: string | null;
   paidInFullAt?: string | null;
+  addedManually?: boolean;
 };
 
 export async function insertBooking(
@@ -132,8 +136,8 @@ export async function insertBooking(
         guest_email, guest_name, guest_phone,
         people, mats, total_eur, deposit_eur, remaining_eur,
         payment_status, stripe_checkout_session_id, stripe_payment_intent_id,
-        notes, paid_in_full_at, location_id, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        notes, paid_in_full_at, location_id, added_manually, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .bind(
       id,
@@ -154,6 +158,7 @@ export async function insertBooking(
       input.notes ?? null,
       paidInFullAt,
       input.locationId ?? null,
+      input.addedManually ? 1 : 0,
       ts,
       ts,
     )

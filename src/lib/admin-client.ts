@@ -56,6 +56,7 @@ export type AdminBooking = {
   notes: string | null;
   paidInFullAt: string | null;
   locationId: string | null;
+  addedManually?: boolean;
   createdAt: string;
   updatedAt: string;
 };

@@ -91,9 +91,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     return error("holdToken, slotId and slug are required.");
   }
 
-  const quote = quoteCheckout({ slug, people, mats });
-  if (!quote.ok) return error(quote.error);
-
   if (slug === PRIVATE_INVENTORY_SLUG) {
     if (!locationId || !PRIVATE_LOCATION_IDS.has(locationId)) {
       return error("Choose a park location to continue.");
@@ -117,23 +114,53 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   if (!isFutureStartsAt(slot.starts_at)) {
     return error("This slot is in the past.", 409);
   }
-  if (slot.status === "booked") {
-    return error("This slot is already booked.", 409);
+
+  if (slot.kind === "event") {
+    const reservation = await env.DB.prepare(
+      `SELECT id, expires_at FROM event_reservations
+       WHERE slot_id = ? AND hold_token = ? LIMIT 1`,
+    )
+      .bind(slotId, holdToken)
+      .first<{ id: string; expires_at: string }>();
+    if (!reservation) {
+      return error("Hold this date before paying.", 409);
+    }
+    if (reservation.expires_at < nowIso()) {
+      return error("Your hold expired. Pick the date again.", 409);
+    }
+    // Keep seats through Stripe Checkout (default session ~30m).
+    const checkoutHoldUntil = new Date(
+      Date.now() + 35 * 60_000,
+    ).toISOString();
+    if (reservation.expires_at < checkoutHoldUntil) {
+      await env.DB.prepare(
+        `UPDATE event_reservations SET expires_at = ? WHERE id = ?`,
+      )
+        .bind(checkoutHoldUntil, reservation.id)
+        .run();
+    }
+  } else {
+    if (slot.status === "booked") {
+      return error("This slot is already booked.", 409);
+    }
+    if (slot.status !== "held") {
+      return error("Hold this date before paying.", 409);
+    }
+    if (slot.hold_token !== holdToken) {
+      return error("Invalid hold token.", 409);
+    }
+    if (slot.hold_expires_at && slot.hold_expires_at < nowIso()) {
+      return error("Your hold expired. Pick the date again.", 409);
+    }
   }
-  if (slot.status !== "held") {
-    return error(
-      quote.fullPay
-        ? "Hold this date before paying."
-        : "Hold this date before paying the deposit.",
-      409,
-    );
-  }
-  if (slot.hold_token !== holdToken) {
-    return error("Invalid hold token.", 409);
-  }
-  if (slot.hold_expires_at && slot.hold_expires_at < nowIso()) {
-    return error("Your hold expired. Pick the date again.", 409);
-  }
+
+  const quote = quoteCheckout({
+    slug,
+    people,
+    mats,
+    pricePerPersonOverride: slot.price_eur,
+  });
+  if (!quote.ok) return error(quote.error);
 
   const origin = siteOrigin(request, env);
   const slotLabel = formatSlotLabel(slot.starts_at);

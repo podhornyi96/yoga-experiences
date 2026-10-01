@@ -6,7 +6,7 @@ export function AdminNav({
   active,
   onLogout,
 }: {
-  active: "schedule" | "bookings";
+  active: "schedule" | "events" | "bookings";
   onLogout: () => void;
 }) {
   const link = (href: string, key: typeof active, label: string) => (
@@ -25,6 +25,7 @@ export function AdminNav({
   return (
     <div className="flex flex-wrap items-center gap-2">
       {link("/admin/", "schedule", "Schedule")}
+      {link("/admin/events/", "events", "Events")}
       {link("/admin/bookings/", "bookings", "Bookings")}
       <button
         type="button"

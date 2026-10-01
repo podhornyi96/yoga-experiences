@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Container } from "@/components/Container";
 import { SectionHeading } from "@/components/Section";
 import { ExperienceCard } from "@/components/ExperienceCard";
+import { UpcomingExperiencesBanner } from "@/components/UpcomingExperiencesBanner";
 import { JsonLd } from "@/components/JsonLd";
 import { getExperiencesByGroup, groups } from "@/data/experiences";
 import { pageSeo } from "@/lib/seo";
@@ -35,10 +36,13 @@ export default function ExperiencesPage() {
             title="Yoga experiences across Lisbon"
             description={g.tagline}
           />
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4 lg:gap-4">
-            {items.map((exp) => (
-              <ExperienceCard key={exp.slug} experience={exp} compact />
-            ))}
+          <div className="mt-6">
+            <UpcomingExperiencesBanner />
+            <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4 lg:gap-4">
+              {items.map((exp) => (
+                <ExperienceCard key={exp.slug} experience={exp} compact />
+              ))}
+            </div>
           </div>
         </Container>
       </section>

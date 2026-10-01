@@ -6,8 +6,9 @@
 
 import type { SlotRow } from "./types";
 
-/** Minutes of practice for each scheduled experience. */
+/** Minutes of practice for each scheduled experience (template defaults). */
 export const SESSION_DURATION_MIN: Record<string, number> = {
+  "yoga-studio-saldanha": 60,
   "sunrise-yoga-lisbon": 60,
   "sunset-yoga-ocean": 60,
   "yoga-cascais-wooden-house": 120,
@@ -20,7 +21,17 @@ export const DEFAULT_SESSION_DURATION_MIN = 75;
 /** Travel / recovery buffer after session end before the next booking. */
 export const POST_SESSION_BUFFER_MIN = 75;
 
-export function sessionDurationMin(slug: string): number {
+export function sessionDurationMin(
+  slug: string,
+  overrideMinutes?: number | null,
+): number {
+  if (
+    overrideMinutes != null &&
+    Number.isFinite(overrideMinutes) &&
+    overrideMinutes > 0
+  ) {
+    return Math.floor(overrideMinutes);
+  }
   return SESSION_DURATION_MIN[slug] ?? DEFAULT_SESSION_DURATION_MIN;
 }
 
@@ -49,10 +60,14 @@ export function startsAtToMinutes(startsAt: string): number | null {
 export function busyWindow(slot: {
   experience_slug: string;
   starts_at: string;
+  duration_minutes?: number | null;
 }): { startMin: number; endMin: number } | null {
   const startMin = startsAtToMinutes(slot.starts_at);
   if (startMin == null) return null;
-  const duration = sessionDurationMin(slot.experience_slug);
+  const duration = sessionDurationMin(
+    slot.experience_slug,
+    slot.duration_minutes,
+  );
   const endMin = startMin + duration + POST_SESSION_BUFFER_MIN;
   return { startMin, endMin };
 }

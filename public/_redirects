@@ -2,3 +2,5 @@
 /experiences/private-yoga-package/  /experiences/private-yoga-tandem/  301
 /experiences/group-yoga-estrela-park/  /experiences/  301
 /experiences/group-yoga-graca/  /experiences/  301
+/events/:id/  /events/?id=:id  200
+/events/:id  /events/?id=:id  200

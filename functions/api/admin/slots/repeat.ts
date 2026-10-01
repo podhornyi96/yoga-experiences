@@ -1,15 +1,3 @@
-/**
- * POST /api/admin/slots/repeat
- * After creating one slot, duplicate it on selected weekdays for N weeks.
- *
- * Body: {
- *   experienceSlug, time: HH:mm, fromDate: YYYY-MM-DD,
- *   weekdays: number[] (ISO Mon=1 … Sun=7), weeks: number
- * }
- *
- * Skips the seed day (already created) and any conflicts; returns a report.
- */
-
 import { isAdminAuthenticated } from "../../../_lib/auth";
 import { error, json, readJson } from "../../../_lib/http";
 import {
@@ -19,6 +7,9 @@ import {
 } from "../../../_lib/slots";
 import { isScheduledSlug, type Env } from "../../../_lib/types";
 
+/**
+ * POST /api/admin/slots/repeat — inventory slots only (Schedule).
+ */
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
 
@@ -64,7 +55,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   const skipped: { day: string; reason: string }[] = [];
 
   for (const day of dates) {
-    const result = await createOpenSlot(env.DB, experienceSlug, day, time);
+    const result = await createOpenSlot(env.DB, experienceSlug, day, time, {
+      kind: "inventory",
+    });
     if (result.ok) {
       created.push(adminSlot(result.slot));
     } else {

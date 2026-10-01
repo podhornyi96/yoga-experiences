@@ -1,8 +1,9 @@
 /**
  * POST /api/stripe/webhook
  * On checkout.session.completed:
- *  - create booking (deposit_paid or paid_in_full)
- *  - mark held slot booked + block conflicting siblings
+ *  - create booking (unique id per payment via crypto.randomUUID)
+ *  - inventory: mark held slot booked + block siblings
+ *  - events: consume seat reservation (seats already claimed atomically)
  *  - send confirmation email (best-effort)
  */
 
@@ -10,6 +11,10 @@ import {
   getBookingByStripeSession,
   insertBooking,
 } from "../../_lib/bookings";
+import {
+  claimEventSeatsForManualBooking,
+  consumeEventReservation,
+} from "../../_lib/event-capacity";
 import { sendBookingConfirmation } from "../../_lib/email";
 import { error, json } from "../../_lib/http";
 import {
@@ -120,7 +125,33 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   const ts = nowIso();
 
   let slotBookedNow = false;
-  if (slot.status === "held" && slot.hold_token === holdToken) {
+  let eventOverbookRisk = false;
+
+  if (slot.kind === "event") {
+    const consumed = await consumeEventReservation(
+      env.DB,
+      slotId,
+      holdToken,
+    );
+    if (!consumed.ok) {
+      // Hold expired after payment (or webhook retry). Seats were released —
+      // try to reclaim atomically so we never overbook when the last seat
+      // was taken by someone else in between.
+      const reclaim = await claimEventSeatsForManualBooking(
+        env.DB,
+        slot,
+        people,
+      );
+      if (!reclaim.ok) {
+        eventOverbookRisk = true;
+        console.error("[webhook] event overbook risk after expired hold", {
+          slotId,
+          people,
+          reason: reclaim.error,
+        });
+      }
+    }
+  } else if (slot.status === "held" && slot.hold_token === holdToken) {
     const result = await env.DB.prepare(
       `UPDATE slots
        SET status = 'booked',
@@ -163,18 +194,37 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       stripeCheckoutSessionId: sessionId,
       stripePaymentIntentId: paymentIntentIdFromSession(session),
       locationId,
+      notes: eventOverbookRisk
+        ? "Paid after hold expired; event may be over capacity — review manually."
+        : null,
     });
 
     const emailResult = await sendBookingConfirmation(booking, env, {
       notifyTeacher: true,
     });
-    if (!emailResult.sent) {
-      console.warn("[webhook] confirmation email not sent", emailResult);
+    if (!emailResult.sent || !emailResult.teacherNotified) {
+      console.warn("[webhook] confirmation email incomplete", {
+        bookingId: booking.id,
+        kind: slot.kind,
+        ...emailResult,
+      });
+    } else {
+      console.log("[webhook] confirmation emails sent", {
+        bookingId: booking.id,
+        kind: slot.kind,
+        guest: Boolean(booking.guest_email),
+        teacherNotified: emailResult.teacherNotified,
+      });
     }
 
     return json({
       received: true,
-      status: slotBookedNow || slot.status === "booked" ? "booked" : "booking_only",
+      status:
+        slot.kind === "event"
+          ? "event_booking"
+          : slotBookedNow || slot.status === "booked"
+            ? "booked"
+            : "booking_only",
       bookingId: booking.id,
       email: emailResult,
     });

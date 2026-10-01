@@ -10,6 +10,8 @@ export type PublicSlot = {
   day: string;
   status: "open" | "held" | "booked" | "cancelled" | "blocked";
   holdExpiresAt: string | null;
+  priceEur?: number | null;
+  durationMinutes?: number | null;
 };
 
 export type HoldResponse = {
@@ -97,6 +99,7 @@ export async function fetchAvailableSlots(
 export async function createHold(
   slotId: string,
   holdToken?: string | null,
+  people = 1,
 ): Promise<
   | { ok: true; data: HoldResponse }
   | { ok: false; error: string; status: number }
@@ -108,6 +111,7 @@ export async function createHold(
       credentials: "same-origin",
       body: JSON.stringify({
         slotId,
+        people,
         ...(holdToken ? { holdToken } : {}),
       }),
     });
@@ -187,4 +191,77 @@ export function formatSlotLabel(startsAt: string): string {
   }).format(utc);
   const time = timePart.slice(0, 5);
   return `${weekday} ${d} ${month} · ${time}`;
+}
+
+export type UpcomingEvent = {
+  id: string;
+  slug: string;
+  title: string;
+  startsAt: string;
+  day: string;
+  locationLabel: string;
+  image: string | null;
+  durationMinutes: number;
+  pricePerPersonEur: number | null;
+  maxGuests: number;
+  whatsappOnly: boolean;
+  href: string;
+};
+
+export async function fetchUpcomingEvents(
+  limit = 2,
+): Promise<UpcomingEvent[]> {
+  try {
+    const res = await fetch(`/api/upcoming?limit=${limit}`, {
+      credentials: "same-origin",
+    });
+    if (!res.ok) return [];
+    const data = (await res.json()) as { events?: UpcomingEvent[] };
+    return data.events ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export type PublicEventDetail = {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string;
+  description: string;
+  locationLabel: string;
+  locationUrl: string | null;
+  startsAt: string;
+  day: string;
+  status: string;
+  durationMinutes: number;
+  maxGuests: number;
+  seatsTaken?: number;
+  seatsRemaining?: number;
+  images: string[];
+  includes: string[];
+  pricePerPersonEur: number | null;
+  priceSchedule: "coastal" | "sintra" | "cascais" | null;
+  privatePricing: boolean;
+  mats: boolean;
+  depositRate: number;
+  whatsappOnly: boolean;
+  marketingSlug: string | null;
+  bookable: boolean;
+  holdExpiresAt: string | null;
+};
+
+export async function fetchEventDetail(
+  id: string,
+): Promise<PublicEventDetail | null> {
+  try {
+    const res = await fetch(`/api/events?id=${encodeURIComponent(id)}`, {
+      credentials: "same-origin",
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { event?: PublicEventDetail };
+    return data.event ?? null;
+  } catch {
+    return null;
+  }
 }

@@ -19,7 +19,9 @@ type AdminSlot = {
   updatedAt: string;
 };
 
-const groupExperiences = getExperiencesByGroup("experiences");
+const groupExperiences = getExperiencesByGroup("experiences").filter((e) =>
+  ["sunrise-yoga-lisbon", "sunset-yoga-ocean"].includes(e.slug),
+);
 const privateInventory = getExperiencesByGroup("private").filter(
   (e) => e.slug === "private-yoga-session",
 );
@@ -93,7 +95,9 @@ export default function AdminPage() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const q = filterSlug ? `?slug=${encodeURIComponent(filterSlug)}` : "";
+      const q = filterSlug
+        ? `?kind=inventory&slug=${encodeURIComponent(filterSlug)}`
+        : "?kind=inventory";
       const res = await adminApi<{ slots: AdminSlot[] }>(`/api/admin/slots${q}`);
       if (cancelled) return;
       if (!res.ok) {
@@ -125,7 +129,9 @@ export default function AdminPage() {
   }, []);
 
   async function refreshSlots() {
-    const q = filterSlug ? `?slug=${encodeURIComponent(filterSlug)}` : "";
+    const q = filterSlug
+      ? `?kind=inventory&slug=${encodeURIComponent(filterSlug)}`
+      : "?kind=inventory";
     const res = await adminApi<{ slots: AdminSlot[] }>(`/api/admin/slots${q}`);
     if (!res.ok) {
       if (res.status === 401) {
@@ -173,7 +179,7 @@ export default function AdminPage() {
     }
     const res = await adminApi<{ slot: AdminSlot }>("/api/admin/slots", {
       method: "POST",
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, kind: "inventory" }),
     });
     if (!res.ok) {
       setError(res.error);
@@ -319,8 +325,8 @@ export default function AdminPage() {
         <div>
           <h1 className="text-3xl text-forest">Schedule admin</h1>
           <p className="mt-1 text-sm text-muted">
-            Overlapping offers are OK until booked · then conflicting times
-            (session + 75 min buffer) are blocked · Lisbon time · soft hold{" "}
+            Instant-book inventory for Sunrise, Sunset and Private / Tandem ·
+            overlapping offers OK until booked · Lisbon time · soft hold{" "}
             {siteConfig.scheduleHoldMinutes} min
           </p>
         </div>
