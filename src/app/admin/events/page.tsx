@@ -78,6 +78,7 @@ function ParticipantsModal({
   });
   const [resendBusyId, setResendBusyId] = useState<string | null>(null);
   const [deleteBusyId, setDeleteBusyId] = useState<string | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<AdminBooking | null>(null);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
 
   async function load() {
@@ -222,26 +223,42 @@ function ParticipantsModal({
     setStatusMsg(`Confirmation sent to ${p.guestEmail}.`);
   }
 
-  async function removeManual(p: AdminBooking) {
-    if (!p.addedManually) return;
-    const label = p.guestName || p.guestEmail || "this participant";
-    if (!window.confirm(`Remove ${label}? This frees their seat.`)) return;
-
+  async function removeParticipant(
+    p: AdminBooking,
+    opts?: { stripeRefundConfirmed?: boolean },
+  ) {
     setDeleteBusyId(p.id);
     setError(null);
     setStatusMsg(null);
     const res = await adminApi<{ ok: boolean }>(
-      `/api/admin/events/participants?bookingId=${encodeURIComponent(p.id)}`,
-      { method: "DELETE" },
+      "/api/admin/events/participants",
+      {
+        method: "DELETE",
+        body: JSON.stringify({
+          bookingId: p.id,
+          stripeRefundConfirmed: Boolean(opts?.stripeRefundConfirmed),
+        }),
+      },
     );
     setDeleteBusyId(null);
     if (!res.ok) {
       setError(res.error);
       return;
     }
+    setRemoveTarget(null);
     if (editingId === p.id) closeForm();
     setStatusMsg("Participant removed.");
     await load();
+  }
+
+  function requestRemove(p: AdminBooking) {
+    if (p.addedManually) {
+      const label = p.guestName || p.guestEmail || "this participant";
+      if (!window.confirm(`Remove ${label}? This frees their seat.`)) return;
+      void removeParticipant(p);
+      return;
+    }
+    setRemoveTarget(p);
   }
 
   return createPortal(
@@ -472,16 +489,14 @@ function ParticipantsModal({
                             >
                               {resendBusyId === p.id ? "…" : "Email"}
                             </button>
-                            {p.addedManually ? (
-                              <button
-                                type="button"
-                                disabled={deleteBusyId === p.id}
-                                onClick={() => void removeManual(p)}
-                                className="inline-flex rounded-full border border-red-300 bg-white px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
-                              >
-                                {deleteBusyId === p.id ? "…" : "Remove"}
-                              </button>
-                            ) : null}
+                            <button
+                              type="button"
+                              disabled={deleteBusyId === p.id}
+                              onClick={() => requestRemove(p)}
+                              className="inline-flex rounded-full border border-red-300 bg-white px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                            >
+                              {deleteBusyId === p.id ? "…" : "Remove"}
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -493,6 +508,65 @@ function ParticipantsModal({
           )}
         </div>
       </div>
+
+      {removeTarget ? (
+        <div
+          className="fixed inset-0 z-[60] flex items-end justify-center bg-ink/60 p-4 sm:items-center"
+          role="presentation"
+          onMouseDown={(ev) => {
+            if (ev.target === ev.currentTarget) setRemoveTarget(null);
+          }}
+        >
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="remove-stripe-title"
+            className="w-full max-w-md rounded-2xl bg-cream p-5 shadow-xl"
+          >
+            <h3
+              id="remove-stripe-title"
+              className="text-lg font-semibold text-forest"
+            >
+              Remove Stripe participant?
+            </h3>
+            <p className="mt-3 text-sm leading-relaxed text-ink">
+              Make sure you have issued a refund in the Stripe Dashboard before
+              removing{" "}
+              <strong>
+                {removeTarget.guestName ||
+                  removeTarget.guestEmail ||
+                  "this guest"}
+              </strong>
+              . This only frees their seat here — it does not refund money
+              automatically.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={deleteBusyId === removeTarget.id}
+                onClick={() =>
+                  void removeParticipant(removeTarget, {
+                    stripeRefundConfirmed: true,
+                  })
+                }
+                className="rounded-full bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800 disabled:opacity-60"
+              >
+                {deleteBusyId === removeTarget.id
+                  ? "Removing…"
+                  : "Refund done"}
+              </button>
+              <button
+                type="button"
+                disabled={deleteBusyId === removeTarget.id}
+                onClick={() => setRemoveTarget(null)}
+                className="rounded-full border border-sand-dark px-4 py-2 text-sm font-semibold text-ink hover:bg-sand"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>,
     document.body,
   );

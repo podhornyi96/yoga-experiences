@@ -214,17 +214,19 @@ export const onRequestDelete: PagesFunction<Env> = async (context) => {
 
   const url = new URL(request.url);
   let bookingId = url.searchParams.get("bookingId")?.trim() ?? "";
+  let stripeRefundConfirmed = url.searchParams.get("stripeRefundConfirmed") === "1";
   if (!bookingId) {
-    const body = await readJson<{ bookingId?: string }>(request);
+    const body = await readJson<{
+      bookingId?: string;
+      stripeRefundConfirmed?: boolean;
+    }>(request);
     bookingId = body?.bookingId?.trim() ?? "";
+    if (body?.stripeRefundConfirmed) stripeRefundConfirmed = true;
   }
   if (!bookingId) return error("bookingId is required.");
 
   const booking = await getBookingById(env.DB, bookingId);
   if (!booking) return error("Participant not found.", 404);
-  if (!booking.added_manually) {
-    return error("Only manually added participants can be removed here.", 409);
-  }
   if (
     booking.payment_status !== "deposit_paid" &&
     booking.payment_status !== "paid_in_full"
@@ -237,17 +239,33 @@ export const onRequestDelete: PagesFunction<Env> = async (context) => {
     return error("Not an event participant.", 404);
   }
 
+  const isManual = Boolean(booking.added_manually);
+  if (!isManual && !stripeRefundConfirmed) {
+    return error(
+      "Confirm Stripe refund first (stripeRefundConfirmed required).",
+      409,
+    );
+  }
+
   const ts = nowIso();
+  const nextStatus = isManual ? "cancelled" : "refunded";
+  const notes = isManual
+    ? booking.notes
+    : [booking.notes?.trim(), "Removed by admin after Stripe refund"]
+        .filter(Boolean)
+        .join(" · ");
+
   await env.DB.prepare(
     `UPDATE bookings
-     SET payment_status = 'cancelled',
+     SET payment_status = ?,
+         notes = ?,
          updated_at = ?
      WHERE id = ?`,
   )
-    .bind(ts, bookingId)
+    .bind(nextStatus, notes, ts, bookingId)
     .run();
 
   await releaseEventSeats(env.DB, booking.slot_id, booking.people || 1);
 
-  return json({ ok: true, bookingId });
+  return json({ ok: true, bookingId, paymentStatus: nextStatus });
 };
