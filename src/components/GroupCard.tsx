@@ -6,6 +6,7 @@ import { ZoomableImage } from "@/components/ZoomableImage";
 const groupHref: Record<Group, string> = {
   experiences: "/experiences/",
   private: "/private/",
+  online: "/online/",
   corporate: "/corporate/",
 };
 

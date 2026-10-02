@@ -14,7 +14,7 @@ import { siteConfig, whatsappLink } from "@/config/site";
 const steps = [
   {
     title: "Choose your experience",
-    text: "Sunrise, sunset, forest, private or corporate — pick what fits you.",
+    text: "Sunrise, sunset, forest, private, online or corporate — pick what fits you.",
   },
   {
     title: "Pick a date & pay",

@@ -35,6 +35,11 @@ export function Footer() {
               </Link>
             </li>
             <li>
+              <Link href="/online/" className="hover:text-clay">
+                Online
+              </Link>
+            </li>
+            <li>
               <Link href="/corporate/" className="hover:text-clay">
                 Corporate
               </Link>

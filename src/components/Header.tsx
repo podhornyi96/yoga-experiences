@@ -8,6 +8,7 @@ import { BookingCTA } from "./BookingCTA";
 const nav = [
   { label: "Experiences", href: "/experiences/" },
   { label: "Private", href: "/private/" },
+  { label: "Online", href: "/online/" },
   { label: "Corporate", href: "/corporate/" },
   { label: "About", href: "/about/" },
   { label: "Contact", href: "/contact/" },

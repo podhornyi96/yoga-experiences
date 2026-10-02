@@ -1,5 +1,5 @@
 /**
- * Single source of truth for all offerings (experiences, private, corporate).
+ * Single source of truth for all offerings (experiences, private, online, corporate).
  * Placeholder content — replace text, prices and images with the real ones.
  *
  * The data model is intentionally structured (typed price, booking type, tags)
@@ -8,7 +8,7 @@
 
 import type { GroupPriceSchedule } from "@/lib/group-pricing";
 
-export type Group = "experiences" | "private" | "corporate";
+export type Group = "experiences" | "private" | "online" | "corporate";
 
 export type PriceUnit =
   | "per_person"
@@ -95,7 +95,30 @@ export interface Experience {
   matRental?: boolean;
   /** Fixed party size when people aren't selectable (Private / Tandem). */
   fixedGuests?: number;
+  /**
+   * Online yoga: single session + pack pricing with shared cancellation policy.
+   * Shown on the detail page via OnlinePackagesPanel (WhatsApp only).
+   */
+  onlinePricing?: {
+    single: { amount: number; label: string };
+    packs: Array<{
+      sessions: number;
+      amount: number;
+      cadence: string;
+      validityDays: number;
+      note: string;
+    }>;
+    policies: string[];
+  };
 }
+
+/** Shared cancellation / freeze rules for online private & tandem. */
+export const ONLINE_YOGA_POLICIES: string[] = [
+  "Free cancellation in case of force majeure, or with at least 24 hours' notice before the session.",
+  "If you cancel less than 24 hours ahead, the session is deducted from your pack.",
+  "If you arrive late without notice, that time is deducted from the session.",
+  "Planning a holiday? Let us know in advance — your pack can be frozen for up to 7 days, or the session moved to another day.",
+];
 
 export const groups: Record<
   Group,
@@ -114,6 +137,13 @@ export const groups: Record<
     tagline: "Personalised 1:1 or tandem sessions in Lisbon",
     description:
       "Personalised private yoga in Lisbon. Whether you are starting out, recovering, or deepening your practice, sessions are fully adapted to your body and goals.",
+  },
+  online: {
+    slug: "online",
+    label: "Online",
+    tagline: "Private & tandem yoga from anywhere",
+    description:
+      "Live online yoga with Ivanna — one-to-one or tandem. Book a single session or a pack of 4 or 8 practices, with flexible scheduling and clear cancellation terms.",
   },
   corporate: {
     slug: "corporate",
@@ -440,6 +470,150 @@ export const experiences: Experience[] = [
     ],
     matRental: true,
     fixedGuests: 2,
+  },
+
+  // ---------------- ONLINE ----------------
+  {
+    slug: "online-private-yoga",
+    group: "online",
+    title: "Online Private Yoga",
+    summary:
+      "1:1 live online yoga — single sessions or packs of 4 or 8.",
+    description:
+      "A personalised live online yoga session, fully tailored to your body and goals. Practise from home on a video call — ideal if you travel, prefer privacy, or want a steady weekly rhythm. Choose a single session or a pack of 4 or 8 practices within 30 days.",
+    price: { amount: 35, currency: "EUR", unit: "per_session", from: true },
+    bookingType: "request",
+    duration: "60 min",
+    groupSize: "1:1",
+    locationLabel: "Online",
+    tags: { location: "online", level: "all-levels" },
+    highlights: [
+      "Fully personalised 1:1",
+      "Practise from anywhere",
+      "Single session or packs",
+    ],
+    includes: [
+      "60-minute live video session",
+      "Tailored sequence",
+      "Flexible scheduling",
+    ],
+    images: [
+      "/images/experiences/private-yoga-session/private-yoga-session-cover.jpg",
+    ],
+    faq: [
+      {
+        question: "How do online sessions work?",
+        answer:
+          "We meet on a video call (WhatsApp, Zoom or similar — we'll confirm when you book). You'll need a quiet space, a mat, and a stable internet connection.",
+      },
+      {
+        question: "How does payment work?",
+        answer:
+          "A single session is paid by card on the day of the meeting. Packs are paid in full after the first practice.",
+      },
+      {
+        question: "How long is a pack valid?",
+        answer:
+          "30 days from the first practice. A 4-session pack is once a week; an 8-session pack is twice a week.",
+      },
+    ],
+    featured: true,
+    fixedGuests: 1,
+    onlinePricing: {
+      single: {
+        amount: 35,
+        label: "per session · paid by card on the day",
+      },
+      packs: [
+        {
+          sessions: 4,
+          amount: 120,
+          cadence: "once a week",
+          validityDays: 30,
+          note: "Full payment after the first session",
+        },
+        {
+          sessions: 8,
+          amount: 200,
+          cadence: "twice a week",
+          validityDays: 30,
+          note: "Full payment after the first session",
+        },
+      ],
+      policies: ONLINE_YOGA_POLICIES,
+    },
+  },
+  {
+    slug: "online-tandem-yoga",
+    group: "online",
+    title: "Online Tandem Yoga",
+    summary:
+      "Live online yoga for two — single sessions or packs of 4 or 8.",
+    description:
+      "A private live online yoga session for exactly two people. Perfect for couples, friends or family who want to practise together from home while still getting personalised attention. Choose a single session or a pack of 4 or 8 practices within 30 days.",
+    price: { amount: 60, currency: "EUR", unit: "per_session", from: true },
+    bookingType: "request",
+    duration: "60 min",
+    groupSize: "2 people",
+    locationLabel: "Online",
+    tags: { location: "online", level: "all-levels" },
+    highlights: [
+      "Just the two of you",
+      "Practise together from home",
+      "Single session or packs",
+    ],
+    includes: [
+      "60-minute live video session",
+      "Shared tailored sequence",
+      "Flexible scheduling",
+    ],
+    images: [
+      "/images/tandem/tandem-cover.jpg",
+      "/images/tandem/tandem-duo.jpg",
+    ],
+    cardImagePosition: "50% 70%",
+    coverImagePosition: "50% 70%",
+    faq: [
+      {
+        question: "Do we need to be at the same level?",
+        answer:
+          "Not at all — I'll adapt the session so you both feel supported and challenged in the right way.",
+      },
+      {
+        question: "How do online tandem sessions work?",
+        answer:
+          "We meet on a video call. You'll need a quiet shared space (or two cameras if you're in different places), mats, and a stable connection.",
+      },
+      {
+        question: "How does payment work?",
+        answer:
+          "A single session is paid by card on the day of the meeting (€60 for two). Packs are paid in full after the first practice.",
+      },
+    ],
+    fixedGuests: 2,
+    onlinePricing: {
+      single: {
+        amount: 60,
+        label: "per session for two · paid by card on the day",
+      },
+      packs: [
+        {
+          sessions: 4,
+          amount: 200,
+          cadence: "once a week",
+          validityDays: 30,
+          note: "Full payment after the first session · for two",
+        },
+        {
+          sessions: 8,
+          amount: 360,
+          cadence: "twice a week",
+          validityDays: 30,
+          note: "Full payment after the first session · for two",
+        },
+      ],
+      policies: ONLINE_YOGA_POLICIES,
+    },
   },
 
   // ---------------- CORPORATE ----------------

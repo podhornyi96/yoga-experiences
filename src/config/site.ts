@@ -7,9 +7,9 @@
 export const siteConfig = {
   name: "Ivanna Yoga Lisbon",
   // Short tagline used in hero / OG.
-  tagline: "Yoga experiences in Lisbon — sunrise, sunset by the ocean & in the parks",
+  tagline: "Yoga experiences in Lisbon — sunrise, sunset, private & online",
   description:
-    "Book unforgettable yoga experiences in Lisbon: sunrise and sunset sessions, forest immersions in Sintra, corporate yoga for IT teams, and private 1:1 sessions in person.",
+    "Book unforgettable yoga experiences in Lisbon: sunrise and sunset sessions, forest immersions in Sintra, corporate yoga for IT teams, private 1:1 sessions in person, and live online yoga.",
   // Production URL — update before launch. Used for canonical URLs, sitemap and OG.
   url: "https://ivanna-yoga.com",
   locale: "en",

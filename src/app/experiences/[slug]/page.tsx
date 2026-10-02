@@ -8,6 +8,7 @@ import { Faq } from "@/components/Faq";
 import { ExperienceDetails } from "@/components/ExperienceDetails";
 import { GroupBookingPanel } from "@/components/GroupBookingPanel";
 import { PrivateBookingPanel } from "@/components/PrivateBookingPanel";
+import { OnlinePackagesPanel } from "@/components/OnlinePackagesPanel";
 import { MapPinIcon } from "@/components/icons";
 import { PriceTag } from "@/components/PriceTag";
 import { JsonLd } from "@/components/JsonLd";
@@ -39,8 +40,10 @@ export async function generateMetadata({
   const { slug } = await params;
   const exp = getExperienceBySlug(slug);
   if (!exp) return {};
+  const title =
+    exp.group === "online" ? exp.title : `${exp.title} in Lisbon`;
   return pageSeo({
-    title: `${exp.title} in Lisbon`,
+    title,
     description: exp.summary,
     path: `/experiences/${exp.slug}/`,
     image: exp.images[0],
@@ -57,9 +60,12 @@ export default async function ExperienceDetailPage({
   if (!exp) notFound();
 
   const group = groups[exp.group];
-  const faq = exp.groupPricing?.whatsappOnly
-    ? exp.faq
-    : withDepositPolicyFaq(exp.faq);
+  const faq =
+    exp.group === "online" || exp.groupPricing?.whatsappOnly
+      ? exp.faq
+      : withDepositPolicyFaq(exp.faq);
+  const pageTitle =
+    exp.group === "online" ? exp.title : `${exp.title} in Lisbon`;
 
   return (
     <>
@@ -110,9 +116,7 @@ export default async function ExperienceDetailPage({
               exp.locationLabel
             )}
           </p>
-          <h1 className="mt-2 text-4xl text-forest">
-            {exp.title} in Lisbon
-          </h1>
+          <h1 className="mt-2 text-4xl text-forest">{pageTitle}</h1>
           <p className="mt-5 text-lg leading-relaxed text-muted">
             {exp.description}
           </p>
@@ -155,7 +159,9 @@ export default async function ExperienceDetailPage({
         {/* Booking sidebar */}
         <aside className="lg:sticky lg:top-24">
           <div className="rounded-2xl border border-sand-dark bg-white p-5 shadow-sm sm:p-6">
-            {exp.group === "private" ? (
+            {exp.group === "online" && exp.onlinePricing ? (
+              <OnlinePackagesPanel experience={exp} />
+            ) : exp.group === "private" ? (
               <PrivateBookingPanel experience={exp} />
             ) : hasLiveBooking(exp) || exp.group === "experiences" ? (
               <GroupBookingPanel experience={exp} />
