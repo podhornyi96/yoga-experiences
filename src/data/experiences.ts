@@ -110,6 +110,18 @@ export interface Experience {
     }>;
     policies: string[];
   };
+  /**
+   * In-person Private / Tandem: one-time intro pack (WhatsApp only).
+   * Shown on the detail page via IntroPackPanel beneath single-session booking.
+   */
+  introPack?: {
+    sessions: number;
+    amount: number;
+    validityDays: number;
+    onceOnly: boolean;
+    note: string;
+    policies: string[];
+  };
 }
 
 /** Shared cancellation / freeze rules for online private & tandem. */
@@ -118,6 +130,14 @@ export const ONLINE_YOGA_POLICIES: string[] = [
   "If you cancel less than 24 hours ahead, the session is deducted from your pack.",
   "If you arrive late without notice, that time is deducted from the session.",
   "Planning a holiday? Let us know in advance — your pack can be frozen for up to 7 days, or the session moved to another day.",
+];
+
+/** Shared terms for in-person Private / Tandem intro packs. */
+export const PRIVATE_INTRO_PACK_POLICIES: string[] = [
+  "Full payment after the first practice — or a 30% non-refundable deposit, with the balance due on the day.",
+  "Day, time and place are fixed when we arrange the pack.",
+  "This is a promotional offer: sessions cannot be rescheduled at the guest's request. Rescheduling only if the teacher initiates.",
+  "Available once — for getting started and finding a good practice fit.",
 ];
 
 export const groups: Record<
@@ -421,6 +441,14 @@ export const experiences: Experience[] = [
     featured: true,
     matRental: true,
     fixedGuests: 1,
+    introPack: {
+      sessions: 3,
+      amount: 100,
+      validityDays: 21,
+      onceOnly: true,
+      note: "Full payment after the first practice",
+      policies: PRIVATE_INTRO_PACK_POLICIES,
+    },
   },
   {
     slug: "private-yoga-tandem",
@@ -472,6 +500,14 @@ export const experiences: Experience[] = [
     ],
     matRental: true,
     fixedGuests: 2,
+    introPack: {
+      sessions: 3,
+      amount: 150,
+      validityDays: 21,
+      onceOnly: true,
+      note: "Full payment after the first practice · for two",
+      policies: PRIVATE_INTRO_PACK_POLICIES,
+    },
   },
 
   // ---------------- ONLINE ----------------

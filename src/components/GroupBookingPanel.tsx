@@ -348,6 +348,7 @@ export function GroupBookingPanel({ experience }: { experience: Experience }) {
             message={message}
             size="lg"
             className="w-full"
+            stickyMobile
           />
           <p className="mt-2 text-center text-xs text-muted">
             WhatsApp booking — we&apos;ll confirm a date with you.

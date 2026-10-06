@@ -8,6 +8,7 @@ import { Faq } from "@/components/Faq";
 import { ExperienceDetails } from "@/components/ExperienceDetails";
 import { GroupBookingPanel } from "@/components/GroupBookingPanel";
 import { PrivateBookingPanel } from "@/components/PrivateBookingPanel";
+import { IntroPackPanel } from "@/components/IntroPackPanel";
 import { OnlinePackagesPanel } from "@/components/OnlinePackagesPanel";
 import { MapPinIcon } from "@/components/icons";
 import { PriceTag } from "@/components/PriceTag";
@@ -172,7 +173,7 @@ export default async function ExperienceDetailPage({
                 </div>
                 <ExperienceDetails experience={exp} />
                 <div className="mt-6">
-                  <BookingCTA experience={exp} size="lg" className="w-full" />
+                  <BookingCTA experience={exp} size="lg" className="w-full" stickyMobile />
                 </div>
                 <p className="mt-3 text-center text-xs text-muted">
                   You&apos;ll be redirected to WhatsApp to confirm a date.
@@ -180,6 +181,9 @@ export default async function ExperienceDetailPage({
               </>
             )}
           </div>
+          {exp.group === "private" && exp.introPack ? (
+            <IntroPackPanel experience={exp} />
+          ) : null}
         </aside>
       </Container>
     </>

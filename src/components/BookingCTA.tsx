@@ -1,6 +1,10 @@
+"use client";
+
 import Link from "next/link";
+import { useRef } from "react";
 import { siteConfig, whatsappLink } from "@/config/site";
 import type { Experience } from "@/data/experiences";
+import { MobileStickyCta } from "@/components/MobileStickyCta";
 
 /**
  * Primary booking call-to-action.
@@ -17,6 +21,7 @@ export function BookingCTA({
   variant = "primary",
   label,
   message: messageOverride,
+  stickyMobile = false,
 }: {
   experience?: Experience;
   className?: string;
@@ -25,7 +30,11 @@ export function BookingCTA({
   label?: string;
   /** Pre-filled WhatsApp text. Defaults to a generic booking / enquiry message. */
   message?: string;
+  /** Duplicate as a fixed bottom bar on mobile while this CTA is off-screen. */
+  stickyMobile?: boolean;
 }) {
+  const anchorRef = useRef<HTMLDivElement>(null);
+
   const message =
     messageOverride ??
     (experience
@@ -49,16 +58,35 @@ export function BookingCTA({
       ? "bg-clay text-cream hover:bg-clay-dark"
       : "bg-forest text-cream hover:bg-forest-deep";
 
+  const linkClass = `inline-flex items-center justify-center gap-2 rounded-full font-semibold shadow-sm transition-colors ${sizeClasses} ${variantClasses} ${className}`;
+
   return (
-    <Link
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`inline-flex items-center justify-center gap-2 rounded-full font-semibold shadow-sm transition-colors ${sizeClasses} ${variantClasses} ${className}`}
-    >
-      <WhatsAppIcon className="h-5 w-5" />
-      {text}
-    </Link>
+    <>
+      <div ref={anchorRef}>
+        <Link
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={linkClass}
+        >
+          <WhatsAppIcon className="h-5 w-5" />
+          {text}
+        </Link>
+      </div>
+      {stickyMobile ? (
+        <MobileStickyCta anchorRef={anchorRef}>
+          <Link
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`inline-flex w-full items-center justify-center gap-2 rounded-full bg-clay px-8 py-4 text-base font-semibold text-cream shadow-sm transition-colors hover:bg-clay-dark`}
+          >
+            <WhatsAppIcon className="h-5 w-5" />
+            {text}
+          </Link>
+        </MobileStickyCta>
+      ) : null}
+    </>
   );
 }
 

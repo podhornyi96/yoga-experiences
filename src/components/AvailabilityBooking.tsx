@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { BookingCTA, WhatsAppIcon } from "@/components/BookingCTA";
+import { MobileStickyCta } from "@/components/MobileStickyCta";
 import { siteConfig, whatsappLink } from "@/config/site";
 import type { Experience } from "@/data/experiences";
 import {
@@ -111,6 +112,7 @@ export function AvailabilityBooking({
   const [slots, setSlots] = useState<PublicSlot[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const ctaRef = useRef<HTMLButtonElement>(null);
   const payments = siteConfig.paymentsEnabled;
   const fullPay = depositRate >= 1;
   const charge = calcDepositEur(totalEur, depositRate);
@@ -161,6 +163,7 @@ export function AvailabilityBooking({
           size="lg"
           className="w-full"
           label="Ask for dates on WhatsApp"
+          stickyMobile
         />
         <p className="mt-2 text-center text-xs text-muted">
           Usually reply within a few hours.
@@ -174,12 +177,22 @@ export function AvailabilityBooking({
   return (
     <div className={className}>
       <button
+        ref={ctaRef}
         type="button"
         onClick={() => setOpen(true)}
         className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-clay px-8 py-4 text-base font-semibold text-cream shadow-sm transition-colors hover:bg-clay-dark"
       >
         Check availability
       </button>
+      <MobileStickyCta anchorRef={ctaRef} hidden={open}>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-clay px-8 py-4 text-base font-semibold text-cream shadow-sm transition-colors hover:bg-clay-dark"
+        >
+          Check availability
+        </button>
+      </MobileStickyCta>
       <p className="mt-2 text-center text-xs text-muted">
         {slotCount === 1
           ? "1 upcoming date"

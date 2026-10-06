@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { BookingCTA } from "@/components/BookingCTA";
 import { siteConfig, whatsappLink } from "@/config/site";
@@ -17,8 +17,18 @@ function formatMoney(amount: number): string {
   return Number.isInteger(amount) ? `€${amount}` : `€${amount.toFixed(2)}`;
 }
 
+function useMarkMobileStickyCta() {
+  useEffect(() => {
+    document.body.dataset.mobileStickyCta = "1";
+    return () => {
+      delete document.body.dataset.mobileStickyCta;
+    };
+  }, []);
+}
+
 /** Sticky book CTA for a trainer-organised event (1 person). */
 export function EventBookingPanel({ event }: { event: PublicEventDetail }) {
+  useMarkMobileStickyCta();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

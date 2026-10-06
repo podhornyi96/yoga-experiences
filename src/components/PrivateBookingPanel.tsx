@@ -5,6 +5,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { BookingCTA, WhatsAppIcon } from "@/components/BookingCTA";
 import { ExperienceDetails } from "@/components/ExperienceDetails";
+import { MobileStickyCta } from "@/components/MobileStickyCta";
 import { siteConfig, whatsappLink } from "@/config/site";
 import type { Experience } from "@/data/experiences";
 import {
@@ -69,6 +70,7 @@ export function PrivateBookingPanel({
   const [slots, setSlots] = useState<PublicSlot[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const ctaRef = useRef<HTMLButtonElement>(null);
 
   const effectiveMats = Math.min(mats, people);
   const total = privateSessionEur(people) + effectiveMats * MAT_PRICE_EUR;
@@ -192,12 +194,22 @@ export function PrivateBookingPanel({
         ) : hasSlots ? (
           <>
             <button
+              ref={ctaRef}
               type="button"
               onClick={() => setOpen(true)}
               className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-clay px-8 py-3.5 text-base font-semibold text-cream shadow-sm transition-colors hover:bg-clay-dark"
             >
               Book this session
             </button>
+            <MobileStickyCta anchorRef={ctaRef} hidden={open}>
+              <button
+                type="button"
+                onClick={() => setOpen(true)}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-clay px-8 py-3.5 text-base font-semibold text-cream shadow-sm transition-colors hover:bg-clay-dark"
+              >
+                Book this session
+              </button>
+            </MobileStickyCta>
             <p className="mt-2 text-center text-xs text-muted">
               Pick a time and park, then pay a {formatMoney(deposit)} deposit (
               {Math.round(PRIVATE_DEPOSIT_RATE * 100)}%).
@@ -210,6 +222,7 @@ export function PrivateBookingPanel({
               message={waMessageBase}
               size="lg"
               className="w-full"
+              stickyMobile
             />
             <p className="mt-2 text-center text-xs text-muted">
               No open dates online — message to arrange a time.

@@ -1,20 +1,22 @@
 # Private / Tandem booking — product brief
 
-Status: **implemented (v1).**  
-See also: checkout full-pay, park picker, capacity buffer, confirmation email (Resend).
+Status: **implemented** (single-session Stripe deposit + Intro packs via WhatsApp).
+
+Source of truth for guest copy: `src/lib/booking-policy.ts`, `src/app/terms/page.tsx`, catalog in `src/data/experiences.ts`.
 
 ---
 
 ## Ops checklist after deploy
 
-1. Apply D1 migration `0004_booking_location.sql` (`wrangler d1 migrations apply`).
+1. Apply D1 migrations through `0004_booking_location.sql` (and later as needed).
 2. In admin schedule, create **Private / Tandem** slots (inventory slug `private-yoga-session`).
 3. Set Pages secrets for confirmation email: `RESEND_API_KEY`, `EMAIL_FROM` (e.g. `Ivanna Yoga <bookings@ivanna-yoga.com>`). Optional until email is ready — checkout still works without them.
-4. Smoke-test: pick park → hold → Stripe full pay → webhook → booking `paid_in_full` + email.
+4. Smoke-test single session: pick park → hold → Stripe **30% deposit** → webhook → booking `deposit_paid` + email.
+5. Smoke-test Intro pack CTA: detail page → WhatsApp prefill for Intro pack (no Stripe).
 
 ---
 
-## Offer
+## Offer — single session
 
 | | Private | Tandem |
 |---|---|---|
@@ -22,25 +24,60 @@ See also: checkout full-pay, park picker, capacity buffer, confirmation email (R
 | Price | €45 / session | €80 / session |
 | Duration | 75 min | 75 min |
 | Language | English (beginner-friendly) | same |
-| Mats | optional rental (existing addon) | same |
+| Mats | optional rental (€5) | same |
+| Payment | 30% non-refundable deposit online; balance later | same |
 
-**One inventory slot type** for both. The trainer always travels to a park; the only difference is 1 vs 2 people (and mats). On checkout the guest picks 1 or 2 people → price resolves to Private or Tandem.
+**One inventory slot type** for both (`private-yoga-session`). Party size 1 → Private, 2 → Tandem. Deposit rate: `PRIVATE_DEPOSIT_RATE` (0.3) in `src/lib/group-pricing.ts`.
 
 ---
 
-## Guest flow
+## Offer — Intro pack (WhatsApp only)
+
+One-time promotional packs on Private / Tandem detail pages (`introPack` in catalog + `IntroPackPanel`).
+
+| | Private Intro pack | Tandem Intro pack |
+|---|---|---|
+| Price | €100 / 3 practices | €150 / 3 practices (for two) |
+| Vs singles | €135 (€45×3) — save €35 | €240 (€80×3) — save €90 |
+| Validity | 21 days from the first practice | same |
+| Once-only | Yes | Yes |
+| Booking | WhatsApp: agree schedule, then pay | same |
+
+**Pack payment options (ops, arranged on WhatsApp):**
+- Full payment after the first practice, or
+- 30% non-refundable deposit + balance on the day
+
+**Pack reschedule:** promotional — no guest-initiated reschedule; only if the teacher initiates. (Single sessions still allow free reschedule with ≥ 48 hours’ notice.)
+
+Guest-facing EN policies: `PRIVATE_INTRO_PACK_POLICIES` in `src/data/experiences.ts`.
+
+---
+
+## Guest flow — single session
 
 ```
 /private
-  → choose 1 or 2 people
+  → Private or Tandem detail
   → choose location (photo cards of parks, or “Custom location” → WhatsApp)
-  → pick a slot (next days)
+  → pick a slot
   → optional mat rental
-  → Stripe: pay in full
-  → success page + confirmation email
+  → Stripe: 30% deposit
+  → success page + confirmation email (status deposit_paid)
 ```
 
-If no suitable slot, or custom location: **WhatsApp only** (price/travel negotiated offline). Instant booking is disabled for custom locations.
+If no suitable slot, or custom location: **WhatsApp only**. Instant booking is disabled for custom locations.
+
+## Guest flow — Intro pack
+
+```
+Private / Tandem detail
+  → Intro pack block (price + savings + terms)
+  → WhatsApp CTA
+  → agree day / time / place for the pack
+  → payment (full after first practice, or 30% + balance on the day)
+```
+
+No Stripe pack checkout and no credit ledger in D1 — remaining sessions tracked manually by the teacher.
 
 ---
 
@@ -53,7 +90,7 @@ If no suitable slot, or custom location: **WhatsApp only** (price/travel negotia
 | `nacoes` | Park Nações | Parque das Nações | https://www.google.com/maps/search/?api=1&query=Parque+das+Na%C3%A7%C3%B5es%2C+Lisbon |
 | `eduardo-vii` | Park Eduardo VII | Parque Eduardo VII | https://www.google.com/maps/search/?api=1&query=Parque+Eduardo+VII%2C+Lisbon |
 
-**UI:** location step shows large photo cards (not a plain dropdown). Each card: photo, park name, one-line vibe, Maps link. After selection, slots are for that park.
+**UI:** location step shows large photo cards. Each card: photo, park name, one-line vibe, Maps link.
 
 **Assets (local):**
 
@@ -64,7 +101,7 @@ If no suitable slot, or custom location: **WhatsApp only** (price/travel negotia
 | `nacoes` | `/images/locations/park-nacoes.jpg` |
 | `eduardo-vii` | `/images/locations/park-eduardo-vii.jpg` |
 
-Photos are Wikimedia Commons (CC-licensed), not Google Maps user uploads — those stay under the photographers’ rights. Attribution in [Image credits](#image-credits).
+Photos are Wikimedia Commons (CC-licensed). Attribution in [Image credits](#image-credits).
 
 **Custom / home / other:** WhatsApp request only.
 
@@ -72,46 +109,50 @@ Photos are Wikimedia Commons (CC-licensed), not Google Maps user uploads — tho
 
 ## Schedule & capacity
 
-- Admin may publish **overlapping** group experiences, private, and tandem windows on the same day/time. Guests rarely book everything; the calendar is a menu of options.
+- Admin may publish **overlapping** group experiences, private, and tandem windows on the same day/time.
 - **After a real booking (or soft-hold):** block overlapping bookable inventory with a **75 min buffer after session end**.
   - Session length: **75 min**
   - Buffer after end: **75 min**
   - Effective busy window per booking: ~**2.5 hours** from start
 - Experience ↔ private/tandem must not overlap once something is held/booked.
-- Typical volume: **1–3 private/tandem sessions per day** (usually 1–2). Morning group (sunrise) often leaves the rest of the day free for private.
+- Typical volume: **1–3 private/tandem sessions per day** (usually 1–2).
 
 ---
 
-## Payment
+## Payment (single session)
 
-- **v1: full payment** at Stripe Checkout (not the 30% group deposit).
-- Keep a clear path to switch to **deposit mode later** (config flag / payment mode on catalog entry), without rewriting the flow.
+- **30% non-refundable deposit** at Stripe Checkout (`PRIVATE_DEPOSIT_RATE`).
+- Balance due later (on the day / as agreed).
 - Mat rental included in the Stripe total when selected.
+- Booking `paymentStatus`: typically `deposit_paid` until marked paid in admin.
 
 ---
 
-## Cancellation & weather
+## Cancellation & weather (single session)
 
-| When | Policy |
+| | Rule |
 |---|---|
-| ≥ 24 hours before start | Full refund **or** reschedule |
-| &lt; 24 hours | No refund, no reschedule |
+| Deposit / online payment | Non-refundable |
+| Reschedule | Free with ≥ **48 hours’** notice (WhatsApp) |
+| &lt; 48 hours or no-show | Payment forfeited |
 
-**Reschedule:** via WhatsApp / email / other contact — **not** self-serve slot picker in v1.
+Guest copy: `DEPOSIT_POLICY_SHORT` / FAQ in `src/lib/booking-policy.ts`. Terms page covers Private/Tandem the same as Sunset deposit bookings.
 
-**Weather (outdoor parks):** if conditions make the spot unsafe, we contact the guest to reschedule (or refund if they prefer). No promised indoor backup in v1.
+**Weather (outdoor parks):** if conditions make the spot unsafe, we contact the guest to reschedule (or refund the deposit if they prefer). No promised indoor backup.
+
+**Intro packs:** see pack terms above (no guest reschedule).
 
 ---
 
-## Confirmation email (after pay)
+## Confirmation email (after deposit)
 
 Must include:
 
 - Private or Tandem, date, time, duration
 - Chosen park + Maps link
-- Amount paid
-- Cancellation policy (≥24h / &lt;24h)
-- Weather note (reschedule via contact if unsafe)
+- Amount paid (deposit) + note that balance is due later
+- Deposit / reschedule policy (48h)
+- Weather note
 - Beginner-friendly / English
 - WhatsApp (and email) for questions / reschedule
 
@@ -119,39 +160,25 @@ Must include:
 
 ## Admin
 
-- Create private-session slots (same schedule tooling as groups, extended to private inventory).
-- Slot is location-agnostic inventory **or** optionally tagged to a park later; v1 can show the same open windows for any chosen park (trainer confirms exact meeting point inside the park).
+- Create private-session slots (same schedule tooling as groups; inventory slug `private-yoga-session`).
 - Day view should show holds/bookings across group + private so conflicts with buffer are visible.
+- Intro pack purchases are **not** in D1 — handled offline via WhatsApp.
 
 ---
 
-## Out of scope (v1)
+## Out of scope
 
 - Instant book for guest home / custom address
 - Self-serve reschedule UI
 - Indoor backup venue
-- Deposit mode (flag only, not default)
-- Ads primary funnel for private (organic + self-serve only)
-
----
-
-## Implementation notes (for later build)
-
-Reuse existing soft-hold → Stripe → webhook path used by group experiences, with differences:
-
-1. Private inventory slug(s) allowed in schedule APIs (today private is WhatsApp-only / excluded from `SCHEDULED_SLUGS` / checkout catalog).
-2. Checkout quote: **full pay** path (configurable deposit rate; private = `1.0`).
-3. Guest count 1|2 maps to Private vs Tandem pricing; single slot type.
-4. Persist chosen `locationId` on hold/booking for email + admin.
-5. Capacity: enforce non-overlap + 75 min post-buffer across group and private once held/booked.
-6. Fix misleading “30% deposit” copy on private detail pages until/unless deposit mode is on.
-7. Terms + privacy: cancellation window, weather, analytics if Google Ads tag is added separately.
+- Stripe checkout for Intro packs / credit ledger in D1
+- Auto-enforcement of once-only Intro pack (ops via WhatsApp)
 
 ---
 
 ## Image credits
 
-Wikimedia Commons (not Google Maps uploads — those stay under photographers’ rights).
+Wikimedia Commons (not Google Maps uploads — those stay under the photographers’ rights).
 
 | File | Source | Author / license |
 |---|---|---|

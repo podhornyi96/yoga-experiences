@@ -8,6 +8,7 @@ import { WhatsAppIcon } from "./BookingCTA";
 export function WhatsAppFloat() {
   const { bannerVisible } = useConsent();
   const [pastHero, setPastHero] = useState(false);
+  const [stickyCtaActive, setStickyCtaActive] = useState(false);
   const href = whatsappLink(
     `Hi ${siteConfig.teacher.name}! I'd like to book a yoga experience in Lisbon.`,
   );
@@ -32,7 +33,21 @@ export function WhatsAppFloat() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    const sync = () =>
+      setStickyCtaActive(document.body.dataset.mobileStickyCta === "1");
+    sync();
+    const mo = new MutationObserver(sync);
+    mo.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["data-mobile-sticky-cta"],
+    });
+    return () => mo.disconnect();
+  }, []);
+
   if (bannerVisible) return null;
+
+  const visible = pastHero && !stickyCtaActive;
 
   return (
     <a
@@ -40,10 +55,10 @@ export function WhatsAppFloat() {
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Book on WhatsApp"
-      aria-hidden={!pastHero}
-      tabIndex={pastHero ? 0 : -1}
+      aria-hidden={!visible}
+      tabIndex={visible ? 0 : -1}
       className={`fixed right-5 bottom-5 z-50 inline-flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-[opacity,transform] duration-300 hover:scale-105 ${
-        pastHero
+        visible
           ? "translate-y-0 opacity-100"
           : "pointer-events-none translate-y-3 opacity-0"
       }`}

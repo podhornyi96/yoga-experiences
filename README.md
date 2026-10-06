@@ -6,8 +6,9 @@ private 1:1 yoga, and corporate yoga for IT teams.
 
 Built with **Next.js (App Router) + TypeScript + Tailwind CSS**, exported as a
 **static site** and deployed to **Cloudflare Pages**. Schedule + soft-hold APIs
-run as **Pages Functions** on **D1**. Group experiences can take a **30% Stripe
-deposit** after a soft-hold; private/corporate stay on **WhatsApp**.
+run as **Pages Functions** on **D1**. Group and private park sessions take a
+**30% Stripe deposit** after a soft-hold; Intro packs, custom locations, online
+yoga packs, and corporate stay on **WhatsApp**.
 
 ## Tech stack
 

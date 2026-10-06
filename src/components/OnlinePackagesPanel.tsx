@@ -67,6 +67,7 @@ export function OnlinePackagesPanel({
           experience={experience}
           size="lg"
           className="w-full"
+          stickyMobile
           message={`Hi ${siteConfig.teacher.name}! I'd like to book "${experience.title}". Could you share the next available times and packages?`}
         />
       </div>

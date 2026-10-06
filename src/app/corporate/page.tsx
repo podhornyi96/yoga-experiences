@@ -142,7 +142,7 @@ export default function CorporatePage() {
                 </div>
                 <ExperienceDetails experience={exp} />
                 <div className="mt-6">
-                  <BookingCTA experience={exp} size="lg" className="w-full" />
+                  <BookingCTA experience={exp} size="lg" className="w-full" stickyMobile />
                 </div>
                 <p className="mt-3 text-center text-xs text-muted">
                   You&apos;ll be redirected to WhatsApp to confirm a date.
