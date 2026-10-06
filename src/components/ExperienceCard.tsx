@@ -13,24 +13,27 @@ export function ExperienceCard({
   compact?: boolean;
 }) {
   const href = experiencePagePath(experience);
+  const cover = experience.images[0];
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-sand-dark bg-white shadow-sm transition-shadow hover:shadow-md">
-      <div
-        className={`relative overflow-hidden ${compact ? "aspect-[3/2]" : "aspect-[4/3]"}`}
-      >
-        <ZoomableImage
-          src={experience.images[0]}
-          alt={experience.title}
-          sizes={
-            compact
-              ? "(max-width: 1024px) 50vw, 25vw"
-              : "(max-width: 768px) 100vw, 33vw"
-          }
-          objectPosition={
-            experience.cardImagePosition ?? experience.coverImagePosition
-          }
-        />
-      </div>
+      {cover ? (
+        <div
+          className={`relative overflow-hidden ${compact ? "aspect-[3/2]" : "aspect-[4/3]"}`}
+        >
+          <ZoomableImage
+            src={cover}
+            alt={experience.title}
+            sizes={
+              compact
+                ? "(max-width: 1024px) 50vw, 25vw"
+                : "(max-width: 768px) 100vw, 33vw"
+            }
+            objectPosition={
+              experience.cardImagePosition ?? experience.coverImagePosition
+            }
+          />
+        </div>
+      ) : null}
       <div className={`flex flex-1 flex-col ${compact ? "p-4" : "p-6"}`}>
         <p className="flex items-center gap-1.5 text-xs font-semibold text-sage-dark">
           <MapPinIcon className="h-3.5 w-3.5 shrink-0" />

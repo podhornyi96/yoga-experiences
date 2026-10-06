@@ -497,9 +497,7 @@ export const experiences: Experience[] = [
       "Tailored sequence",
       "Flexible scheduling",
     ],
-    images: [
-      "/images/experiences/private-yoga-session/private-yoga-session-cover.jpg",
-    ],
+    images: [],
     faq: [
       {
         question: "How do online sessions work?",
@@ -567,12 +565,7 @@ export const experiences: Experience[] = [
       "Shared tailored sequence",
       "Flexible scheduling",
     ],
-    images: [
-      "/images/tandem/tandem-cover.jpg",
-      "/images/tandem/tandem-duo.jpg",
-    ],
-    cardImagePosition: "50% 70%",
-    coverImagePosition: "50% 70%",
+    images: [],
     faq: [
       {
         question: "Do we need to be at the same level?",

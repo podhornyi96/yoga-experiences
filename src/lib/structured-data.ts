@@ -51,7 +51,9 @@ export function experienceSchema(exp: Experience) {
     serviceType: exp.title,
     name: exp.title,
     description: exp.summary,
-    image: `${siteConfig.url}${exp.images[0]}`,
+    ...(exp.images[0]
+      ? { image: `${siteConfig.url}${exp.images[0]}` }
+      : {}),
     areaServed: { "@type": "City", name: siteConfig.geo.city },
     provider: {
       "@type": "LocalBusiness",

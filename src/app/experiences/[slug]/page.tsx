@@ -46,7 +46,7 @@ export async function generateMetadata({
     title,
     description: exp.summary,
     path: `/experiences/${exp.slug}/`,
-    image: exp.images[0],
+    image: exp.images[0] || undefined,
   });
 }
 
