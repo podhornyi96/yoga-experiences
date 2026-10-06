@@ -127,9 +127,9 @@ export const groups: Record<
   experiences: {
     slug: "experiences",
     label: "Experiences",
-    tagline: "Sunrise, sunset, forest & Cascais immersions near Lisbon",
+    tagline: "Outdoor sunrise, sunset & beach yoga near Lisbon",
     description:
-      "Book unforgettable yoga experiences — sunrise flows in the city, sunset sessions by the ocean, forest immersions in Sintra, and intimate retreats in a wooden house in Cascais. Perfect for locals, expats and travellers.",
+      "English-friendly sessions in parks and by the ocean. Book a date online; mats on request. Made for travellers and expats.",
   },
   private: {
     slug: "private",

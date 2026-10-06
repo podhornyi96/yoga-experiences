@@ -165,8 +165,9 @@ Business name: `Ivanna Yoga Lisbon`. Logo — квадрат из `brand/`.
 
 - Final URL: `https://ivanna-yoga.com/experiences/`
 - Path: `yoga` / `lisbon`
-- Headlines: Yoga Classes in Lisbon · Yoga Lisbon · Book Online in 1 Minute · English Yoga in Lisbon · Drop-In Yoga in Lisbon · All Levels Welcome · From €50 Per Session · Instant Online Booking · Sunrise, Sunset & Beach · Small Groups, Big Views · Certified RYT-300 Teacher · Pay 30% Deposit Online · Outdoor Yoga in Lisbon · Yoga Experiences Lisbon
-- Descriptions: каталог (sunrise + sunset), instant book, €50 / €100 for 5, RYT-300 + mats
+- Headlines: Outdoor Yoga in Lisbon · Yoga Lisbon · Book Online in 1 Minute · English Yoga in Lisbon · Sunrise, Sunset & Beach · All Levels Welcome · From €50 Per Session · Instant Online Booking · Parks & Ocean Views · Small Groups, Big Views · Certified RYT-300 Teacher · Pay 30% Deposit Online · Yoga Experiences Lisbon · Outdoor Yoga Lisbon
+- **Не использовать:** `Drop-In Yoga in Lisbon`, `Yoga Classes in Lisbon` — звучит как студия; search terms показали студийный интент.
+- Descriptions: outdoor parks & ocean, sunrise + sunset, instant book, €50 / €100 for 5, RYT-300 + mats · For travellers & expats
 
 ### Sunrise Yoga
 

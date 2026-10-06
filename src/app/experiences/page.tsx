@@ -9,9 +9,9 @@ import { pageSeo } from "@/lib/seo";
 import { breadcrumbSchema } from "@/lib/structured-data";
 
 export const metadata: Metadata = pageSeo({
-  title: "Yoga Experiences in Lisbon | Ivanna Yoga",
+  title: "Outdoor Yoga Experiences in Lisbon | Ivanna Yoga",
   description:
-    "Book drop-in yoga experiences: sunrise yoga, sunset by the ocean, and forest immersions in Sintra. All levels welcome.",
+    "English-friendly outdoor yoga in Lisbon parks and by the ocean. Sunrise, sunset and beach sessions — book a date online. For travellers and expats.",
   path: "/experiences/",
   absolute: true,
 });
@@ -32,9 +32,9 @@ export default function ExperiencesPage() {
         <Container className="max-w-7xl py-6 sm:py-8 lg:min-h-[calc(100dvh-4.5rem)] lg:py-10">
           <SectionHeading
             as="h1"
-            eyebrow="Lisbon · Outdoor & ocean"
-            title="Yoga experiences across Lisbon"
-            description={g.tagline}
+            eyebrow="Outdoor yoga · Lisbon parks & ocean"
+            title="Outdoor yoga experiences in Lisbon"
+            description={g.description}
           />
           <div className="mt-6">
             <UpcomingExperiencesBanner />
