@@ -90,7 +90,7 @@ function NumberField({
           onChange(parse(raw));
         }}
         onBlur={() => commit(draft)}
-        className={`mt-1 w-full rounded-lg border bg-cream px-3 py-2 text-base font-medium text-ink outline-none transition-colors focus:ring-2 sm:text-sm ${
+        className={`mt-1 min-h-12 w-full rounded-lg border bg-cream px-3 py-3 text-base font-medium text-ink outline-none transition-colors focus:ring-2 sm:text-sm ${
           error
             ? "border-red-600 focus:border-red-600 focus:ring-red-600/20"
             : "border-sand-dark focus:border-clay focus:ring-clay/25"
@@ -266,12 +266,11 @@ export function GroupBookingPanel({ experience }: { experience: Experience }) {
           ) : (
             <>
               <p className="font-medium text-forest">
-                Deposit today: {formatMoney(deposit)} (
-                {Math.round(depositRate * 100)}%)
+                Pay {formatMoney(deposit)} today (
+                {Math.round(depositRate * 100)}% deposit)
               </p>
               <p className="text-muted">
-                Due later: {formatMoney(remaining)} — paid on arrival or as
-                agreed
+                {formatMoney(remaining)} due later — on arrival or as agreed
               </p>
               <p className="text-xs text-muted">
                 {DEPOSIT_POLICY_SHORT}{" "}
@@ -351,7 +350,7 @@ export function GroupBookingPanel({ experience }: { experience: Experience }) {
             className="w-full"
           />
           <p className="mt-2 text-center text-xs text-muted">
-            You&apos;ll be redirected to WhatsApp to confirm a date.
+            WhatsApp booking — we&apos;ll confirm a date with you.
           </p>
         </div>
       ) : (

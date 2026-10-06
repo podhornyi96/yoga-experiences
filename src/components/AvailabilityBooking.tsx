@@ -151,40 +151,44 @@ export function AvailabilityBooking({
   if (!hasSlots) {
     return (
       <div className={className}>
+        <p className="mb-3 rounded-xl border border-sand-dark bg-sand/40 px-4 py-3 text-sm leading-relaxed text-ink">
+          No dates listed right now. Message on WhatsApp and we&apos;ll share
+          the next openings.
+        </p>
         <BookingCTA
           experience={experience}
           message={bookingMessageBase}
           size="lg"
           className="w-full"
+          label="Ask for dates on WhatsApp"
         />
         <p className="mt-2 text-center text-xs text-muted">
-          You&apos;ll be redirected to WhatsApp to confirm a date.
+          Usually reply within a few hours.
         </p>
       </div>
     );
   }
+
+  const slotCount = slots!.length;
 
   return (
     <div className={className}>
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-clay px-8 py-3.5 text-base font-semibold text-cream shadow-sm transition-colors hover:bg-clay-dark"
+        className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-clay px-8 py-4 text-base font-semibold text-cream shadow-sm transition-colors hover:bg-clay-dark"
       >
         Check availability
       </button>
       <p className="mt-2 text-center text-xs text-muted">
+        {slotCount === 1
+          ? "1 upcoming date"
+          : `${slotCount} upcoming dates`}
         {payments
           ? fullPay
-            ? pickLocation
-              ? `Pick a date and spot, then pay ${formatMoney(charge)} in full.`
-              : `Pick a date, then pay ${formatMoney(charge)} in full.`
-            : pickLocation
-              ? `Pick a date and spot, then pay a ${formatMoney(charge)} deposit (${Math.round(depositRate * 100)}%).`
-              : `Pick a date, then pay a ${formatMoney(charge)} deposit (${Math.round(depositRate * 100)}%).`
-          : pickLocation
-            ? "Pick a date and spot, then continue on WhatsApp."
-            : "Pick a date, then continue on WhatsApp."}
+            ? ` · pay ${formatMoney(charge)} in full`
+            : ` · pay ${formatMoney(charge)} today (${Math.round(depositRate * 100)}% deposit), rest later`
+          : " · then continue on WhatsApp"}
       </p>
       {open ? (
         <AvailabilityModal
@@ -237,7 +241,7 @@ function AvailabilityModal({
   onSlotsChange: (slots: PublicSlot[] | null) => void;
 }) {
   const titleId = useId();
-  const closeRef = useRef<HTMLButtonElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const fullPay = depositRate >= 1;
   const [step, setStep] = useState<Step>("when");
   const [selectedId, setSelectedId] = useState<string | null>(() => {
@@ -256,7 +260,8 @@ function AvailabilityModal({
   const remaining = calcRemainingEur(totalEur, depositRate);
 
   useEffect(() => {
-    closeRef.current?.focus();
+    // Focus the title, not ✕ — avoid accidental close on open (Clarity: open → ✕).
+    titleRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
@@ -433,7 +438,12 @@ function AvailabilityModal({
       >
         <div className="flex shrink-0 items-start justify-between gap-3 border-b border-sand px-6 pb-4 pt-6">
           <div>
-            <h2 id={titleId} className="text-xl text-forest">
+            <h2
+              id={titleId}
+              ref={titleRef}
+              tabIndex={-1}
+              className="text-xl text-forest outline-none"
+            >
               {showWhere ? "Choose a spot" : "Available dates"}
             </h2>
             <p className="mt-1 text-sm text-muted">
@@ -447,30 +457,40 @@ function AvailabilityModal({
               )}
             </p>
             {pickLocation ? (
-              <div className="mt-3 flex items-center gap-2 text-xs font-medium">
-                <span
-                  className={
-                    step === "when" ? "text-clay-dark" : "text-muted"
-                  }
-                >
-                  1. When
-                </span>
-                <span className="text-sand-dark">→</span>
-                <span
-                  className={
-                    step === "where" ? "text-clay-dark" : "text-muted"
-                  }
-                >
-                  2. Where
-                </span>
+              <div className="mt-3 flex flex-col gap-1">
+                <div className="flex items-center gap-2 text-xs font-medium">
+                  <span
+                    className={
+                      step === "when" ? "text-clay-dark" : "text-muted"
+                    }
+                  >
+                    1. When
+                  </span>
+                  <span className="text-sand-dark">→</span>
+                  <span
+                    className={
+                      step === "where" ? "text-clay-dark" : "text-muted"
+                    }
+                  >
+                    2. Where
+                  </span>
+                </div>
+                <p className="text-xs text-muted">
+                  {step === "when"
+                    ? "Pick a date, then choose your sunrise spot."
+                    : "Choose where you'll meet for this sunrise."}
+                </p>
               </div>
-            ) : null}
+            ) : (
+              <p className="mt-2 text-xs text-muted">
+                Select a date below, then continue to pay.
+              </p>
+            )}
           </div>
           <button
-            ref={closeRef}
             type="button"
             onClick={onClose}
-            className="rounded-full px-2 py-1 text-sm text-muted hover:bg-sand hover:text-ink"
+            className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full text-sm text-muted hover:bg-sand hover:text-ink"
             aria-label="Close"
           >
             ✕
@@ -539,7 +559,7 @@ function AvailabilityModal({
                           <button
                             type="button"
                             onClick={() => setSelectedId(slot.id)}
-                            className={`w-full rounded-lg border px-3 py-2 text-left text-sm font-medium transition-colors ${
+                            className={`min-h-12 w-full rounded-lg border px-3 py-3 text-left text-sm font-medium transition-colors ${
                               active
                                 ? "border-clay bg-white text-forest ring-2 ring-clay/30"
                                 : "border-sand-dark bg-white/60 text-ink hover:border-clay/50"
@@ -585,11 +605,11 @@ function AvailabilityModal({
               ) : (
                 <>
                   <p className="font-medium text-forest">
-                    Deposit today: {formatMoney(charge)} (
-                    {Math.round(depositRate * 100)}%)
+                    Pay {formatMoney(charge)} today (
+                    {Math.round(depositRate * 100)}% deposit)
                   </p>
                   <p className="text-muted">
-                    Due later: {formatMoney(remaining)} — paid on arrival or as
+                    {formatMoney(remaining)} due later — on arrival or as
                     agreed
                   </p>
                   <p className="text-xs text-muted">
@@ -621,7 +641,7 @@ function AvailabilityModal({
                   setError(null);
                   setStep("where");
                 }}
-                className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-clay px-6 py-3.5 text-sm font-semibold text-cream shadow-sm transition-colors hover:bg-clay-dark disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-clay px-6 py-3.5 text-sm font-semibold text-cream shadow-sm transition-colors hover:bg-clay-dark disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Continue
               </button>
@@ -642,7 +662,7 @@ function AvailabilityModal({
                 onClick={() =>
                   void (payments ? payOnline() : continueOnWhatsApp())
                 }
-                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-clay px-6 py-3.5 text-sm font-semibold text-cream shadow-sm transition-colors hover:bg-clay-dark disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-clay px-6 py-3.5 text-sm font-semibold text-cream shadow-sm transition-colors hover:bg-clay-dark disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {payments ? null : <WhatsAppIcon className="h-5 w-5" />}
                 {busy
@@ -682,7 +702,7 @@ function AvailabilityModal({
                 onClick={() =>
                   void (payments ? payOnline() : continueOnWhatsApp())
                 }
-                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-clay px-6 py-3.5 text-sm font-semibold text-cream shadow-sm transition-colors hover:bg-clay-dark disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-clay px-6 py-3.5 text-sm font-semibold text-cream shadow-sm transition-colors hover:bg-clay-dark disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {payments ? null : <WhatsAppIcon className="h-5 w-5" />}
                 {busy

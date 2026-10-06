@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import type { ImageFocalPoint } from "@/data/experiences";
 
 const presetObjectPosition: Record<"top" | "center" | "bottom", string> = {
@@ -46,6 +47,8 @@ export function ZoomableImage({
   priority = false,
   objectPosition = "center",
   className = "",
+  /** When set, photo navigates here instead of opening the zoom viewer. */
+  href,
 }: {
   src: string;
   alt: string;
@@ -53,13 +56,25 @@ export function ZoomableImage({
   priority?: boolean;
   objectPosition?: ImageFocalPoint;
   className?: string;
+  href?: string;
 }) {
   const [open, setOpen] = useState(false);
   const positionStyle = objectPositionStyle(objectPosition);
   const positionClass = objectPositionClass(objectPosition);
+  const image = (
+    <Image
+      src={src}
+      alt={alt}
+      fill
+      sizes={sizes}
+      priority={priority}
+      className={`object-cover ${positionClass}`.trim()}
+      style={positionStyle}
+    />
+  );
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || href) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
@@ -69,7 +84,19 @@ export function ZoomableImage({
       document.body.style.overflow = "";
       window.removeEventListener("keydown", onKey);
     };
-  }, [open]);
+  }, [open, href]);
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className={`relative block h-full w-full overflow-hidden ${className}`}
+        aria-label={alt}
+      >
+        {image}
+      </Link>
+    );
+  }
 
   return (
     <>
@@ -79,15 +106,7 @@ export function ZoomableImage({
         className={`relative block h-full w-full cursor-zoom-in overflow-hidden ${className}`}
         aria-label={`View larger: ${alt}`}
       >
-        <Image
-          src={src}
-          alt={alt}
-          fill
-          sizes={sizes}
-          priority={priority}
-          className={`object-cover ${positionClass}`.trim()}
-          style={positionStyle}
-        />
+        {image}
       </button>
 
       {open ? (

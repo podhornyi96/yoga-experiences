@@ -23,6 +23,7 @@ export function ExperienceCard({
           <ZoomableImage
             src={cover}
             alt={experience.title}
+            href={href}
             sizes={
               compact
                 ? "(max-width: 1024px) 50vw, 25vw"
@@ -35,9 +36,15 @@ export function ExperienceCard({
         </div>
       ) : null}
       <div className={`flex flex-1 flex-col ${compact ? "p-4" : "p-6"}`}>
-        <p className="flex items-center gap-1.5 text-xs font-semibold text-sage-dark">
+        <p
+          className={`flex items-center gap-1.5 text-xs font-semibold text-sage-dark ${
+            compact ? "min-w-0 truncate" : ""
+          }`}
+        >
           <MapPinIcon className="h-3.5 w-3.5 shrink-0" />
-          {experience.locationLabel}
+          <span className={compact ? "truncate" : undefined}>
+            {experience.locationLabel}
+          </span>
         </p>
         <h3
           className={`text-forest ${compact ? "mt-1.5 text-lg" : "mt-2 text-xl"}`}
@@ -47,17 +54,28 @@ export function ExperienceCard({
           </Link>
         </h3>
         <p
-          className={`flex-1 text-sm leading-relaxed text-muted ${compact ? "mt-1.5 line-clamp-2" : "mt-2"}`}
+          className={`text-sm text-muted ${
+            compact
+              ? "mt-1.5 line-clamp-2 leading-snug"
+              : "mt-2 flex-1 leading-relaxed"
+          }`}
         >
           {experience.summary}
         </p>
         <div
-          className={`flex items-center justify-between border-t border-sand ${compact ? "mt-3 pt-3" : "mt-5 pt-4"}`}
+          className={`mt-auto flex items-end justify-between gap-3 border-t border-sand ${compact ? "pt-3" : "pt-4"}`}
         >
-          <PriceTag price={experience.price} />
+          <div className="min-w-0">
+            <PriceTag price={experience.price} />
+            {experience.groupPricing?.whatsappOnly ? (
+              <p className="mt-0.5 text-xs text-muted">WhatsApp booking</p>
+            ) : experience.group === "experiences" && experience.groupPricing ? (
+              <p className="mt-0.5 text-xs text-muted">Book online · deposit</p>
+            ) : null}
+          </div>
           <Link
             href={href}
-            className="text-sm font-semibold text-clay-dark hover:underline"
+            className="shrink-0 py-1 text-sm font-semibold text-clay-dark hover:underline"
           >
             View details →
           </Link>

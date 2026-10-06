@@ -312,7 +312,8 @@ export const experiences: Experience[] = [
           "The wooden house belongs to a local host — we confirm the date with them before locking your booking. Message us with your preferred day and group size.",
       },
     ],
-    featured: true,
+    // Not on homepage “Most loved” — WhatsApp / higher ticket; still on /experiences/
+    featured: false,
   },
   {
     slug: "yoga-sintra-forest",
@@ -372,7 +373,8 @@ export const experiences: Experience[] = [
           "The exact meeting point in Sintra is shared on WhatsApp after you book, along with directions and transport tips.",
       },
     ],
-    featured: true,
+    // Not on homepage “Most loved” — WhatsApp / higher ticket; still on /experiences/
+    featured: false,
   },
 
   // ---------------- PRIVATE ----------------
@@ -662,16 +664,38 @@ export const experiences: Experience[] = [
 
 // ---------------- Helpers ----------------
 
+/** Catalog order for group experiences (instant-book coastal first). */
+const EXPERIENCE_CATALOG_ORDER: string[] = [
+  "sunrise-yoga-lisbon",
+  "sunset-yoga-ocean",
+  "yoga-cascais-wooden-house",
+  "yoga-sintra-forest",
+];
+
 export function getExperienceBySlug(slug: string): Experience | undefined {
   return experiences.find((e) => e.slug === slug);
 }
 
 export function getExperiencesByGroup(group: Group): Experience[] {
-  return experiences.filter((e) => e.group === group);
+  const items = experiences.filter((e) => e.group === group);
+  if (group !== "experiences") return items;
+  return [...items].sort((a, b) => {
+    const ia = EXPERIENCE_CATALOG_ORDER.indexOf(a.slug);
+    const ib = EXPERIENCE_CATALOG_ORDER.indexOf(b.slug);
+    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+  });
 }
 
 export function getFeatured(): Experience[] {
-  return experiences.filter((e) => e.featured);
+  const featured = experiences.filter((e) => e.featured);
+  const experienceFeatured = featured.filter((e) => e.group === "experiences");
+  const rest = featured.filter((e) => e.group !== "experiences");
+  const sortedExperiences = [...experienceFeatured].sort((a, b) => {
+    const ia = EXPERIENCE_CATALOG_ORDER.indexOf(a.slug);
+    const ib = EXPERIENCE_CATALOG_ORDER.indexOf(b.slug);
+    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+  });
+  return [...sortedExperiences, ...rest];
 }
 
 /** Public URL path for an offering (corporate lives on /corporate/, not /experiences/). */
