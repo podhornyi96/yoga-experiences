@@ -104,6 +104,11 @@ export type EmailEnv = {
   BOOKING_NOTIFY_EMAIL?: string;
 };
 
+export type LowInventoryItem = {
+  label: string;
+  count: number;
+};
+
 function formatSlotLabel(startsAt: string): string {
   const [datePart, timePart = ""] = startsAt.split("T");
   const [y, m, d] = datePart.split("-").map(Number);
@@ -446,6 +451,61 @@ async function sendResendEmail(
     console.warn("[email] exception", { to: message.to, message: messageText });
     return { sent: false, reason: messageText };
   }
+}
+
+/** Alert trainer that one or more inventory categories are low on open slots. */
+export async function sendLowInventoryAlert(
+  env: EmailEnv,
+  lowItems: LowInventoryItem[],
+): Promise<{ sent: boolean; reason?: string }> {
+  if (lowItems.length === 0) {
+    return { sent: false, reason: "nothing_low" };
+  }
+
+  const site = (env.SITE_URL ?? "https://ivanna-yoga.com").replace(/\/$/, "");
+  const adminUrl = `${site}/admin/`;
+  const to = teacherNotifyAddress(env);
+
+  const summary = lowItems
+    .map((item) => `${item.label} (${item.count})`)
+    .join(", ");
+  const subject = `Low slots — ${summary}`;
+
+  const lines = lowItems.map(
+    (item) =>
+      `• ${item.label}: ${item.count} open slot${item.count === 1 ? "" : "s"} left`,
+  );
+
+  const text = [
+    `Some experiences have fewer than 5 upcoming open slots.`,
+    ``,
+    ...lines,
+    ``,
+    `Please add new slots in the schedule admin:`,
+    adminUrl,
+  ].join("\n");
+
+  const rowsHtml = lowItems
+    .map(
+      (item) =>
+        `<tr><td style="padding: 6px 0; color: #5c6b5c;">${escapeHtml(item.label)}</td><td style="padding: 6px 0;"><strong>${item.count}</strong> open</td></tr>`,
+    )
+    .join("");
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<body style="font-family: Georgia, serif; color: #1a2e1a; line-height: 1.5; max-width: 560px; margin: 0 auto; padding: 24px;">
+  <p><strong>Low inventory</strong> — some experiences have fewer than 5 upcoming open slots.</p>
+  <table style="width:100%; border-collapse: collapse; margin: 16px 0;">
+    ${rowsHtml}
+  </table>
+  <p>Please add new slots so guests can keep booking.</p>
+  <p><a href="${escapeHtml(adminUrl)}">Open schedule admin</a></p>
+</body>
+</html>`.trim();
+
+  return sendResendEmail(env, { to, subject, html, text });
 }
 
 export async function sendBookingConfirmation(

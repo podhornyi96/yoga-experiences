@@ -1,0 +1,14 @@
+# Thin companion Worker: hourly cron → Pages low-inventory alert API.
+# Pages Functions cannot attach Cron Triggers; this Worker only fetches the API.
+
+name = "yoga-inventory-alert-cron"
+main = "src/index.ts"
+compatibility_date = "2025-03-01"
+workers_dev = false
+
+[triggers]
+crons = ["0 * * * *"]
+
+# Override in dashboard / secrets if needed. CRON_SECRET must match Pages.
+[vars]
+SITE_URL = "https://ivanna-yoga.com"

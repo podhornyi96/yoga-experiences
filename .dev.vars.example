@@ -9,3 +9,9 @@ ADMIN_SESSION_SECRET=generate-a-long-random-string
 # STRIPE_SECRET_KEY=sk_test_...
 # STRIPE_WEBHOOK_SECRET=whsec_...
 # SITE_URL=http://localhost:8788
+
+# Daily low-inventory cron (Bearer secret for /api/cron/low-inventory)
+# CRON_SECRET=generate-a-long-random-string
+# RESEND_API_KEY=re_...
+# EMAIL_FROM=Ivanna Yoga <bookings@ivanna-yoga.com>
+# BOOKING_NOTIFY_EMAIL=ivannapylypchuk@gmail.com

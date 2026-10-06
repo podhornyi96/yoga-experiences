@@ -41,16 +41,39 @@ Admin UI: `http://localhost:8788/admin/` (not linked from the public nav).
 In the Cloudflare Pages project → Settings:
 
 1. Bind D1 database `yoga-experiences-slots` as binding name **`DB`** (see `wrangler.toml`).
-2. Add secrets: `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`.
+2. Add secrets: `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `CRON_SECRET`.
 3. Optional var: `SITE_URL=https://ivanna-yoga.com` (Checkout success/cancel URLs).
-4. Apply remote migrations once:
+4. Email (Resend): `RESEND_API_KEY`, `EMAIL_FROM`, optional `BOOKING_NOTIFY_EMAIL` / `CONTACT_EMAIL`.
+5. Apply remote migrations once:
 
 ```bash
 npm run db:migrate:remote
 ```
 
-### Stripe webhook
+### Low-inventory daily email
 
+At **11:00 Europe/Lisbon**, if Sunrise, Sunset, or Private/Tandem have **fewer than 5** future `open` slots, the trainer gets one email with counts and a link to `/admin/`.
+
+Pages Functions cannot run Cron Triggers, so:
+
+1. Set the same **`CRON_SECRET`** on the Pages project and on the companion Worker.
+2. Deploy the Worker once:
+
+```bash
+npx wrangler secret put CRON_SECRET -c workers/inventory-alert-cron/wrangler.toml
+npx wrangler deploy -c workers/inventory-alert-cron/wrangler.toml
+```
+
+The Worker runs hourly (`0 * * * *`); `/api/cron/low-inventory` only sends when Lisbon hour is 11.
+
+Manual test (skips the hour gate):
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" \
+  "https://ivanna-yoga.com/api/cron/low-inventory?force=1"
+```
+
+### Stripe webhook
 1. Stripe Dashboard → Developers → Webhooks → endpoint  
    `https://ivanna-yoga.com/api/stripe/webhook`
 2. Event: `checkout.session.completed`
@@ -81,7 +104,10 @@ functions/
   api/holds.ts         # 20-minute soft hold
   api/checkout.ts      # Stripe Checkout Session (30% deposit)
   api/stripe/webhook.ts # checkout.session.completed → mark booked
+  api/cron/low-inventory.ts # daily low-slot alert (Bearer CRON_SECRET)
   api/admin/*          # login + slot CRUD
+workers/
+  inventory-alert-cron/ # hourly cron → calls /api/cron/low-inventory
 migrations/            # D1 schema
 ```
 ## Editing content
