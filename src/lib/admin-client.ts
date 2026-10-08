@@ -105,6 +105,29 @@ export type SlotStatus =
   | "cancelled"
   | "blocked";
 
+export type SlotTimeScope = "upcoming" | "past";
+
+/** Lisbon wall-clock `YYYY-MM-DDTHH:mm` — same scale as slot.startsAt. */
+export function lisbonNowLocal(now = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Lisbon",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(now);
+  const get = (type: string) =>
+    parts.find((p) => p.type === type)?.value ?? "00";
+  return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
+}
+
+/** Matches server `isFutureStartsAt` (strictly after current Lisbon minute). */
+export function isUpcomingStartsAt(startsAt: string, now = new Date()): boolean {
+  return startsAt > lisbonNowLocal(now);
+}
+
 /** Bright badge classes for schedule slot status. */
 export function slotStatusBadgeClass(status: SlotStatus | string): string {
   const base =

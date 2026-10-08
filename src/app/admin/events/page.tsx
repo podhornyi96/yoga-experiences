@@ -3,13 +3,16 @@
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import { AdminNav } from "@/components/AdminNav";
+import { AdminSlotTimeScope } from "@/components/AdminSlotTimeScope";
 import { Container } from "@/components/Container";
 import { getEventTemplates } from "@/data/event-templates";
 import { formatSlotLabel } from "@/lib/schedule-api";
 import {
   adminApi,
   formatMoney,
+  isUpcomingStartsAt,
   type AdminBooking,
+  type SlotTimeScope,
   slotStatusBadgeClass,
 } from "@/lib/admin-client";
 
@@ -809,6 +812,7 @@ export default function AdminEventsPage() {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [slots, setSlots] = useState<AdminSlot[]>([]);
   const [filterSlug, setFilterSlug] = useState("");
+  const [timeScope, setTimeScope] = useState<SlotTimeScope>("upcoming");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -821,6 +825,21 @@ export default function AdminEventsPage() {
   const titleBySlug = useMemo(() => {
     return new Map(templates.map((t) => [t.slug, t.title]));
   }, []);
+
+  const nowDate = useMemo(() => new Date(now), [now]);
+  const upcomingSlots = useMemo(
+    () => slots.filter((s) => isUpcomingStartsAt(s.startsAt, nowDate)),
+    [slots, nowDate],
+  );
+  const pastSlots = useMemo(
+    () =>
+      slots
+        .filter((s) => !isUpcomingStartsAt(s.startsAt, nowDate))
+        .slice()
+        .reverse(),
+    [slots, nowDate],
+  );
+  const visibleSlots = timeScope === "upcoming" ? upcomingSlots : pastSlots;
 
   async function refreshSlots() {
     const q = filterSlug
@@ -988,6 +1007,12 @@ export default function AdminEventsPage() {
         >
           Schedule event
         </button>
+        <AdminSlotTimeScope
+          value={timeScope}
+          onChange={setTimeScope}
+          upcomingCount={upcomingSlots.length}
+          pastCount={pastSlots.length}
+        />
         <label htmlFor="ev-filter" className="text-sm font-medium text-ink">
           Filter
         </label>
@@ -1025,10 +1050,16 @@ export default function AdminEventsPage() {
       ) : null}
 
       <ul className="mt-6 space-y-3">
-        {slots.length === 0 ? (
-          <li className="text-sm text-muted">No events yet.</li>
+        {visibleSlots.length === 0 ? (
+          <li className="text-sm text-muted">
+            {slots.length === 0
+              ? "No events yet."
+              : timeScope === "upcoming"
+                ? "No upcoming events."
+                : "No past events."}
+          </li>
         ) : (
-          slots.map((slot) => {
+          visibleSlots.map((slot) => {
             const hold = holdRemaining(slot.holdExpiresAt, now);
             return (
               <li
