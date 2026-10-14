@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AvailabilityBooking } from "@/components/AvailabilityBooking";
 import { BookingCTA } from "@/components/BookingCTA";
 import { ExperienceDetails } from "@/components/ExperienceDetails";
+import { GiftStatusBanner } from "@/components/GiftStatusBanner";
 import { siteConfig, whatsappLink } from "@/config/site";
 import type { Experience } from "@/data/experiences";
 import { SUNRISE_INVENTORY_SLUG } from "@/data/sunrise-locations";
@@ -16,6 +17,7 @@ import {
   priceForSchedule,
   remainingEur,
 } from "@/lib/group-pricing";
+import { useExperienceGift } from "@/lib/use-experience-gift";
 
 function clampInt(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, Math.trunc(value)));
@@ -159,8 +161,10 @@ function SelectField({
 }
 
 export function GroupBookingPanel({ experience }: { experience: Experience }) {
+  const giftState = useExperienceGift(experience.slug);
+  const gift = giftState.phase === "match" ? giftState.gift : null;
   const groupPricing = experience.groupPricing;
-  const showMats = Boolean(experience.matRental || groupPricing?.mats);
+  const showMats = Boolean(experience.matRental || groupPricing?.mats) && !gift;
   const [people, setPeople] = useState(1);
   const [mats, setMats] = useState(0);
   const peopleOverLimit = Boolean(
@@ -172,9 +176,11 @@ export function GroupBookingPanel({ experience }: { experience: Experience }) {
   /** Raw people count from the field (may exceed maxGuests while showing an error). */
   const peopleCount = groupPricing ? people : (experience.fixedGuests ?? 1);
   /** Capped for price, deposit, and checkout. */
-  const bookingPeople = groupPricing
-    ? Math.min(people, groupPricing.maxGuests)
-    : peopleCount;
+  const bookingPeople = gift
+    ? gift.people
+    : groupPricing
+      ? Math.min(people, groupPricing.maxGuests)
+      : peopleCount;
   const matSelectMax = Math.min(MAT_MAX, peopleCount);
   const matsOverPeople = showMats && mats > peopleCount;
   const matsOverLimit = showMats && mats > MAT_MAX;
@@ -244,9 +250,19 @@ export function GroupBookingPanel({ experience }: { experience: Experience }) {
 
   return (
     <>
-      <p className="text-2xl font-semibold text-forest">{formatMoney(total)}</p>
-      <p className="mt-0.5 text-sm text-muted">{summary}</p>
-      {showDeposit ? (
+      <GiftStatusBanner state={giftState} />
+      {gift ? (
+        <>
+          <p className="text-2xl font-semibold text-forest">Gift</p>
+          <p className="mt-0.5 text-sm text-muted">
+            {gift.people === 1 ? "1 person" : `${gift.people} people`} · paid
+          </p>
+        </>
+      ) : (
+        <p className="text-2xl font-semibold text-forest">{formatMoney(total)}</p>
+      )}
+      {gift ? null : <p className="mt-0.5 text-sm text-muted">{summary}</p>}
+      {!gift && showDeposit ? (
         <div className="mt-2 space-y-0.5 text-sm leading-snug">
           {fullPay ? (
             <>
@@ -286,6 +302,7 @@ export function GroupBookingPanel({ experience }: { experience: Experience }) {
         </div>
       ) : null}
 
+      {gift ? null : (
       <div
         className={`mt-4 ${
           groupPricing && showMats
@@ -339,6 +356,7 @@ export function GroupBookingPanel({ experience }: { experience: Experience }) {
           )
         ) : null}
       </div>
+      )}
 
       <ExperienceDetails experience={experience} />
       {groupPricing?.whatsappOnly ? (
@@ -360,9 +378,18 @@ export function GroupBookingPanel({ experience }: { experience: Experience }) {
           bookingMessageBase={message}
           people={bookingPeople}
           mats={effectiveMats}
-          totalEur={total}
+          totalEur={gift ? gift.amountEur : total}
           depositRate={depositRate}
           className="mt-4"
+          gift={
+            gift
+              ? {
+                  code: gift.code,
+                  recipientName: gift.recipientName,
+                  recipientEmail: gift.recipientEmail,
+                }
+              : null
+          }
         />
       )}
       {experience.slug === SUNRISE_INVENTORY_SLUG ? (

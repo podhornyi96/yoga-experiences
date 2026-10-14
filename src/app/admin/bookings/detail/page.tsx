@@ -10,10 +10,12 @@ import { getPrivateLocation } from "@/data/private-locations";
 import { getSunriseLocation } from "@/data/sunrise-locations";
 import {
   adminApi,
+  canSendRefundEmail,
   formatMoney,
   paymentStatusBadgeClass,
   paymentStatusLabel,
   type AdminBooking,
+  type RefundEmailResult,
 } from "@/lib/admin-client";
 import { formatSlotLabel } from "@/lib/schedule-api";
 
@@ -73,37 +75,62 @@ function BookingDetailInner() {
   }
 
   async function patch(
-    action: "mark_paid" | "cancel" | "refund" | "resend_email",
+    action:
+      | "mark_paid"
+      | "cancel"
+      | "refund"
+      | "resend_email"
+      | "resend_refund_email",
   ) {
     if (!booking) return;
     setBusy(true);
     setMessage(null);
     setError(null);
-    const res = await adminApi<{ booking: AdminBooking; email?: unknown }>(
-      `/api/admin/bookings/${encodeURIComponent(booking.id)}`,
-      {
-        method: "PATCH",
-        body: JSON.stringify({ action }),
-      },
-    );
+    const res = await adminApi<{
+      booking: AdminBooking;
+      email?: RefundEmailResult;
+    }>(`/api/admin/bookings/${encodeURIComponent(booking.id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ action }),
+    });
     setBusy(false);
     if (!res.ok) {
       setError(res.error);
       return;
     }
-    if (action !== "resend_email") {
+    const keepsStatus =
+      action === "resend_email" || action === "resend_refund_email";
+    if (!keepsStatus) {
       setBooking(res.data.booking);
+      await load();
     }
-    setMessage(
-      action === "mark_paid"
-        ? "Marked paid in full."
-        : action === "refund"
-          ? "Marked refunded · slot reopened if it was booked."
+    if (action === "refund") {
+      const email = res.data.email;
+      if (email?.sent) {
+        setMessage(`Marked refunded. Refund email sent to ${booking.guestEmail}.`);
+      } else if (email?.skipped && email.reason === "no_guest_email") {
+        setMessage(
+          "Marked refunded. This booking has no guest email, so the refund email was not sent.",
+        );
+      } else if (email?.skipped) {
+        setMessage("Marked refunded · slot reopened if it was booked.");
+      } else {
+        setMessage("Marked refunded · slot reopened if it was booked.");
+        setError(
+          `Refund email was not sent: ${email?.reason ?? "unknown error"}. Use Resend refund email.`,
+        );
+      }
+    } else if (action === "resend_refund_email") {
+      setMessage(`Refund email sent to ${booking.guestEmail}.`);
+    } else {
+      setMessage(
+        action === "mark_paid"
+          ? "Marked paid in full."
           : action === "resend_email"
             ? `Confirmation email sent to ${booking.guestEmail}.`
             : "Cancelled · slot reopened if it was booked.",
-    );
-    if (action !== "resend_email") await load();
+      );
+    }
   }
 
   if (authed === null) {
@@ -285,6 +312,14 @@ function BookingDetailInner() {
                 {booking.stripeCheckoutSessionId || "—"}
               </dd>
             </div>
+            {booking.notes ? (
+              <div className="flex justify-between gap-4 border-b border-sand pb-2">
+                <dt className="text-muted">Notes</dt>
+                <dd className="max-w-[60%] text-right font-medium text-ink">
+                  {booking.notes}
+                </dd>
+              </div>
+            ) : null}
             <div className="flex justify-between gap-4">
               <dt className="text-muted">Payment intent</dt>
               <dd className="max-w-[60%] break-all font-mono text-xs text-ink">
@@ -305,6 +340,16 @@ function BookingDetailInner() {
             className="rounded-full border border-forest/30 bg-white px-5 py-2.5 text-sm font-medium text-forest hover:bg-sand disabled:opacity-60"
           >
             Resend confirmation email
+          </button>
+        ) : null}
+        {booking.paymentStatus === "refunded" && canSendRefundEmail(booking) ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void patch("resend_refund_email")}
+            className="rounded-full border border-forest/30 bg-white px-5 py-2.5 text-sm font-medium text-forest hover:bg-sand disabled:opacity-60"
+          >
+            Resend refund email
           </button>
         ) : null}
         {booking.paymentStatus === "deposit_paid" ? (
@@ -342,7 +387,7 @@ function BookingDetailInner() {
               onClick={() => {
                 if (
                   window.confirm(
-                    "Mark as refunded and reopen the day? (Refund money in Stripe Dashboard separately.)",
+                    "Mark as refunded and reopen the day? Refund the money in Stripe Dashboard separately. If this guest paid by card, they receive a refund email.",
                   )
                 ) {
                   void patch("refund");

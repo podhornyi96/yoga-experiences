@@ -12,6 +12,7 @@ import {
   formatMoney,
   isUpcomingStartsAt,
   type AdminBooking,
+  type RefundEmailResult,
   type SlotTimeScope,
   slotStatusBadgeClass,
 } from "@/lib/admin-client";
@@ -233,16 +234,16 @@ function ParticipantsModal({
     setDeleteBusyId(p.id);
     setError(null);
     setStatusMsg(null);
-    const res = await adminApi<{ ok: boolean }>(
-      "/api/admin/events/participants",
-      {
-        method: "DELETE",
-        body: JSON.stringify({
-          bookingId: p.id,
-          stripeRefundConfirmed: Boolean(opts?.stripeRefundConfirmed),
-        }),
-      },
-    );
+    const res = await adminApi<{
+      ok: boolean;
+      email?: RefundEmailResult;
+    }>("/api/admin/events/participants", {
+      method: "DELETE",
+      body: JSON.stringify({
+        bookingId: p.id,
+        stripeRefundConfirmed: Boolean(opts?.stripeRefundConfirmed),
+      }),
+    });
     setDeleteBusyId(null);
     if (!res.ok) {
       setError(res.error);
@@ -250,8 +251,24 @@ function ParticipantsModal({
     }
     setRemoveTarget(null);
     if (editingId === p.id) closeForm();
-    setStatusMsg("Participant removed.");
     await load();
+    const email = res.data.email;
+    if (email?.sent) {
+      setStatusMsg(
+        `Participant removed. Refund email sent to ${p.guestEmail}.`,
+      );
+    } else if (email?.skipped && email.reason === "no_guest_email") {
+      setStatusMsg(
+        "Participant removed. This booking has no guest email, so the refund email was not sent.",
+      );
+    } else if (email && !email.sent && !email.skipped) {
+      setStatusMsg("Participant removed.");
+      setError(
+        `Refund email was not sent: ${email.reason ?? "unknown error"}. Open the booking and use Resend refund email.`,
+      );
+    } else {
+      setStatusMsg("Participant removed.");
+    }
   }
 
   function requestRemove(p: AdminBooking) {
@@ -401,7 +418,7 @@ function ParticipantsModal({
         <div className="min-h-0 flex-1 overflow-auto px-5 py-3">
           {loading ? (
             <p className="text-sm text-muted">Loading…</p>
-          ) : filtered.length === 0 && !error ? (
+          ) : filtered.length === 0 && !error && !statusMsg ? (
             <p className="text-sm text-muted">No participants yet.</p>
           ) : (
             <>
@@ -540,8 +557,8 @@ function ParticipantsModal({
                   removeTarget.guestEmail ||
                   "this guest"}
               </strong>
-              . This only frees their seat here — it does not refund money
-              automatically.
+              . This frees their seat here. If they paid by card, they also
+              receive a refund email.
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <button

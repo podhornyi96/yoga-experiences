@@ -123,6 +123,27 @@ export async function expireHolds(db: D1Database, now = nowIso()): Promise<void>
   for (const day of days) {
     await recomputeBlockedSlotsOnDay(db, day, now);
   }
+
+  // Gift codes reserved during a booking attempt follow the same hold window.
+  // Ignore a missing table so bookings still work before the gifts migration.
+  try {
+    await db
+      .prepare(
+        `UPDATE gifts
+         SET hold_token = NULL,
+             hold_slot_id = NULL,
+             hold_expires_at = NULL,
+             updated_at = ?
+         WHERE status = 'active'
+           AND hold_expires_at IS NOT NULL
+           AND hold_expires_at < ?`,
+      )
+      .bind(now, now)
+      .run();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "";
+    if (!/no such table/i.test(message)) throw err;
+  }
 }
 
 export async function getSlotById(

@@ -109,7 +109,7 @@ export type LowInventoryItem = {
   count: number;
 };
 
-function formatSlotLabel(startsAt: string): string {
+function formatSlotLabel(startsAt: string, withYear = false): string {
   const [datePart, timePart = ""] = startsAt.split("T");
   const [y, m, d] = datePart.split("-").map(Number);
   if (!y || !m || !d) return startsAt;
@@ -123,7 +123,8 @@ function formatSlotLabel(startsAt: string): string {
     timeZone: "UTC",
   }).format(utc);
   const time = timePart.slice(0, 5);
-  return `${weekday}, ${d} ${month} at ${time}`;
+  const year = withYear ? ` ${y}` : "";
+  return `${weekday}, ${d} ${month}${year} at ${time}`;
 }
 
 function money(amount: number): string {
@@ -227,12 +228,17 @@ export function buildBookingConfirmationEmail(
     ? `Questions: <a href="${waLink}">WhatsApp</a> or <a href="mailto:${contactEmail}">${contactEmail}</a>`
     : `Questions or reschedule: <a href="${waLink}">WhatsApp</a> or <a href="mailto:${contactEmail}">${contactEmail}</a>`;
 
+  const isGift = Boolean(booking.notes?.startsWith("Gift "));
+  const intro = isGift
+    ? `Your ${meta.title} is booked, paid with a gift certificate.`
+    : fullPay
+      ? `Your ${meta.title} is booked and paid in full.`
+      : `We've received your deposit for ${meta.title}.`;
+
   const text = [
     `Hi${booking.guest_name ? ` ${booking.guest_name.split(" ")[0]}` : ""},`,
     ``,
-    fullPay
-      ? `Your ${meta.title} is booked and paid in full.`
-      : `We've received your deposit for ${meta.title}.`,
+    intro,
     ``,
     `Booking #: ${booking.id}`,
     `When: ${when} (Lisbon time)`,
@@ -261,9 +267,11 @@ export function buildBookingConfirmationEmail(
 <body style="font-family: Georgia, serif; color: #1a2e1a; line-height: 1.5; max-width: 560px; margin: 0 auto; padding: 24px;">
   <p>Hi${booking.guest_name ? ` ${escapeHtml(booking.guest_name.split(" ")[0])}` : ""},</p>
   <p>${
-    fullPay
-      ? `Your <strong>${escapeHtml(meta.title)}</strong> is booked and paid in full.`
-      : `We've received your deposit for <strong>${escapeHtml(meta.title)}</strong>.`
+    isGift
+      ? `Your <strong>${escapeHtml(meta.title)}</strong> is booked, paid with a gift certificate.`
+      : fullPay
+        ? `Your <strong>${escapeHtml(meta.title)}</strong> is booked and paid in full.`
+        : `We've received your deposit for <strong>${escapeHtml(meta.title)}</strong>.`
   }</p>
   <table style="width:100%; border-collapse: collapse; margin: 20px 0;">
     <tr><td style="padding: 6px 0; color: #5c6b5c;">Booking #</td><td style="padding: 6px 0; font-family: ui-monospace, monospace; font-size: 13px;">${escapeHtml(booking.id)}</td></tr>
@@ -290,6 +298,78 @@ export function buildBookingConfirmationEmail(
   <p style="font-size: 14px;">${escapeHtml(policy).replace(/\n\n/g, "</p><p style=\"font-size: 14px;\">").replace(/\n/g, "<br/>")}</p>
   <p style="font-size: 14px;">${contactHtml}</p>
   <p style="font-size: 13px; color: #5c6b5c;"><a href="${site}/terms/">Terms of booking</a></p>
+  <p>— Ivanna Yoga Lisbon</p>
+</body>
+</html>`.trim();
+
+  return { subject, html, text };
+}
+
+/** Card checkout only. Gift certificates and offline guests get no refund notice. */
+export function refundEmailSkipReason(booking: BookingRow): string | null {
+  if (booking.added_manually) return "not_card_payment";
+  if (booking.notes?.trim().startsWith("Gift ")) return "not_card_payment";
+  if (
+    !booking.stripe_checkout_session_id?.trim() &&
+    !booking.stripe_payment_intent_id?.trim()
+  ) {
+    return "not_card_payment";
+  }
+  if (!booking.guest_email?.trim()) return "no_guest_email";
+  return null;
+}
+
+export function buildRefundConfirmationEmail(
+  booking: BookingRow,
+  env: EmailEnv,
+): { subject: string; html: string; text: string } | null {
+  const to = booking.guest_email?.trim();
+  if (!to) return null;
+
+  const meta = sessionMeta(booking);
+  const when = formatSlotLabel(booking.starts_at, true);
+  const amount = money(booking.deposit_eur);
+  const wa = env.WHATSAPP ?? "351964275367";
+  const contactEmail = env.CONTACT_EMAIL ?? "ivannapylypchuk@gmail.com";
+  const waLink = `https://wa.me/${wa}`;
+  const firstName = booking.guest_name?.trim().split(/\s+/)[0];
+  const subject = `Refund confirmed — ${meta.title}`;
+  const intro = `We've refunded ${amount} for your ${meta.title} on ${when} (Lisbon time).`;
+  const timing =
+    "The amount goes back to the original payment method. It can take 5-10 business days to appear, depending on your bank.";
+
+  const text = [
+    `Hi${firstName ? ` ${firstName}` : ""},`,
+    ``,
+    intro,
+    ``,
+    timing,
+    ``,
+    `Booking #: ${booking.id}`,
+    `When: ${when} (Lisbon time)`,
+    `Refunded: ${amount}`,
+    ``,
+    `This session is cancelled.`,
+    ``,
+    `Questions: WhatsApp ${waLink} or ${contactEmail}`,
+    ``,
+    `— Ivanna Yoga Lisbon`,
+  ].join("\n");
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<body style="font-family: Georgia, serif; color: #1a2e1a; line-height: 1.5; max-width: 560px; margin: 0 auto; padding: 24px;">
+  <p>Hi${firstName ? ` ${escapeHtml(firstName)}` : ""},</p>
+  <p>We've refunded <strong>${escapeHtml(amount)}</strong> for your <strong>${escapeHtml(meta.title)}</strong> on ${escapeHtml(when)} (Lisbon time).</p>
+  <p>${escapeHtml(timing)}</p>
+  <table style="width:100%; border-collapse: collapse; margin: 20px 0;">
+    <tr><td style="padding: 6px 0; color: #5c6b5c;">Booking #</td><td style="padding: 6px 0; font-family: ui-monospace, monospace; font-size: 13px;">${escapeHtml(booking.id)}</td></tr>
+    <tr><td style="padding: 6px 0; color: #5c6b5c;">When</td><td style="padding: 6px 0;"><strong>${escapeHtml(when)}</strong> (Lisbon time)</td></tr>
+    <tr><td style="padding: 6px 0; color: #5c6b5c;">Refunded</td><td style="padding: 6px 0;"><strong>${escapeHtml(amount)}</strong></td></tr>
+  </table>
+  <p>This session is cancelled.</p>
+  <p style="font-size: 14px;">Questions: <a href="${waLink}">WhatsApp</a> or <a href="mailto:${contactEmail}">${escapeHtml(contactEmail)}</a></p>
   <p>— Ivanna Yoga Lisbon</p>
 </body>
 </html>`.trim();
@@ -342,10 +422,16 @@ function buildTeacherNotifyEmail(
   const site = (env.SITE_URL ?? "https://ivanna-yoga.com").replace(/\/$/, "");
   const adminUrl = `${site}/admin/bookings/detail/?id=${encodeURIComponent(booking.id)}`;
 
-  const subject = `New booking — ${meta.title} · ${when}`;
+  const isGift = Boolean(booking.notes?.startsWith("Gift "));
+  const subject = isGift
+    ? `Gift booking — ${meta.title} · ${when}`
+    : `New booking — ${meta.title} · ${when}`;
 
   const text = [
-    `New booking paid${fullPay ? " in full" : " (deposit)"}.`,
+    isGift
+      ? `New booking paid in full with a gift certificate.`
+      : `New booking paid${fullPay ? " in full" : " (deposit)"}.`,
+    booking.notes ? `Note: ${booking.notes}` : null,
     ``,
     `Booking #: ${booking.id}`,
     `Experience: ${meta.title}`,
@@ -372,7 +458,9 @@ function buildTeacherNotifyEmail(
 <!DOCTYPE html>
 <html>
 <body style="font-family: Georgia, serif; color: #1a2e1a; line-height: 1.5; max-width: 560px; margin: 0 auto; padding: 24px;">
-  <p><strong>New booking</strong> — ${fullPay ? "paid in full" : "deposit paid"}.</p>
+  <p><strong>${isGift ? "Gift booking" : "New booking"}</strong> — ${
+    isGift ? "paid in full with a gift certificate" : fullPay ? "paid in full" : "deposit paid"
+  }.${booking.notes ? ` ${escapeHtml(booking.notes)}.` : ""}</p>
   <table style="width:100%; border-collapse: collapse; margin: 16px 0;">
     <tr><td style="padding: 6px 0; color: #5c6b5c;">Booking #</td><td style="padding: 6px 0; font-family: ui-monospace, monospace; font-size: 13px;">${escapeHtml(booking.id)}</td></tr>
     <tr><td style="padding: 6px 0; color: #5c6b5c;">Experience</td><td style="padding: 6px 0;">${escapeHtml(meta.title)}</td></tr>
@@ -508,6 +596,38 @@ export async function sendLowInventoryAlert(
   return sendResendEmail(env, { to, subject, html, text });
 }
 
+export type RefundEmailResult = {
+  sent: boolean;
+  skipped?: boolean;
+  reason?: string;
+};
+
+export async function sendRefundConfirmation(
+  booking: BookingRow,
+  env: EmailEnv,
+): Promise<RefundEmailResult> {
+  const skip = refundEmailSkipReason(booking);
+  if (skip) {
+    console.warn("[email] refund notice skipped", {
+      bookingId: booking.id,
+      reason: skip,
+    });
+    return { sent: false, skipped: true, reason: skip };
+  }
+
+  const to = booking.guest_email?.trim() ?? "";
+  const payload = buildRefundConfirmationEmail(booking, env);
+  if (!payload) {
+    return { sent: false, skipped: true, reason: "no_guest_email" };
+  }
+  return sendResendEmail(env, {
+    to,
+    subject: payload.subject,
+    html: payload.html,
+    text: payload.text,
+  });
+}
+
 export async function sendBookingConfirmation(
   booking: BookingRow,
   env: EmailEnv,
@@ -576,4 +696,199 @@ export async function sendBookingConfirmation(
   }
 
   return { sent: true, teacherNotified };
+}
+
+export type GiftEmailPayload = {
+  code: string;
+  displayCode: string;
+  buyerName: string;
+  buyerEmail: string;
+  recipientName: string;
+  recipientEmail: string | null;
+  message: string | null;
+  title: string;
+  people: number;
+  amountEur: number;
+  expiresAt: string;
+  deliverOn: string | null;
+  pagePath: string;
+};
+
+function formatExpiry(iso: string): string {
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) return iso;
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Europe/Lisbon",
+  }).format(parsed);
+}
+
+function formatIsoDate(isoDate: string): string {
+  const [y, m, d] = isoDate.split("-").map(Number);
+  if (!y || !m || !d) return isoDate;
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(y, m - 1, d, 12)));
+}
+
+function giftRedeemUrl(env: EmailEnv, gift: GiftEmailPayload): string {
+  const site = (env.SITE_URL ?? "https://ivanna-yoga.com").replace(/\/$/, "");
+  return `${site}${gift.pagePath}?gift=${encodeURIComponent(gift.code)}`;
+}
+
+function peopleLabel(people: number): string {
+  return people === 1 ? "1 person" : `${people} people`;
+}
+
+export async function sendGiftBuyerEmail(
+  env: EmailEnv,
+  gift: GiftEmailPayload,
+): Promise<{ sent: boolean; reason?: string }> {
+  const url = giftRedeemUrl(env, gift);
+  const until = formatExpiry(gift.expiresAt);
+  const delivery = gift.deliverOn
+    ? `We'll email ${gift.recipientName} on ${formatIsoDate(gift.deliverOn)} (Lisbon morning).`
+    : gift.recipientEmail
+      ? `We've also emailed ${gift.recipientName}.`
+      : `Forward this certificate to ${gift.recipientName} whenever you're ready.`;
+
+  const text = [
+    `Hi ${gift.buyerName.split(" ")[0]},`,
+    ``,
+    `Your gift certificate for ${gift.title} (${peopleLabel(gift.people)}) is ready.`,
+    ``,
+    `Code: ${gift.displayCode}`,
+    `Valid until: ${until}`,
+    `Amount paid: ${money(gift.amountEur)}`,
+    ``,
+    delivery,
+    ``,
+    `They open this link, choose a date, and book without paying again:`,
+    url,
+    ``,
+    `The certificate is used when the booking is confirmed. It is non-refundable and can't be exchanged for a different experience.`,
+    ``,
+    `— Ivanna Yoga Lisbon`,
+  ].join("\n");
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<body style="font-family: Georgia, serif; color: #1a2e1a; line-height: 1.5; max-width: 560px; margin: 0 auto; padding: 24px;">
+  <p>Hi ${escapeHtml(gift.buyerName.split(" ")[0])},</p>
+  <p>Your gift certificate for <strong>${escapeHtml(gift.title)}</strong> (${peopleLabel(gift.people)}) is ready.</p>
+  <p style="font-size: 28px; letter-spacing: 0.12em; font-family: ui-monospace, monospace;">${escapeHtml(gift.displayCode)}</p>
+  <p>Valid until <strong>${escapeHtml(until)}</strong>. Paid ${money(gift.amountEur)}.</p>
+  <p>${escapeHtml(delivery)}</p>
+  <p><a href="${escapeHtml(url)}">Open the gift</a></p>
+  <p style="font-size: 14px; color: #5c6b5c;">The certificate is used when the booking is confirmed. It is non-refundable and can't be exchanged for a different experience.</p>
+  <p>— Ivanna Yoga Lisbon</p>
+</body>
+</html>`.trim();
+
+  return sendResendEmail(env, {
+    to: gift.buyerEmail,
+    subject: `Your yoga gift certificate — ${gift.title}`,
+    html,
+    text,
+  });
+}
+
+export async function sendGiftRecipientEmail(
+  env: EmailEnv,
+  gift: GiftEmailPayload,
+): Promise<{ sent: boolean; reason?: string }> {
+  const to = gift.recipientEmail?.trim();
+  if (!to) return { sent: false, reason: "no_recipient_email" };
+  const url = giftRedeemUrl(env, gift);
+  const until = formatExpiry(gift.expiresAt);
+  const text = [
+    `Hi ${gift.recipientName.split(" ")[0]},`,
+    ``,
+    `${gift.buyerName} sent you ${gift.title} for ${peopleLabel(gift.people)}.`,
+    gift.message ? `` : null,
+    gift.message ? `"${gift.message}"` : null,
+    ``,
+    `Code: ${gift.displayCode}`,
+    `Valid until: ${until}`,
+    ``,
+    `Choose a date here — there's nothing to pay:`,
+    url,
+    ``,
+    `Opening the link doesn't use the certificate. It's used when you confirm a date.`,
+    ``,
+    `— Ivanna Yoga Lisbon`,
+  ]
+    .filter((line) => line != null)
+    .join("\n");
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<body style="font-family: Georgia, serif; color: #1a2e1a; line-height: 1.5; max-width: 560px; margin: 0 auto; padding: 24px;">
+  <p>Hi ${escapeHtml(gift.recipientName.split(" ")[0])},</p>
+  <p><strong>${escapeHtml(gift.buyerName)}</strong> sent you ${escapeHtml(gift.title)} for ${peopleLabel(gift.people)}.</p>
+  ${gift.message ? `<p style="font-size: 18px;">“${escapeHtml(gift.message)}”</p>` : ""}
+  <p style="font-size: 28px; letter-spacing: 0.12em; font-family: ui-monospace, monospace;">${escapeHtml(gift.displayCode)}</p>
+  <p>Valid until <strong>${escapeHtml(until)}</strong>.</p>
+  <p><a href="${escapeHtml(url)}">Choose a date</a></p>
+  <p style="font-size: 14px; color: #5c6b5c;">Opening the link doesn't use the certificate. It's used when you confirm a date. There's nothing to pay.</p>
+  <p>— Ivanna Yoga Lisbon</p>
+</body>
+</html>`.trim();
+
+  return sendResendEmail(env, {
+    to,
+    subject: `${gift.buyerName} sent you a yoga gift`,
+    html,
+    text,
+  });
+}
+
+export async function sendGiftTeacherEmail(
+  env: EmailEnv,
+  gift: GiftEmailPayload,
+): Promise<{ sent: boolean; reason?: string }> {
+  const site = (env.SITE_URL ?? "https://ivanna-yoga.com").replace(/\/$/, "");
+  const text = [
+    `Gift certificate sold.`,
+    ``,
+    `Code: ${gift.displayCode}`,
+    `Experience: ${gift.title}`,
+    `People: ${gift.people}`,
+    `Paid: ${money(gift.amountEur)}`,
+    `Valid until: ${formatExpiry(gift.expiresAt)}`,
+    ``,
+    `From: ${gift.buyerName} <${gift.buyerEmail}>`,
+    `To: ${gift.recipientName}${gift.recipientEmail ? ` <${gift.recipientEmail}>` : ""}`,
+    gift.deliverOn ? `Recipient email on: ${gift.deliverOn}` : null,
+    gift.message ? `Message: ${gift.message}` : null,
+    ``,
+    `Admin: ${site}/admin/gifts/`,
+  ]
+    .filter((line) => line != null)
+    .join("\n");
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<body style="font-family: Georgia, serif; color: #1a2e1a; line-height: 1.5; max-width: 560px; margin: 0 auto; padding: 24px;">
+  <p><strong>Gift certificate sold.</strong></p>
+  <p>${escapeHtml(gift.displayCode)} · ${escapeHtml(gift.title)} · ${peopleLabel(gift.people)} · ${money(gift.amountEur)}</p>
+  <p>From ${escapeHtml(gift.buyerName)} (${escapeHtml(gift.buyerEmail)}) to ${escapeHtml(gift.recipientName)}.</p>
+  <p><a href="${site}/admin/gifts/">Open gifts in admin</a></p>
+</body>
+</html>`.trim();
+
+  return sendResendEmail(env, {
+    to: teacherNotifyAddress(env),
+    subject: `Gift sold — ${gift.title} · ${money(gift.amountEur)}`,
+    html,
+    text,
+  });
 }

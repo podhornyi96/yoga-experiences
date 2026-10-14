@@ -1,4 +1,5 @@
 import { sendLowInventoryAlert } from "../../_lib/email";
+import { deliverDueGiftEmails } from "../../_lib/gifts";
 import { error, json } from "../../_lib/http";
 import {
   categoriesBelowThreshold,
@@ -76,6 +77,10 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   const url = new URL(request.url);
   const force = url.searchParams.get("force") === "1";
   const hour = lisbonHour();
+  const gifts = await deliverDueGiftEmails(env.DB, env, { force });
+  if (gifts.sent > 0 || gifts.failed > 0) {
+    console.log("[cron/low-inventory] gift emails", gifts);
+  }
 
   if (!force && hour !== 11) {
     return json({
@@ -83,6 +88,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       sent: false,
       reason: "outside_lisbon_window",
       lisbonHour: hour,
+      gifts,
     });
   }
 
@@ -96,6 +102,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       reason: "inventory_ok",
       threshold: LOW_INVENTORY_THRESHOLD,
       counts,
+      gifts,
     });
   }
 
@@ -114,6 +121,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         threshold: LOW_INVENTORY_THRESHOLD,
         counts,
         low,
+        gifts,
       },
       { status: 502 },
     );
@@ -129,5 +137,6 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     threshold: LOW_INVENTORY_THRESHOLD,
     counts,
     low,
+    gifts,
   });
 };

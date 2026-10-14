@@ -5,6 +5,8 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { BookingCTA, WhatsAppIcon } from "@/components/BookingCTA";
 import { ExperienceDetails } from "@/components/ExperienceDetails";
+import { GiftGuestFields } from "@/components/GiftGuestFields";
+import { GiftStatusBanner } from "@/components/GiftStatusBanner";
 import { MobileStickyCta } from "@/components/MobileStickyCta";
 import { siteConfig, whatsappLink } from "@/config/site";
 import type { Experience } from "@/data/experiences";
@@ -21,7 +23,9 @@ import {
   privateSessionEur,
   remainingEur,
 } from "@/lib/group-pricing";
+import { redeemGiftBooking, type GiftBooking } from "@/lib/gifts";
 import {
+  clearPendingHold,
   createCheckoutSession,
   createHold,
   fetchAvailableSlots,
@@ -30,6 +34,7 @@ import {
   savePendingHold,
   type PublicSlot,
 } from "@/lib/schedule-api";
+import { useExperienceGift } from "@/lib/use-experience-gift";
 
 type LocationChoice = PrivateLocationId | "custom";
 type Step = "when" | "where";
@@ -65,14 +70,16 @@ export function PrivateBookingPanel({
 }: {
   experience: Experience;
 }) {
-  const people = experience.fixedGuests === 2 ? 2 : 1;
+  const giftState = useExperienceGift(experience.slug);
+  const gift = giftState.phase === "match" ? giftState.gift : null;
+  const people = gift?.people ?? (experience.fixedGuests === 2 ? 2 : 1);
   const [mats, setMats] = useState(0);
   const [slots, setSlots] = useState<PublicSlot[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const ctaRef = useRef<HTMLButtonElement>(null);
 
-  const effectiveMats = Math.min(mats, people);
+  const effectiveMats = gift ? 0 : Math.min(mats, people);
   const total = privateSessionEur(people) + effectiveMats * MAT_PRICE_EUR;
   const deposit = depositEur(total, PRIVATE_DEPOSIT_RATE);
   const remaining = remainingEur(total, PRIVATE_DEPOSIT_RATE);
@@ -115,9 +122,19 @@ export function PrivateBookingPanel({
 
   return (
     <>
-      <p className="text-2xl font-semibold text-forest">{formatMoney(total)}</p>
-      <p className="mt-0.5 text-sm text-muted">{summary}</p>
-      {siteConfig.paymentsEnabled ? (
+      <GiftStatusBanner state={giftState} />
+      {gift ? (
+        <>
+          <p className="text-2xl font-semibold text-forest">Gift</p>
+          <p className="mt-0.5 text-sm text-muted">
+            {people === 1 ? "1 person" : "2 people"} · paid
+          </p>
+        </>
+      ) : (
+        <p className="text-2xl font-semibold text-forest">{formatMoney(total)}</p>
+      )}
+      {gift ? null : <p className="mt-0.5 text-sm text-muted">{summary}</p>}
+      {!gift && siteConfig.paymentsEnabled ? (
         <div className="mt-2 space-y-0.5 text-sm leading-snug">
           <p className="font-medium text-forest">
             Deposit today: {formatMoney(deposit)} (
@@ -138,6 +155,7 @@ export function PrivateBookingPanel({
         </div>
       ) : null}
 
+      {gift ? null : (
       <div className="mt-4">
         <div className="flex items-baseline justify-between gap-3">
           <label
@@ -179,6 +197,7 @@ export function PrivateBookingPanel({
           </svg>
         </div>
       </div>
+      )}
 
       <ExperienceDetails experience={experience} />
 
@@ -199,7 +218,7 @@ export function PrivateBookingPanel({
               onClick={() => setOpen(true)}
               className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-clay px-8 py-3.5 text-base font-semibold text-cream shadow-sm transition-colors hover:bg-clay-dark"
             >
-              Book this session
+              {gift ? "Choose a date" : "Book this session"}
             </button>
             <MobileStickyCta anchorRef={ctaRef} hidden={open}>
               <button
@@ -207,12 +226,13 @@ export function PrivateBookingPanel({
                 onClick={() => setOpen(true)}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-clay px-8 py-3.5 text-base font-semibold text-cream shadow-sm transition-colors hover:bg-clay-dark"
               >
-                Book this session
+                {gift ? "Choose a date" : "Book this session"}
               </button>
             </MobileStickyCta>
             <p className="mt-2 text-center text-xs text-muted">
-              Pick a time and park, then pay a {formatMoney(deposit)} deposit (
-              {Math.round(PRIVATE_DEPOSIT_RATE * 100)}%).
+              {gift
+                ? "Pick a time and park. Your gift covers the session."
+                : `Pick a time and park, then pay a ${formatMoney(deposit)} deposit (${Math.round(PRIVATE_DEPOSIT_RATE * 100)}%).`}
             </p>
           </>
         ) : (
@@ -254,6 +274,15 @@ export function PrivateBookingPanel({
           mats={effectiveMats}
           totalEur={total}
           depositEur={deposit}
+          gift={
+            gift
+              ? {
+                  code: gift.code,
+                  recipientName: gift.recipientName,
+                  recipientEmail: gift.recipientEmail,
+                }
+              : null
+          }
           onClose={() => setOpen(false)}
           onSlotsChange={setSlots}
         />
@@ -270,6 +299,7 @@ function PrivateBookingModal({
   mats,
   totalEur,
   depositEur: depositAmount,
+  gift,
   onClose,
   onSlotsChange,
 }: {
@@ -280,6 +310,7 @@ function PrivateBookingModal({
   mats: number;
   totalEur: number;
   depositEur: number;
+  gift: GiftBooking | null;
   onClose: () => void;
   onSlotsChange: (slots: PublicSlot[] | null) => void;
 }) {
@@ -299,6 +330,8 @@ function PrivateBookingModal({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [guestName, setGuestName] = useState(gift?.recipientName ?? "");
+  const [guestEmail, setGuestEmail] = useState(gift?.recipientEmail ?? "");
 
   const selected = slots.find((s) => s.id === selectedId) ?? null;
   const monthGroups = useMemo(() => groupSlotsByMonth(slots), [slots]);
@@ -395,6 +428,60 @@ function PrivateBookingModal({
     }
 
     window.location.assign(checkout.data.url);
+  }
+
+  async function bookWithGift() {
+    if (!gift || !selected || !location || location === "custom") return;
+    const name = guestName.trim();
+    const email = guestEmail.trim();
+    if (!name || !email.includes("@")) {
+      setError("Add your name and email so we can send the confirmation.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+
+    const pending = readPendingHold(PRIVATE_INVENTORY_SLUG);
+    const hold = await createHold(
+      selected.id,
+      pending?.slotId === selected.id ? pending.holdToken : null,
+      people,
+    );
+    if (!hold.ok) {
+      setError(hold.error);
+      setBusy(false);
+      await refreshSlots();
+      setStep("when");
+      return;
+    }
+
+    savePendingHold({
+      holdToken: hold.data.holdToken,
+      slotId: hold.data.slot.id,
+      slug: PRIVATE_INVENTORY_SLUG,
+      people,
+      mats: 0,
+      expiresAt: hold.data.expiresAt,
+      locationId: location,
+    });
+
+    const redeemed = await redeemGiftBooking({
+      code: gift.code,
+      holdToken: hold.data.holdToken,
+      slotId: hold.data.slot.id,
+      guestName: name,
+      guestEmail: email,
+      locationId: location,
+    });
+    if (!redeemed.ok) {
+      setError(redeemed.error);
+      setBusy(false);
+      await refreshSlots();
+      return;
+    }
+
+    clearPendingHold();
+    window.location.assign("/gift/booked/");
   }
 
   function openCustomWhatsApp() {
@@ -547,6 +634,15 @@ function PrivateBookingModal({
         </div>
 
         <div className="shrink-0 border-t border-sand px-6 pb-6 pt-4">
+          {gift && step === "where" ? (
+            <GiftGuestFields
+              name={guestName}
+              email={guestEmail}
+              onName={setGuestName}
+              onEmail={setGuestEmail}
+            />
+          ) : null}
+
           {error ? (
             <p role="alert" className="mb-3 text-sm text-red-700">
               {error}
@@ -582,15 +678,20 @@ function PrivateBookingModal({
               <button
                 type="button"
                 disabled={!location || location === "custom" || busy}
-                onClick={() => void pay()}
+                onClick={() => void (gift ? bookWithGift() : pay())}
                 className="inline-flex w-full items-center justify-center rounded-full bg-clay px-6 py-3.5 text-sm font-semibold text-cream shadow-sm transition-colors hover:bg-clay-dark disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {busy
-                  ? "Starting checkout…"
-                  : payments
-                    ? `Pay ${formatMoney(depositAmount)} deposit`
-                    : "Continue on WhatsApp"}
+                  ? gift
+                    ? "Booking…"
+                    : "Starting checkout…"
+                  : gift
+                    ? "Book with gift"
+                    : payments
+                      ? `Pay ${formatMoney(depositAmount)} deposit`
+                      : "Continue on WhatsApp"}
               </button>
+              {gift ? null : (
               <button
                 type="button"
                 onClick={openCustomWhatsApp}
@@ -599,6 +700,7 @@ function PrivateBookingModal({
                 <WhatsAppIcon className="h-4 w-4" />
                 Custom location — WhatsApp
               </button>
+              )}
               <button
                 type="button"
                 onClick={() => {

@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { BookingCTA, WhatsAppIcon } from "@/components/BookingCTA";
+import { GiftGuestFields } from "@/components/GiftGuestFields";
 import { MobileStickyCta } from "@/components/MobileStickyCta";
 import { siteConfig, whatsappLink } from "@/config/site";
 import type { Experience } from "@/data/experiences";
@@ -18,7 +19,9 @@ import {
   depositEur as calcDepositEur,
   remainingEur as calcRemainingEur,
 } from "@/lib/group-pricing";
+import { redeemGiftBooking, type GiftBooking } from "@/lib/gifts";
 import {
+  clearPendingHold,
   createCheckoutSession,
   createHold,
   fetchAvailableSlots,
@@ -47,6 +50,8 @@ type Props = {
   depositRate?: number;
   /** Required for private inventory checkout. */
   locationId?: string | null;
+  /** When set, the date is booked with this certificate instead of Stripe. */
+  gift?: GiftBooking | null;
 };
 
 type LocationChoice = SunriseLocationId | "custom";
@@ -106,6 +111,7 @@ export function AvailabilityBooking({
   scheduleSlug,
   depositRate = DEPOSIT_RATE,
   locationId = null,
+  gift = null,
 }: Props) {
   const inventorySlug = scheduleSlug ?? experience.slug;
   const pickLocation = inventorySlug === SUNRISE_INVENTORY_SLUG;
@@ -197,11 +203,13 @@ export function AvailabilityBooking({
         {slotCount === 1
           ? "1 upcoming date"
           : `${slotCount} upcoming dates`}
-        {payments
-          ? fullPay
-            ? ` · pay ${formatMoney(charge)} in full`
-            : ` · pay ${formatMoney(charge)} today (${Math.round(depositRate * 100)}% deposit), rest later`
-          : " · then continue on WhatsApp"}
+        {gift
+          ? " · gift applied, nothing to pay"
+          : payments
+            ? fullPay
+              ? ` · pay ${formatMoney(charge)} in full`
+              : ` · pay ${formatMoney(charge)} today (${Math.round(depositRate * 100)}% deposit), rest later`
+            : " · then continue on WhatsApp"}
       </p>
       {open ? (
         <AvailabilityModal
@@ -216,6 +224,7 @@ export function AvailabilityBooking({
           depositRate={depositRate}
           locationId={locationId}
           pickLocation={pickLocation}
+          gift={gift}
           onClose={() => setOpen(false)}
           onSlotsChange={setSlots}
         />
@@ -236,6 +245,7 @@ function AvailabilityModal({
   depositRate,
   locationId: locationIdProp,
   pickLocation,
+  gift,
   onClose,
   onSlotsChange,
 }: {
@@ -250,6 +260,7 @@ function AvailabilityModal({
   depositRate: number;
   locationId: string | null;
   pickLocation: boolean;
+  gift: GiftBooking | null;
   onClose: () => void;
   onSlotsChange: (slots: PublicSlot[] | null) => void;
 }) {
@@ -269,6 +280,8 @@ function AvailabilityModal({
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [guestName, setGuestName] = useState(gift?.recipientName ?? "");
+  const [guestEmail, setGuestEmail] = useState(gift?.recipientEmail ?? "");
   const charge = calcDepositEur(totalEur, depositRate);
   const remaining = calcRemainingEur(totalEur, depositRate);
 
@@ -422,6 +435,63 @@ function AvailabilityModal({
     window.location.assign(checkout.data.url);
   }
 
+  async function bookWithGift() {
+    if (!gift || !selected) return;
+    if (pickLocation && !resolvedLocationId) {
+      setError("Choose a location before booking.");
+      return;
+    }
+    const name = guestName.trim();
+    const email = guestEmail.trim();
+    if (!name || !email.includes("@")) {
+      setError("Add your name and email so we can send the confirmation.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+
+    const pending = readPendingHold(inventorySlug);
+    const hold = await createHold(
+      selected.id,
+      pending?.slotId === selected.id ? pending.holdToken : null,
+      people,
+    );
+    if (!hold.ok) {
+      setError(hold.error);
+      setBusy(false);
+      await refreshSlots();
+      return;
+    }
+
+    savePendingHold({
+      holdToken: hold.data.holdToken,
+      slotId: hold.data.slot.id,
+      slug: inventorySlug,
+      people,
+      mats: 0,
+      expiresAt: hold.data.expiresAt,
+      locationId: resolvedLocationId,
+    });
+
+    const redeemed = await redeemGiftBooking({
+      code: gift.code,
+      holdToken: hold.data.holdToken,
+      slotId: hold.data.slot.id,
+      guestName: name,
+      guestEmail: email,
+      locationId: resolvedLocationId,
+    });
+    if (!redeemed.ok) {
+      setError(redeemed.error);
+      setBusy(false);
+      await refreshSlots();
+      return;
+    }
+
+    clearPendingHold();
+    window.location.assign("/gift/booked/");
+  }
+
   function openCustomWhatsApp() {
     if (!selected) return;
     const label = formatSlotLabel(selected.startsAt);
@@ -496,7 +566,9 @@ function AvailabilityModal({
               </div>
             ) : (
               <p className="mt-2 text-xs text-muted">
-                Select a date below, then continue to pay.
+                {gift
+                  ? "Select a date below, then book with your gift."
+                  : "Select a date below, then continue to pay."}
               </p>
             )}
           </div>
@@ -598,7 +670,16 @@ function AvailabilityModal({
         </div>
 
         <div className="shrink-0 border-t border-sand px-6 pb-6 pt-4">
-          {!showWhere && payments ? (
+          {gift && (!pickLocation || showWhere) ? (
+            <GiftGuestFields
+              name={guestName}
+              email={guestEmail}
+              onName={setGuestName}
+              onEmail={setGuestEmail}
+            />
+          ) : null}
+
+          {!gift && !showWhere && payments ? (
             <div className="space-y-1 text-sm">
               {fullPay ? (
                 <>
@@ -673,21 +754,30 @@ function AvailabilityModal({
                 type="button"
                 disabled={!spot || busy}
                 onClick={() =>
-                  void (payments ? payOnline() : continueOnWhatsApp())
+                  void (gift
+                    ? bookWithGift()
+                    : payments
+                      ? payOnline()
+                      : continueOnWhatsApp())
                 }
                 className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-clay px-6 py-3.5 text-sm font-semibold text-cream shadow-sm transition-colors hover:bg-clay-dark disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {payments ? null : <WhatsAppIcon className="h-5 w-5" />}
+                {gift || payments ? null : <WhatsAppIcon className="h-5 w-5" />}
                 {busy
-                  ? payments
-                    ? "Starting checkout…"
-                    : "Holding slot…"
-                  : payments
-                    ? fullPay
-                      ? `Pay ${formatMoney(charge)}`
-                      : `Pay ${formatMoney(charge)} deposit`
-                    : "Continue on WhatsApp"}
+                  ? gift
+                    ? "Booking…"
+                    : payments
+                      ? "Starting checkout…"
+                      : "Holding slot…"
+                  : gift
+                    ? "Book with gift"
+                    : payments
+                      ? fullPay
+                        ? `Pay ${formatMoney(charge)}`
+                        : `Pay ${formatMoney(charge)} deposit`
+                      : "Continue on WhatsApp"}
               </button>
+              {gift ? null : (
               <button
                 type="button"
                 onClick={openCustomWhatsApp}
@@ -696,6 +786,7 @@ function AvailabilityModal({
                 <WhatsAppIcon className="h-4 w-4" />
                 Custom location — WhatsApp
               </button>
+              )}
               <button
                 type="button"
                 onClick={() => {
@@ -713,20 +804,28 @@ function AvailabilityModal({
                 type="button"
                 disabled={!selected || busy}
                 onClick={() =>
-                  void (payments ? payOnline() : continueOnWhatsApp())
+                  void (gift
+                    ? bookWithGift()
+                    : payments
+                      ? payOnline()
+                      : continueOnWhatsApp())
                 }
                 className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-clay px-6 py-3.5 text-sm font-semibold text-cream shadow-sm transition-colors hover:bg-clay-dark disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {payments ? null : <WhatsAppIcon className="h-5 w-5" />}
+                {gift || payments ? null : <WhatsAppIcon className="h-5 w-5" />}
                 {busy
-                  ? payments
-                    ? "Starting checkout…"
-                    : "Holding slot…"
-                  : payments
-                    ? fullPay
-                      ? `Pay ${formatMoney(charge)}`
-                      : `Pay ${formatMoney(charge)} deposit`
-                    : "Continue on WhatsApp"}
+                  ? gift
+                    ? "Booking…"
+                    : payments
+                      ? "Starting checkout…"
+                      : "Holding slot…"
+                  : gift
+                    ? "Book with gift"
+                    : payments
+                      ? fullPay
+                        ? `Pay ${formatMoney(charge)}`
+                        : `Pay ${formatMoney(charge)} deposit`
+                      : "Continue on WhatsApp"}
               </button>
 
               <a

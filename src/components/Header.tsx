@@ -10,6 +10,7 @@ const nav = [
   { label: "Private", href: "/private/" },
   { label: "Online", href: "/online/" },
   { label: "Corporate", href: "/corporate/" },
+  { label: "Gifts", href: "/gift/" },
   { label: "About", href: "/about/" },
   { label: "Contact", href: "/contact/" },
 ];

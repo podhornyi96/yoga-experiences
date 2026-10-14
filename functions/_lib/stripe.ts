@@ -17,6 +17,10 @@ export async function createCheckoutSession(
     successUrl: string;
     cancelUrl: string;
     metadata: Record<string, string>;
+    /** Prefill Stripe receipt email. Bookings leave this unset. */
+    customerEmail?: string;
+    /** Defaults to true. Gift checkout does not ask for a phone number. */
+    collectPhone?: boolean;
   },
 ): Promise<StripeCheckoutSession> {
   const body = new URLSearchParams();
@@ -24,7 +28,12 @@ export async function createCheckoutSession(
   body.set("success_url", params.successUrl);
   body.set("cancel_url", params.cancelUrl);
   body.set("billing_address_collection", "auto");
-  body.set("phone_number_collection[enabled]", "true");
+  if (params.collectPhone !== false) {
+    body.set("phone_number_collection[enabled]", "true");
+  }
+  if (params.customerEmail) {
+    body.set("customer_email", params.customerEmail);
+  }
   body.set("line_items[0][quantity]", "1");
   body.set("line_items[0][price_data][currency]", params.currency);
   body.set(
@@ -200,6 +209,7 @@ export type StripeCheckoutSessionObject = {
     phone?: string | null;
   } | null;
   customer_email?: string | null;
+  amount_total?: number | null;
 };
 
 export type StripeEvent = {

@@ -2,7 +2,7 @@
  * GET    /api/admin/events/participants?slotId=
  * POST   /api/admin/events/participants  — manual add
  * PATCH  /api/admin/events/participants  — edit guest details
- * DELETE /api/admin/events/participants  — remove manual participant only
+ * DELETE /api/admin/events/participants  — remove participant (manual cancel, or refunded after Stripe)
  */
 
 import { isAdminAuthenticated } from "../../../_lib/auth";
@@ -22,7 +22,10 @@ import {
   effectivePricePerPerson,
   getServerEventTemplate,
 } from "../../../_lib/event-templates";
-import { sendBookingConfirmation } from "../../../_lib/email";
+import {
+  sendBookingConfirmation,
+  sendRefundConfirmation,
+} from "../../../_lib/email";
 import { error, json, readJson } from "../../../_lib/http";
 import { expireHolds, getSlotById, nowIso } from "../../../_lib/slots";
 import type { Env as ScheduleEnv } from "../../../_lib/types";
@@ -267,5 +270,22 @@ export const onRequestDelete: PagesFunction<Env> = async (context) => {
 
   await releaseEventSeats(env.DB, booking.slot_id, booking.people || 1);
 
-  return json({ ok: true, bookingId, paymentStatus: nextStatus });
+  if (nextStatus !== "refunded") {
+    return json({ ok: true, bookingId, paymentStatus: nextStatus });
+  }
+
+  const updated = await getBookingById(env.DB, bookingId);
+  try {
+    const email = await sendRefundConfirmation(updated ?? booking, env);
+    return json({ ok: true, bookingId, paymentStatus: nextStatus, email });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "email_failed";
+    console.warn("[admin] event refund email exception", message);
+    return json({
+      ok: true,
+      bookingId,
+      paymentStatus: nextStatus,
+      email: { sent: false, reason: message },
+    });
+  }
 };

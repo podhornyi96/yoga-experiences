@@ -95,6 +95,27 @@ export default function TermsPage() {
 
             <div>
               <h2 className="text-xl text-forest sm:text-2xl">
+                Gift certificates
+              </h2>
+              <p className="mt-3">
+                Gift certificates can be bought for Sunrise Yoga, Sunset Yoga by
+                the Ocean, and private or tandem park sessions, for one or two
+                people. The buyer pays the full price online. A certificate is
+                valid for 12 months from payment, is not refundable, and cannot
+                be exchanged for cash or a different experience. Yoga mats are
+                not included.
+              </p>
+              <p className="mt-3">
+                The recipient chooses an available date. Opening the link does
+                not use the certificate. It is used when that booking is
+                confirmed, and cancelling the booking does not restore it. After
+                that, the booking follows the rescheduling rules for that
+                session.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-xl text-forest sm:text-2xl">
                 Rescheduling &amp; cancellation
               </h2>
               <p className="mt-3">

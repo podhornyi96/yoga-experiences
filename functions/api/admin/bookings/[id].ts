@@ -1,7 +1,7 @@
 /**
  * GET  /api/admin/bookings/:id
  * PATCH /api/admin/bookings/:id
- *   Body: { action: 'mark_paid' | 'cancel' | 'refund' | 'resend_email' }
+ *   Body: { action: 'mark_paid' | 'cancel' | 'refund' | 'resend_email' | 'resend_refund_email' }
  */
 
 import {
@@ -9,7 +9,10 @@ import {
   publicBooking,
 } from "../../../_lib/bookings";
 import { isAdminAuthenticated } from "../../../_lib/auth";
-import { sendBookingConfirmation } from "../../../_lib/email";
+import {
+  sendBookingConfirmation,
+  sendRefundConfirmation,
+} from "../../../_lib/email";
 import { error, json, readJson } from "../../../_lib/http";
 import {
   getSlotById,
@@ -72,7 +75,12 @@ export const onRequestPatch: PagesFunction<Env, "id"> = async (context) => {
   if (!id) return error("Booking id is required.", 400);
 
   const body = await readJson<{
-    action?: "mark_paid" | "cancel" | "refund" | "resend_email";
+    action?:
+      | "mark_paid"
+      | "cancel"
+      | "refund"
+      | "resend_email"
+      | "resend_refund_email";
   }>(request);
   const action = body?.action;
   if (!action) return error("action is required.");
@@ -109,6 +117,29 @@ export const onRequestPatch: PagesFunction<Env, "id"> = async (context) => {
     } catch (err) {
       const message = err instanceof Error ? err.message : "email_failed";
       console.warn("[admin] resend_email exception", message);
+      return error(`Email not sent: ${message}`, 422);
+    }
+  }
+
+  if (action === "resend_refund_email") {
+    if (booking.payment_status !== "refunded") {
+      return error("Can only resend the refund email for a refunded booking.", 409);
+    }
+    try {
+      const emailResult = await sendRefundConfirmation(booking, env);
+      if (!emailResult.sent) {
+        return error(
+          `Email not sent: ${emailResult.reason ?? "unknown error"}`,
+          422,
+        );
+      }
+      return json({
+        booking: publicBooking(booking),
+        email: emailResult,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "email_failed";
+      console.warn("[admin] resend_refund_email exception", message);
       return error(`Email not sent: ${message}`, 422);
     }
   }
@@ -174,5 +205,21 @@ export const onRequestPatch: PagesFunction<Env, "id"> = async (context) => {
   }
 
   const updated = await getBookingById(env.DB, id);
+  if (action === "refund" && updated) {
+    try {
+      const emailResult = await sendRefundConfirmation(updated, env);
+      return json({
+        booking: publicBooking(updated),
+        email: emailResult,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "email_failed";
+      console.warn("[admin] refund email exception", message);
+      return json({
+        booking: publicBooking(updated),
+        email: { sent: false, reason: message },
+      });
+    }
+  }
   return json({ booking: updated ? publicBooking(updated) : null });
 };

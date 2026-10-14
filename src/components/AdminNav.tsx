@@ -6,7 +6,7 @@ export function AdminNav({
   active,
   onLogout,
 }: {
-  active: "schedule" | "events" | "bookings";
+  active: "schedule" | "events" | "bookings" | "gifts";
   onLogout: () => void;
 }) {
   const link = (href: string, key: typeof active, label: string) => (
@@ -27,6 +27,7 @@ export function AdminNav({
       {link("/admin/", "schedule", "Schedule")}
       {link("/admin/events/", "events", "Events")}
       {link("/admin/bookings/", "bookings", "Bookings")}
+      {link("/admin/gifts/", "gifts", "Gifts")}
       <button
         type="button"
         onClick={onLogout}

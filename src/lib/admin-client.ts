@@ -61,6 +61,23 @@ export type AdminBooking = {
   updatedAt: string;
 };
 
+/** Same rule as the refund email: card checkout with a guest address. */
+export function canSendRefundEmail(booking: AdminBooking): boolean {
+  if (booking.addedManually) return false;
+  if (booking.notes?.trim().startsWith("Gift ")) return false;
+  if (!booking.guestEmail?.trim()) return false;
+  if (!booking.stripeCheckoutSessionId && !booking.stripePaymentIntentId) {
+    return false;
+  }
+  return true;
+}
+
+export type RefundEmailResult = {
+  sent: boolean;
+  skipped?: boolean;
+  reason?: string;
+};
+
 export function formatMoney(amount: number): string {
   return Number.isInteger(amount) ? `€${amount}` : `€${amount.toFixed(2)}`;
 }

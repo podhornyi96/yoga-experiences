@@ -33,6 +33,16 @@ export function lisbonHour(now = new Date()): number {
   return Number(parts.find((p) => p.type === "hour")?.value ?? "0");
 }
 
+/** Current calendar date `YYYY-MM-DD` in Europe/Lisbon. */
+export function lisbonDate(now = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Lisbon",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+}
+
 /** Count future open inventory slots per scheduled slug. */
 export async function countOpenInventoryByCategory(
   db: D1Database,

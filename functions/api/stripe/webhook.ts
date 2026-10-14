@@ -11,6 +11,7 @@ import {
   getBookingByStripeSession,
   insertBooking,
 } from "../../_lib/bookings";
+import { fulfillGiftCheckout } from "../../_lib/gifts";
 import {
   claimEventSeatsForManualBooking,
   consumeEventReservation,
@@ -90,6 +91,12 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   }
 
   const meta = session.metadata ?? {};
+  if (meta.kind === "gift") {
+    const issued = await fulfillGiftCheckout(env.DB, session, env);
+    if (!issued.ok) return error(issued.error, issued.status);
+    return json(issued.body);
+  }
+
   const slotId = meta.slotId?.trim();
   const holdToken = meta.holdToken?.trim();
   if (!slotId || !holdToken) {
