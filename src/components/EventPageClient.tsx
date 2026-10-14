@@ -33,7 +33,7 @@ function EventPageInner() {
       <Container className="py-16 text-center">
         <h1 className="text-3xl text-forest">Choose a session</h1>
         <p className="mt-2 text-muted">
-          Open a scheduled session from the home page or experiences list.
+          Open a scheduled session from the home page.
         </p>
       </Container>
     );

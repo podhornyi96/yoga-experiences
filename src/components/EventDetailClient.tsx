@@ -140,10 +140,10 @@ export function EventDetailClient({ slotId }: { slotId: string }) {
           This date may have been cancelled or already booked.
         </p>
         <Link
-          href="/experiences/"
+          href="/"
           className="mt-6 inline-flex rounded-full bg-clay px-6 py-3 text-sm font-semibold text-cream hover:bg-clay-dark"
         >
-          Browse experiences
+          Back to home
         </Link>
       </Container>
     );
@@ -165,9 +165,7 @@ export function EventDetailClient({ slotId }: { slotId: string }) {
             Home
           </Link>
           <span className="mx-2">/</span>
-          <Link href="/experiences/" className="hover:text-clay-dark">
-            Experiences
-          </Link>
+          <span>Events</span>
           <span className="mx-2">/</span>
           <span className="text-ink">{event.title}</span>
         </nav>
