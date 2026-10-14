@@ -44,7 +44,8 @@ In the Cloudflare Pages project → Settings:
 2. Add secrets: `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `CRON_SECRET`.
 3. Optional var: `SITE_URL=https://ivanna-yoga.com` (Checkout success/cancel URLs).
 4. Email (Resend): `RESEND_API_KEY`, `EMAIL_FROM`, optional `BOOKING_NOTIFY_EMAIL` / `CONTACT_EMAIL`.
-5. Apply remote migrations once:
+5. Optional Telegram teacher alerts: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` (private chat id after `/start`).
+6. Apply remote migrations once:
 
 ```bash
 npm run db:migrate:remote

@@ -6,6 +6,7 @@
 
 import type { BookingRow } from "./bookings";
 import { getServerEventTemplate } from "./event-templates";
+import { sendTelegramMessage, type TelegramEnv } from "./telegram";
 
 const PRIVATE_LOCATIONS: Record<
   string,
@@ -102,7 +103,7 @@ export type EmailEnv = {
   CONTACT_EMAIL?: string;
   /** Teacher inbox for new-booking alerts. Defaults to CONTACT_EMAIL. */
   BOOKING_NOTIFY_EMAIL?: string;
-};
+} & TelegramEnv;
 
 export type LowInventoryItem = {
   label: string;
@@ -636,6 +637,7 @@ export async function sendBookingConfirmation(
   sent: boolean;
   reason?: string;
   teacherNotified?: boolean;
+  teacherTelegramNotified?: boolean;
 }> {
   const to = booking.guest_email?.trim() ?? "";
   let guestSent = false;
@@ -664,11 +666,12 @@ export async function sendBookingConfirmation(
   }
 
   let teacherNotified = false;
+  let teacherTelegramNotified = false;
   if (options?.notifyTeacher) {
+    const teacherPayload = buildTeacherNotifyEmail(booking, env);
     const teacherTo = teacherNotifyAddress(env);
     // Don't email the teacher twice if they booked themselves.
     if (!to || teacherTo.toLowerCase() !== to.toLowerCase()) {
-      const teacherPayload = buildTeacherNotifyEmail(booking, env);
       const teacher = await sendResendEmail(env, {
         to: teacherTo,
         subject: teacherPayload.subject,
@@ -685,6 +688,15 @@ export async function sendBookingConfirmation(
     } else {
       teacherNotified = guestSent;
     }
+
+    const telegram = await sendTelegramMessage(env, teacherPayload.text);
+    teacherTelegramNotified = telegram.sent;
+    if (!telegram.sent && telegram.reason !== "telegram_not_configured") {
+      console.warn("[email] teacher telegram notify failed", {
+        bookingId: booking.id,
+        ...telegram,
+      });
+    }
   }
 
   if (!guestSent) {
@@ -692,10 +704,11 @@ export async function sendBookingConfirmation(
       sent: false,
       reason: guestReason ?? "guest_email_failed",
       teacherNotified,
+      teacherTelegramNotified,
     };
   }
 
-  return { sent: true, teacherNotified };
+  return { sent: true, teacherNotified, teacherTelegramNotified };
 }
 
 export type GiftEmailPayload = {

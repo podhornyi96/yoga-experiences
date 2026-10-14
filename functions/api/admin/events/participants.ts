@@ -36,6 +36,8 @@ interface Env extends ScheduleEnv {
   SITE_URL?: string;
   CONTACT_EMAIL?: string;
   BOOKING_NOTIFY_EMAIL?: string;
+  TELEGRAM_BOT_TOKEN?: string;
+  TELEGRAM_CHAT_ID?: string;
   WHATSAPP?: string;
 }
 
