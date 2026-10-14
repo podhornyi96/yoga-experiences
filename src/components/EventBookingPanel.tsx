@@ -48,11 +48,11 @@ export function EventBookingPanel({ event }: { event: PublicEventDetail }) {
 
   if (!event.bookable || pricePerPerson <= 0) {
     return (
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-sand-dark bg-cream/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:px-6">
-        <div className="mx-auto max-w-3xl">
+      <div className="fixed inset-x-0 bottom-0 z-40 overflow-x-hidden border-t border-sand-dark bg-cream/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:px-6">
+        <div className="mx-auto min-w-0 max-w-3xl">
           <BookingCTA message={bookMessage} size="lg" className="w-full" />
           {marketingHref ? (
-            <p className="mt-2 text-center text-xs text-muted">
+            <p className="mt-2 break-words text-center text-xs text-muted">
               <Link href={marketingHref} className="hover:underline">
                 View experience page
               </Link>
@@ -111,8 +111,8 @@ export function EventBookingPanel({ event }: { event: PublicEventDetail }) {
   }
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-sand-dark bg-cream/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:px-6">
-      <div className="mx-auto max-w-3xl">
+    <div className="fixed inset-x-0 bottom-0 z-40 overflow-x-hidden border-t border-sand-dark bg-cream/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:px-6">
+      <div className="mx-auto min-w-0 max-w-3xl">
         {error ? (
           <p role="alert" className="mb-2 text-center text-sm text-red-700">
             {error}
@@ -122,11 +122,16 @@ export function EventBookingPanel({ event }: { event: PublicEventDetail }) {
           type="button"
           disabled={busy}
           onClick={() => void onBook()}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-clay px-6 py-3.5 text-base font-semibold text-cream shadow-sm transition-colors hover:bg-clay-dark disabled:opacity-60"
+          className="inline-flex w-full max-w-full items-center justify-center gap-2 rounded-full bg-clay px-6 py-3.5 text-base font-semibold text-cream shadow-sm transition-colors hover:bg-clay-dark disabled:opacity-60"
         >
-          {busy ? "Starting checkout…" : `Pay & book · ${formatMoney(totalEur)}`}
+          {busy
+            ? "Starting checkout…"
+            : `Reserve your place · ${formatMoney(totalEur)}`}
         </button>
-        <p className="mt-2 text-center text-xs text-muted">
+        <p className="mt-2 break-words text-center text-xs leading-snug text-muted">
+          Open group session · {formatMoney(pricePerPerson)} per person
+        </p>
+        <p className="mt-1 break-words text-center text-xs leading-snug text-muted">
           {EVENT_POLICY_SHORT} {EVENT_LEAD_POLICY_SHORT}{" "}
           <Link href="/terms/" className="underline underline-offset-2">
             Terms

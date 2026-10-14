@@ -44,6 +44,8 @@ function DetailRow({
 }
 
 export function ExperienceDetails({ experience }: { experience: Experience }) {
+  const partyLabel = experience.groupPricing ? "Your party" : "Group size";
+
   return (
     <dl className="mt-4 text-sm">
       <DetailRow
@@ -53,7 +55,7 @@ export function ExperienceDetails({ experience }: { experience: Experience }) {
       />
       <DetailRow
         icon={UsersIcon}
-        label="Group size"
+        label={partyLabel}
         value={experience.groupSize}
       />
       <DetailRow

@@ -171,7 +171,7 @@ export function GroupBookingPanel({ experience }: { experience: Experience }) {
     groupPricing && people > groupPricing.maxGuests,
   );
   const peopleError = peopleOverLimit
-    ? `Maximum ${groupPricing!.maxGuests} people.`
+    ? `Maximum ${groupPricing!.maxGuests} in your party.`
     : undefined;
   /** Raw people count from the field (may exceed maxGuests while showing an error). */
   const peopleCount = groupPricing ? people : (experience.fixedGuests ?? 1);
@@ -209,8 +209,8 @@ export function GroupBookingPanel({ experience }: { experience: Experience }) {
   const summary = useMemo(() => {
     const sessionLabel = groupPricing
       ? bookingPeople === 1
-        ? "1 person"
-        : `${bookingPeople} people`
+        ? "1 person · private session"
+        : `${bookingPeople} people · private session`
       : experience.price.unit === "per_session"
         ? "per session"
         : null;
@@ -313,7 +313,7 @@ export function GroupBookingPanel({ experience }: { experience: Experience }) {
         {groupPricing ? (
           <NumberField
             id={`${experience.slug}-people`}
-            label="People"
+            label="Your party"
             value={people}
             min={1}
             max={groupPricing.maxGuests}
@@ -357,6 +357,13 @@ export function GroupBookingPanel({ experience }: { experience: Experience }) {
         ) : null}
       </div>
       )}
+
+      {groupPricing ? (
+        <p className="mt-4 rounded-lg border border-sand bg-cream/80 px-3 py-2.5 text-xs leading-snug text-muted">
+          You book this date for your party — not a drop-in group class. Other
+          guests are not added to your slot.
+        </p>
+      ) : null}
 
       <ExperienceDetails experience={experience} />
       {groupPricing?.whatsappOnly ? (

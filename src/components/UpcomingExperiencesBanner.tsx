@@ -28,7 +28,7 @@ export function UpcomingExperiencesBanner() {
   return (
     <div className="mb-6 space-y-2">
       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sage-dark">
-        Next session{events.length > 1 ? "s" : ""}
+        Next open session{events.length > 1 ? "s" : ""}
       </p>
       {events.map((event) => (
         <Link
@@ -43,7 +43,8 @@ export function UpcomingExperiencesBanner() {
               {event.title}
             </p>
             <p className="mt-0.5 truncate text-xs text-cream/75 sm:text-sm">
-              {event.locationLabel}
+              Open group session
+              {event.locationLabel ? ` · ${event.locationLabel}` : ""}
               {event.pricePerPersonEur != null
                 ? ` · €${event.pricePerPersonEur}/person`
                 : ""}

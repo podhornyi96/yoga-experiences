@@ -181,22 +181,27 @@ export const experiences: Experience[] = [
     group: "experiences",
     title: "Sunrise Yoga",
     summary:
-      "Start your day with a gentle sunrise flow and the city waking up around you.",
+      "Book a sunrise session for yourself or a small group of friends — not a drop-in class.",
     description:
-      "Greet the day with a calming Vinyasa flow as the sun rises over Lisbon. This sunrise yoga session blends mindful movement and breathwork to leave you grounded, energised and clear-headed before the city wakes up. Suitable for all levels — modifications offered throughout.",
-    price: { amount: 50, currency: "EUR", unit: "from" },
+      "You book a private sunrise session for your party — yourself, or you and your friends. Greet the day with a calming Vinyasa flow as the sun rises over Lisbon: mindful movement and breathwork to leave you grounded, energised and clear-headed before the city wakes up. Suitable for all levels — modifications offered throughout. This is not a public drop-in class; other guests are not added to your slot.",
+    price: { amount: 50, currency: "EUR", unit: "per_session", from: true },
     bookingType: "whatsapp",
     duration: "60 min",
-    groupSize: "Up to 30 people",
+    groupSize: "Up to 30",
     groupPricing: { maxGuests: 30, schedule: "coastal", mats: true },
     locationLabel: "Lisbon — Portas do Sol, Beato & Vasco da Gama",
     tags: { timeOfDay: "sunrise", location: "graca", level: "all-levels" },
     highlights: [
+      "Private session for your party",
       "Beat the heat and the crowds",
       "Breathwork + gentle Vinyasa",
       "Stunning early-morning city light",
     ],
-    includes: ["Yoga mat (€5, on request)", "Guided breathwork"],
+    includes: [
+      "Dedicated session — just your group",
+      "Yoga mat (€5, on request)",
+      "Guided breathwork",
+    ],
     images: [
       "/images/experiences/sunrise-yoga-lisbon/sunrise-yoga-lisbon-1.jpg",
       "/images/experiences/sunrise-yoga-lisbon/sunrise-yoga-lisbon-2.jpg",
@@ -207,6 +212,11 @@ export const experiences: Experience[] = [
       "/images/experiences/sunrise-yoga-lisbon/sunrise-yoga-lisbon-7.jpg",
     ],
     faq: [
+      {
+        question: "Is this a public group class?",
+        answer:
+          "No. You book a private sunrise session for yourself or your friends. Other guests are not added to your slot — the date and time are yours.",
+      },
       {
         question: "Do I need to bring a mat?",
         answer:
@@ -225,27 +235,28 @@ export const experiences: Experience[] = [
     group: "experiences",
     title: "Sunset Yoga by the Ocean",
     summary:
-      "Unwind with a slow flow on the sand as the sun sets over the Atlantic.",
+      "Book a sunset beach session for yourself or a small group of friends — not a drop-in class.",
     description:
-      "Roll out your mat at Praia das Avencas (Parede) and flow with the sound of the waves. This sunset yoga experience by the ocean combines a slow, restorative practice with golden-hour views over the Atlantic — the perfect way to end the day.",
-    price: { amount: 50, currency: "EUR", unit: "from" },
+      "You book a private sunset session for your party — yourself, or you and your friends. Roll out your mat at Praia das Avencas (Parede) and flow with the sound of the waves: a slow, restorative practice with golden-hour views over the Atlantic. Suitable for all levels. This is not a public drop-in class; other guests are not added to your slot.",
+    price: { amount: 50, currency: "EUR", unit: "per_session", from: true },
     bookingType: "whatsapp",
     duration: "60 min",
-    groupSize: "Up to 8 people",
+    groupSize: "Up to 8",
     groupPricing: { maxGuests: 8, schedule: "coastal", mats: true },
     locationLabel: "Praia das Avencas (Parede)",
     locationUrl:
       "https://maps.app.goo.gl/C7LJKA8XEhHEnFdg8?g_st=ic",
     tags: { timeOfDay: "sunset", location: "ocean", level: "all-levels" },
     highlights: [
+      "Private session for your party",
       "Golden-hour ocean views",
       "Slow, restorative flow",
       "Sound of the waves",
     ],
     includes: [
+      "Dedicated session — just your group",
       "Guided relaxation",
       "Beach-friendly sequence",
-      "Small group",
       "Yoga mat (€5, on request)",
     ],
     images: [
@@ -260,6 +271,11 @@ export const experiences: Experience[] = [
     cardImagePosition: "50% 70%",
     coverImagePosition: "50% 70%",
     faq: [
+      {
+        question: "Is this a public group class?",
+        answer:
+          "No. You book a private sunset session for yourself or your friends. Other guests are not added to your slot — the date and time are yours.",
+      },
       {
         question: "Where exactly do we meet?",
         answer:
@@ -278,23 +294,25 @@ export const experiences: Experience[] = [
     group: "experiences",
     title: "Wooden House Yoga in Cascais",
     summary:
-      "A 2-hour immersion in a cosy wooden house — movement, breathwork, meditation and sound healing by the coast.",
+      "Book a 2-hour wooden-house immersion for your party — movement, breathwork, meditation and sound healing.",
     description:
-      "Step into a warm wooden house in Cascais for a slow, nourishing yoga experience designed for a small group. Over two hours you'll move through mindful Hatha-inspired sequences, conscious breathwork and guided meditation, ending with a calming sound healing session. All mats and equipment are provided — just arrive, settle in, and let the natural wood and coastal calm do the rest. An intimate alternative to the city — perfect if you want depth, quiet and personal attention.",
-    price: { amount: 120, currency: "EUR", unit: "from" },
+      "Step into a warm wooden house in Cascais for a slow, nourishing yoga experience you book for your party. Over two hours you'll move through mindful Hatha-inspired sequences, conscious breathwork and guided meditation, ending with a calming sound healing session. All mats and equipment are provided — just arrive, settle in, and let the natural wood and coastal calm do the rest. An intimate alternative to the city — perfect if you want depth, quiet and personal attention.",
+    price: { amount: 120, currency: "EUR", unit: "per_session", from: true },
     bookingType: "whatsapp",
     duration: "2 hrs",
-    groupSize: "Up to 6 people",
+    groupSize: "Up to 6",
     /** Live quote only — booking stays on WhatsApp (venue confirmation). */
     groupPricing: { maxGuests: 6, schedule: "cascais", whatsappOnly: true },
     locationLabel: "Cascais",
     tags: { timeOfDay: "day", location: "cascais", level: "all-levels" },
     highlights: [
+      "Private booking for your party",
       "Cosy wooden house setting",
-      "Small group — up to 6 people",
+      "Up to 6 people",
       "Movement, breath, meditation & sound healing",
     ],
     includes: [
+      "Dedicated session — just your group",
       "All equipment (yoga mats)",
       "Guided movement & breathwork",
       "Meditation",
@@ -312,9 +330,14 @@ export const experiences: Experience[] = [
     cardImagePosition: "50% 70%",
     faq: [
       {
+        question: "Is this a public group class?",
+        answer:
+          "No. You book this wooden-house session for your party. We confirm the date with the host — it is not a drop-in class.",
+      },
+      {
         question: "How much does it cost?",
         answer:
-          "From €120 for one person, then €15 for each additional guest (up to 6). Exact total updates as you change the group size on this page.",
+          "From €120 for one person, then €15 for each additional guest (up to 6). Exact total updates as you change your party size on this page.",
       },
       {
         question: "Is equipment included?",
@@ -329,7 +352,7 @@ export const experiences: Experience[] = [
       {
         question: "Why book on WhatsApp?",
         answer:
-          "The wooden house belongs to a local host — we confirm the date with them before locking your booking. Message us with your preferred day and group size.",
+          "The wooden house belongs to a local host — we confirm the date with them before locking your booking. Message us with your preferred day and party size.",
       },
     ],
     // Not on homepage “Most loved” — WhatsApp / higher ticket; still on /experiences/
@@ -340,23 +363,25 @@ export const experiences: Experience[] = [
     group: "experiences",
     title: "Yoga in Sintra Forest",
     summary:
-      "A 2.5-hour forest immersion — meditation, breathwork, movement and sound healing in Sintra.",
+      "Book a 2.5-hour forest immersion for your party — meditation, breathwork, movement and sound healing.",
     description:
-      "An immersive 2.5-hour experience in the Sintra forest combining deep meditation, conscious breathwork, mindful movement and sound healing. Step away from the city and reconnect with yourself among the trees. All equipment is included — just bring yourself.",
-    price: { amount: 299, currency: "EUR", unit: "from" },
+      "An immersive 2.5-hour experience in the Sintra forest that you book for your party — deep meditation, conscious breathwork, mindful movement and sound healing. Step away from the city and reconnect with yourself among the trees. All equipment is included — just bring yourself.",
+    price: { amount: 299, currency: "EUR", unit: "per_session", from: true },
     bookingType: "whatsapp",
     duration: "2.5 hrs",
-    groupSize: "Up to 20 people",
+    groupSize: "Up to 20",
     /** Live quote only — book on WhatsApp (no online deposit). */
     groupPricing: { maxGuests: 20, schedule: "sintra", whatsappOnly: true },
     locationLabel: "Sintra",
     tags: { timeOfDay: "day", location: "sintra", level: "all-levels" },
     highlights: [
+      "Private booking for your party",
       "Deep meditation & breathwork",
       "Sound healing in nature",
       "All equipment included",
     ],
     includes: [
+      "Dedicated session — just your group",
       "Yoga mat & equipment",
       "Guided meditation & breathwork",
       "Sound healing session",
@@ -378,9 +403,14 @@ export const experiences: Experience[] = [
     coverImagePosition: "50% 70%",
     faq: [
       {
+        question: "Is this a public group class?",
+        answer:
+          "No. You book this forest immersion for your party. It is a private booking for your group, not a drop-in class ticket.",
+      },
+      {
         question: "How much does it cost?",
         answer:
-          "€299 for one person, then €15 for each additional guest (up to 20). Exact total updates as you change the group size on this page.",
+          "€299 for one person, then €15 for each additional guest (up to 20). Exact total updates as you change your party size on this page.",
       },
       {
         question: "Is equipment really included?",

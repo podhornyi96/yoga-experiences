@@ -14,12 +14,20 @@ export function ExperienceCard({
 }) {
   const href = experiencePagePath(experience);
   const cover = experience.images[0];
+  const isPartyBooking =
+    experience.group === "experiences" && Boolean(experience.groupPricing);
+
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-sand-dark bg-white shadow-sm transition-shadow hover:shadow-md">
       {cover ? (
         <div
           className={`relative overflow-hidden ${compact ? "aspect-[3/2]" : "aspect-[4/3]"}`}
         >
+          {isPartyBooking ? (
+            <span className="absolute left-3 top-3 z-10 rounded-md bg-white/95 px-2 py-1 text-[11px] font-semibold tracking-wide text-forest shadow-sm">
+              Private booking
+            </span>
+          ) : null}
           <ZoomableImage
             src={cover}
             alt={experience.title}
@@ -68,9 +76,13 @@ export function ExperienceCard({
           <div className="min-w-0">
             <PriceTag price={experience.price} />
             {experience.groupPricing?.whatsappOnly ? (
-              <p className="mt-0.5 text-xs text-muted">WhatsApp booking</p>
-            ) : experience.group === "experiences" && experience.groupPricing ? (
-              <p className="mt-0.5 text-xs text-muted">Book online · deposit</p>
+              <p className="mt-0.5 text-xs text-muted">
+                Private session · WhatsApp
+              </p>
+            ) : isPartyBooking ? (
+              <p className="mt-0.5 text-xs text-muted">
+                Private session · book online
+              </p>
             ) : null}
           </div>
           <Link

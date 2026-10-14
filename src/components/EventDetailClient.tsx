@@ -159,27 +159,27 @@ export function EventDetailClient({ slotId }: { slotId: string }) {
 
   return (
     <>
-      <Container className="pb-36 pt-8 sm:pb-32 sm:pt-12">
-        <nav className="text-sm text-muted">
+      <Container className="overflow-x-hidden pb-40 pt-8 sm:pb-36 sm:pt-12">
+        <nav className="flex min-w-0 flex-wrap items-center gap-x-2 text-sm text-muted">
           <Link href="/" className="hover:text-clay-dark">
             Home
           </Link>
-          <span className="mx-2">/</span>
+          <span>/</span>
           <span>Events</span>
-          <span className="mx-2">/</span>
-          <span className="text-ink">{event.title}</span>
+          <span>/</span>
+          <span className="min-w-0 truncate text-ink">{event.title}</span>
         </nav>
 
-        <div className="mt-6 grid gap-8 lg:grid-cols-2 lg:gap-12">
-          <div>
+        <div className="mt-6 grid min-w-0 gap-8 lg:grid-cols-2 lg:gap-12">
+          <div className="min-w-0">
             {event.images.length > 0 ? (
               <ExperienceGallery images={event.images} title={event.title} />
             ) : null}
           </div>
 
-          <div>
+          <div className="min-w-0">
             <p className="text-sm font-semibold uppercase tracking-[0.14em] text-sage-dark">
-              Scheduled session
+              Open group session
             </p>
             {event.seatsRemaining != null &&
             event.seatsRemaining > 0 &&
@@ -221,6 +221,12 @@ export function EventDetailClient({ slotId }: { slotId: string }) {
                   How to get inside?
                 </button>
               ) : null}
+            </p>
+            <p className="mt-4 break-words rounded-xl border border-sand bg-sand/40 px-3.5 py-3 text-sm leading-relaxed text-ink">
+              You&apos;re reserving{" "}
+              <span className="font-medium">your place</span> in a shared outdoor
+              session — arrive, meet the group, and practise together. This is
+              not a private booking.
             </p>
             <p className="mt-4 text-sm leading-relaxed text-muted">
               {event.description}
