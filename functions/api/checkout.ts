@@ -6,11 +6,16 @@
  * Returns: { url, depositEur, remainingEur, totalEur, fullPay }
  */
 
+import {
+  leadTimeClosedMessage,
+  meetsLeadTimeForKind,
+} from "../_lib/booking-lead-time";
 import { error, json, readJson } from "../_lib/http";
 import { quoteCheckout } from "../_lib/pricing";
 import {
   expireHolds,
   getSlotById,
+  holdMinutes,
   isFutureStartsAt,
   nowIso,
 } from "../_lib/slots";
@@ -114,6 +119,16 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   if (!isFutureStartsAt(slot.starts_at)) {
     return error("This slot is in the past.", 409);
   }
+  if (!meetsLeadTimeForKind(slot.starts_at, slot.kind)) {
+    return error(leadTimeClosedMessage(slot.kind), 409);
+  }
+
+  const minutes = holdMinutes(env);
+  const checkoutHoldUntil = new Date(
+    Date.now() + minutes * 60_000,
+  ).toISOString();
+  /** Stripe requires Checkout Session expires_at ≥ 30 minutes from creation. */
+  const stripeExpiresAtUnix = Math.floor(Date.now() / 1000) + minutes * 60;
 
   if (slot.kind === "event") {
     const reservation = await env.DB.prepare(
@@ -128,10 +143,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     if (reservation.expires_at < nowIso()) {
       return error("Your hold expired. Pick the date again.", 409);
     }
-    // Keep seats through Stripe Checkout (default session ~30m).
-    const checkoutHoldUntil = new Date(
-      Date.now() + 35 * 60_000,
-    ).toISOString();
+    // Align seat reservation with Stripe Checkout Session lifetime.
     if (reservation.expires_at < checkoutHoldUntil) {
       await env.DB.prepare(
         `UPDATE event_reservations SET expires_at = ? WHERE id = ?`,
@@ -151,6 +163,19 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     }
     if (slot.hold_expires_at && slot.hold_expires_at < nowIso()) {
       return error("Your hold expired. Pick the date again.", 409);
+    }
+    // Align inventory hold with Stripe Checkout Session lifetime.
+    if (!slot.hold_expires_at || slot.hold_expires_at < checkoutHoldUntil) {
+      await env.DB.prepare(
+        `UPDATE slots
+         SET hold_expires_at = ?,
+             updated_at = ?
+         WHERE id = ?
+           AND status = 'held'
+           AND hold_token = ?`,
+      )
+        .bind(checkoutHoldUntil, nowIso(), slotId, holdToken)
+        .run();
     }
   }
 
@@ -179,6 +204,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       productDescription,
       successUrl: `${origin}/booking/success/?session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${origin}/booking/cancel/?slug=${encodeURIComponent(slug)}`,
+      expiresAt: stripeExpiresAtUnix,
       metadata: {
         slotId: slot.id,
         holdToken,

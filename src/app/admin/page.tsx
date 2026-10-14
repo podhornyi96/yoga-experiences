@@ -343,16 +343,16 @@ export default function AdminPage() {
 
   return (
     <Container className="py-12">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl text-forest">Schedule admin</h1>
-          <p className="mt-1 text-sm text-muted">
-            Instant-book inventory for Sunrise, Sunset and Private / Tandem ·
-            overlapping offers OK until booked · Lisbon time · soft hold{" "}
-            {siteConfig.scheduleHoldMinutes} min
-          </p>
+      <div>
+        <h1 className="text-3xl text-forest">Schedule admin</h1>
+        <p className="mt-1 text-sm text-muted">
+          Instant-book inventory for Sunrise, Sunset and Private / Tandem ·
+          overlapping offers OK until booked · Lisbon time · soft hold{" "}
+          {siteConfig.scheduleHoldMinutes} min
+        </p>
+        <div className="mt-4">
+          <AdminNav active="schedule" onLogout={() => void onLogout()} />
         </div>
-        <AdminNav active="schedule" onLogout={() => void onLogout()} />
       </div>
 
       <form

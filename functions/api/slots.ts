@@ -1,7 +1,9 @@
+import { meetsLeadTimeForKind } from "../_lib/booking-lead-time";
 import { error, json } from "../_lib/http";
 import { slotsConflict } from "../_lib/capacity";
 import {
   expireHolds,
+  holdMinutes,
   isFutureStartsAt,
   listBusySlotsOnDay,
   nowIso,
@@ -51,9 +53,13 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     .bind(slug, holdToken, holdToken, nowIso())
     .all<SlotRow>();
 
-  const candidates = (results ?? []).filter((row) =>
-    isFutureStartsAt(row.starts_at),
-  );
+  const candidates = (results ?? []).filter((row) => {
+    const kind = row.kind === "event" ? "event" : "inventory";
+    return (
+      isFutureStartsAt(row.starts_at) &&
+      meetsLeadTimeForKind(row.starts_at, kind)
+    );
+  });
 
   const byDay = new Map<string, SlotRow[]>();
   for (const row of candidates) {
@@ -80,5 +86,5 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
   slots.sort((a, b) => (a.startsAt < b.startsAt ? -1 : 1));
 
-  return json({ slots, holdMinutes: Number(env.SCHEDULE_HOLD_MINUTES) || 20 });
+  return json({ slots, holdMinutes: holdMinutes(env) });
 };

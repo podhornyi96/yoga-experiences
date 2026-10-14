@@ -10,6 +10,7 @@ import {
 } from "../_lib/event-templates";
 import { eventMaxGuests, eventSeatsRemaining } from "../_lib/event-capacity";
 import { error, json } from "../_lib/http";
+import { meetsLeadTimeForKind } from "../_lib/booking-lead-time";
 import { expireHolds, getSlotById, isFutureStartsAt } from "../_lib/slots";
 import { type Env } from "../_lib/types";
 
@@ -43,6 +44,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   const seatsRemaining = eventSeatsRemaining(slot);
   const bookable =
     isFutureStartsAt(slot.starts_at) &&
+    meetsLeadTimeForKind(slot.starts_at, slot.kind) &&
     seatsRemaining > 0 &&
     slot.status !== "cancelled" &&
     slot.status !== "blocked";

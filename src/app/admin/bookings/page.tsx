@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { AdminNav } from "@/components/AdminNav";
+import { AdminSlotTimeScope } from "@/components/AdminSlotTimeScope";
 import { Container } from "@/components/Container";
 import { getExperiencesByGroup } from "@/data/experiences";
 import {
@@ -11,6 +12,7 @@ import {
   paymentStatusBadgeClass,
   paymentStatusLabel,
   type AdminBooking,
+  type SlotTimeScope,
 } from "@/lib/admin-client";
 import { formatSlotLabel } from "@/lib/schedule-api";
 
@@ -19,24 +21,37 @@ const scheduled = [
   ...getExperiencesByGroup("private"),
 ];
 
+type BookingsListResponse = {
+  bookings: AdminBooking[];
+  upcomingCount: number;
+  pastCount: number;
+};
+
+function bookingsQuery(statusFilter: string, timeScope: SlotTimeScope): string {
+  const params = new URLSearchParams();
+  params.set("scope", timeScope);
+  params.set("status", statusFilter || "all");
+  return `?${params.toString()}`;
+}
+
 export default function AdminBookingsPage() {
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState<string | null>(null);
   const [bookings, setBookings] = useState<AdminBooking[]>([]);
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("active");
+  const [timeScope, setTimeScope] = useState<SlotTimeScope>("upcoming");
+  const [upcomingCount, setUpcomingCount] = useState(0);
+  const [pastCount, setPastCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const titleBySlug = useMemo(() => {
     return new Map(scheduled.map((e) => [e.slug, e.title]));
   }, []);
 
-  async function refresh() {
-    const q = statusFilter
-      ? `?status=${encodeURIComponent(statusFilter)}`
-      : "";
-    const res = await adminApi<{ bookings: AdminBooking[] }>(
-      `/api/admin/bookings${q}`,
+  async function loadBookings() {
+    const res = await adminApi<BookingsListResponse>(
+      `/api/admin/bookings${bookingsQuery(statusFilter, timeScope)}`,
     );
     if (!res.ok) {
       if (res.status === 401) {
@@ -49,17 +64,20 @@ export default function AdminBookingsPage() {
     }
     setAuthed(true);
     setBookings(res.data.bookings);
+    setUpcomingCount(res.data.upcomingCount);
+    setPastCount(res.data.pastCount);
     setError(null);
+  }
+
+  async function refresh() {
+    await loadBookings();
   }
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const q = statusFilter
-        ? `?status=${encodeURIComponent(statusFilter)}`
-        : "";
-      const res = await adminApi<{ bookings: AdminBooking[] }>(
-        `/api/admin/bookings${q}`,
+      const res = await adminApi<BookingsListResponse>(
+        `/api/admin/bookings${bookingsQuery(statusFilter, timeScope)}`,
       );
       if (cancelled) return;
       if (!res.ok) {
@@ -73,12 +91,14 @@ export default function AdminBookingsPage() {
       }
       setAuthed(true);
       setBookings(res.data.bookings);
+      setUpcomingCount(res.data.upcomingCount);
+      setPastCount(res.data.pastCount);
       setError(null);
     })();
     return () => {
       cancelled = true;
     };
-  }, [statusFilter]);
+  }, [statusFilter, timeScope]);
 
   async function onLogin(e: FormEvent) {
     e.preventDefault();
@@ -99,6 +119,8 @@ export default function AdminBookingsPage() {
     await adminApi("/api/admin/logout", { method: "POST" });
     setAuthed(false);
     setBookings([]);
+    setUpcomingCount(0);
+    setPastCount(0);
   }
 
   if (authed === null) {
@@ -150,32 +172,44 @@ export default function AdminBookingsPage() {
 
   return (
     <Container className="py-12">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl text-forest">Bookings</h1>
-          <p className="mt-1 text-sm text-muted">
-            Deposits from Stripe · mark paid when the balance arrives
-          </p>
+      <div>
+        <h1 className="text-3xl text-forest">Bookings</h1>
+        <p className="mt-1 text-sm text-muted">
+          Deposits from Stripe · mark paid when the balance arrives
+        </p>
+        <div className="mt-4">
+          <AdminNav active="bookings" onLogout={() => void onLogout()} />
         </div>
-        <AdminNav active="bookings" onLogout={() => void onLogout()} />
       </div>
 
-      <div className="mt-6">
-        <label htmlFor="status-filter" className="text-sm font-medium text-ink">
-          Payment status
-        </label>
-        <select
-          id="status-filter"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="mt-1.5 block w-full max-w-xs rounded-xl border border-sand-dark bg-white px-3 py-2.5 text-sm"
-        >
-          <option value="">All</option>
-          <option value="deposit_paid">Deposit paid — balance due</option>
-          <option value="paid_in_full">Paid in full</option>
-          <option value="cancelled">Cancelled</option>
-          <option value="refunded">Refunded</option>
-        </select>
+      <div className="mt-6 flex flex-wrap items-end gap-4">
+        <AdminSlotTimeScope
+          value={timeScope}
+          onChange={setTimeScope}
+          upcomingCount={upcomingCount}
+          pastCount={pastCount}
+        />
+        <div>
+          <label
+            htmlFor="status-filter"
+            className="text-sm font-medium text-ink"
+          >
+            Payment status
+          </label>
+          <select
+            id="status-filter"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="mt-1.5 block w-full min-w-[14rem] rounded-xl border border-sand-dark bg-white px-3 py-2.5 text-sm"
+          >
+            <option value="active">Active</option>
+            <option value="deposit_paid">Deposit paid — balance due</option>
+            <option value="paid_in_full">Paid in full</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="refunded">Refunded</option>
+            <option value="">All</option>
+          </select>
+        </div>
       </div>
 
       {error ? (
@@ -187,7 +221,9 @@ export default function AdminBookingsPage() {
       <ul className="mt-6 space-y-3">
         {bookings.length === 0 ? (
           <li className="rounded-2xl border border-dashed border-sand-dark bg-white/60 px-5 py-8 text-center text-sm text-muted">
-            No bookings yet.
+            {timeScope === "upcoming"
+              ? "No upcoming bookings."
+              : "No past bookings."}
           </li>
         ) : (
           bookings.map((b) => (

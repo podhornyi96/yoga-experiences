@@ -146,14 +146,14 @@ export default function AdminGiftsPage() {
 
   return (
     <Container className="py-12">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl text-forest">Gifts</h1>
-          <p className="mt-1 text-sm text-muted">
-            Certificates sold online. A code is used when the date is booked.
-          </p>
+      <div>
+        <h1 className="text-3xl text-forest">Gifts</h1>
+        <p className="mt-1 text-sm text-muted">
+          Certificates sold online. A code is used when the date is booked.
+        </p>
+        <div className="mt-4">
+          <AdminNav active="gifts" onLogout={() => void onLogout()} />
         </div>
-        <AdminNav active="gifts" onLogout={() => void onLogout()} />
       </div>
 
       {error ? (

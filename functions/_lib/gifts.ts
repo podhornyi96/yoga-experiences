@@ -3,6 +3,10 @@
  * Prices come from the same helpers as checkout.
  */
 
+import {
+  leadTimeClosedMessage,
+  meetsLeadTimeForKind,
+} from "./booking-lead-time";
 import { insertBooking } from "./bookings";
 import {
   sendGiftBuyerEmail,
@@ -542,6 +546,13 @@ export async function redeemGift(
   }
   if (!isFutureStartsAt(slot.starts_at)) {
     return { ok: false, error: "This slot is in the past.", status: 409 };
+  }
+  if (!meetsLeadTimeForKind(slot.starts_at, slot.kind)) {
+    return {
+      ok: false,
+      error: leadTimeClosedMessage(slot.kind),
+      status: 409,
+    };
   }
   if (slot.status !== "held" || slot.hold_token !== input.holdToken) {
     return { ok: false, error: "Hold this date before booking.", status: 409 };

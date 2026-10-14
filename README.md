@@ -101,7 +101,7 @@ src/
   lib/schedule-api.ts  # client helpers for /api/slots, /api/holds, /api/checkout
 functions/
   api/slots.ts         # public available slots
-  api/holds.ts         # 20-minute soft hold
+  api/holds.ts         # ~35-minute soft hold (aligned with Stripe Checkout)
   api/checkout.ts      # Stripe Checkout Session (30% deposit)
   api/stripe/webhook.ts # checkout.session.completed → mark booked
   api/cron/low-inventory.ts # daily low-slot alert (Bearer CRON_SECRET)

@@ -5,6 +5,12 @@ import type { Faq } from "@/data/experiences";
 
 export const RESCHEDULE_NOTICE_HOURS = 48;
 
+/** Public online booking cutoffs — keep in sync with functions/_lib/booking-lead-time.ts */
+export const INVENTORY_LEAD_HOURS = 12;
+export const EVENT_LEAD_HOURS = 3;
+
+export const EVENT_LEAD_POLICY_SHORT = `Online booking closes ${EVENT_LEAD_HOURS} hours before the event.`;
+
 /** One-line notice next to deposit amounts before checkout. */
 export const DEPOSIT_POLICY_SHORT =
   "Deposit is non-refundable. Reschedule free with 48 hours’ notice.";

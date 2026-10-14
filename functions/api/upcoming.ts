@@ -10,6 +10,7 @@ import {
 } from "../_lib/event-templates";
 import { slotsConflict } from "../_lib/capacity";
 import { error, json } from "../_lib/http";
+import { meetsLeadTimeForKind } from "../_lib/booking-lead-time";
 import {
   expireHolds,
   isFutureStartsAt,
@@ -45,6 +46,8 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
   const candidates = (results ?? []).filter((row) => {
     if (!isFutureStartsAt(row.starts_at)) return false;
+    const kind = row.kind === "event" ? "event" : "inventory";
+    if (!meetsLeadTimeForKind(row.starts_at, kind)) return false;
     const template = getServerEventTemplate(row.experience_slug);
     if (!template) return false;
     const taken = Number(row.seats_taken) || 0;

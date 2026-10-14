@@ -1,3 +1,7 @@
+import {
+  leadTimeClosedMessage,
+  meetsLeadTimeForKind,
+} from "../_lib/booking-lead-time";
 import { error, json, readJson } from "../_lib/http";
 import { reserveEventSeats } from "../_lib/event-capacity";
 import {
@@ -41,6 +45,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   }
   if (!isFutureStartsAt(slot.starts_at)) {
     return error("This slot is in the past.", 409);
+  }
+  if (!meetsLeadTimeForKind(slot.starts_at, slot.kind)) {
+    return error(leadTimeClosedMessage(slot.kind), 409);
   }
 
   const minutes = holdMinutes(env);

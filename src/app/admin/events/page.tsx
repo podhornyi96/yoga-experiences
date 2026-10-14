@@ -1005,15 +1005,15 @@ export default function AdminEventsPage() {
 
   return (
     <Container className="py-12">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl text-forest">Events</h1>
-          <p className="mt-1 text-sm text-muted">
-            Trainer-organised sessions (studio, Cascais, Sintra) · Stripe full
-            pay · share the public link in socials
-          </p>
+      <div>
+        <h1 className="text-3xl text-forest">Events</h1>
+        <p className="mt-1 text-sm text-muted">
+          Trainer-organised sessions (studio, Cascais, Sintra) · Stripe full
+          pay · share the public link in socials
+        </p>
+        <div className="mt-4">
+          <AdminNav active="events" onLogout={() => void onLogout()} />
         </div>
-        <AdminNav active="events" onLogout={() => void onLogout()} />
       </div>
 
       <div className="mt-8 flex flex-wrap items-center gap-3">

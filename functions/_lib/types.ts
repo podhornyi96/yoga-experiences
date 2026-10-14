@@ -26,7 +26,7 @@ export interface Env {
   DB: D1Database;
   ADMIN_PASSWORD?: string;
   ADMIN_SESSION_SECRET?: string;
-  /** Soft-hold length in minutes. Defaults to 20. */
+  /** Soft-hold length in minutes. Defaults to 35 (aligned with Stripe Checkout). */
   SCHEDULE_HOLD_MINUTES?: string;
   STRIPE_SECRET_KEY?: string;
   STRIPE_WEBHOOK_SECRET?: string;
@@ -72,5 +72,6 @@ export function isBookableSlug(slug: string): boolean {
   return isScheduledSlug(slug) || isEventSlug(slug);
 }
 
-export const DEFAULT_HOLD_MINUTES = 20;
+/** Matches Stripe Checkout Session minimum expiry (~30m) with a small buffer. */
+export const DEFAULT_HOLD_MINUTES = 35;
 export const TIMEZONE = "Europe/Lisbon";

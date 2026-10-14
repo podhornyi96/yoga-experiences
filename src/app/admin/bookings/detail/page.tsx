@@ -158,7 +158,12 @@ function BookingDetailInner() {
   if (!booking) {
     return (
       <Container className="py-12">
-        <AdminNav active="bookings" onLogout={() => void onLogout()} />
+        <div>
+          <h1 className="text-3xl text-forest">Booking</h1>
+          <div className="mt-4">
+            <AdminNav active="bookings" onLogout={() => void onLogout()} />
+          </div>
+        </div>
         <p role="alert" className="mt-8 text-sm text-red-700">
           {error ?? "Booking not found."}
         </p>
@@ -185,21 +190,21 @@ function BookingDetailInner() {
 
   return (
     <Container className="py-12">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-sm text-muted">
-            <Link href="/admin/bookings/" className="hover:underline">
-              Bookings
-            </Link>{" "}
-            / detail
-          </p>
-          <h1 className="mt-1 text-3xl text-forest">{displayTitle}</h1>
-          <p className="mt-1 text-sm text-muted">
-            {formatSlotLabel(booking.startsAt)}
-            {slotStatus ? ` · slot ${slotStatus}` : ""}
-          </p>
+      <div>
+        <p className="text-sm text-muted">
+          <Link href="/admin/bookings/" className="hover:underline">
+            Bookings
+          </Link>{" "}
+          / detail
+        </p>
+        <h1 className="mt-1 text-3xl text-forest">{displayTitle}</h1>
+        <p className="mt-1 text-sm text-muted">
+          {formatSlotLabel(booking.startsAt)}
+          {slotStatus ? ` · slot ${slotStatus}` : ""}
+        </p>
+        <div className="mt-4">
+          <AdminNav active="bookings" onLogout={() => void onLogout()} />
         </div>
-        <AdminNav active="bookings" onLogout={() => void onLogout()} />
       </div>
 
       {message ? (

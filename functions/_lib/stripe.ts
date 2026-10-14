@@ -21,6 +21,11 @@ export async function createCheckoutSession(
     customerEmail?: string;
     /** Defaults to true. Gift checkout does not ask for a phone number. */
     collectPhone?: boolean;
+    /**
+     * Unix timestamp when the hosted Checkout page expires.
+     * Stripe requires between 30 minutes and 24 hours from creation.
+     */
+    expiresAt?: number;
   },
 ): Promise<StripeCheckoutSession> {
   const body = new URLSearchParams();
@@ -33,6 +38,9 @@ export async function createCheckoutSession(
   }
   if (params.customerEmail) {
     body.set("customer_email", params.customerEmail);
+  }
+  if (params.expiresAt != null) {
+    body.set("expires_at", String(params.expiresAt));
   }
   body.set("line_items[0][quantity]", "1");
   body.set("line_items[0][price_data][currency]", params.currency);

@@ -6,6 +6,7 @@ import {
   POST_SESSION_BUFFER_MIN,
   slotsConflict,
 } from "./capacity";
+import { lisbonWallClock } from "./booking-lead-time";
 import {
   DEFAULT_HOLD_MINUTES,
   type Env,
@@ -52,19 +53,7 @@ export function parseLocalDateTime(
 
 /** Compare Lisbon wall time `YYYY-MM-DDTHH:mm` to "now" in Europe/Lisbon. */
 export function isFutureStartsAt(startsAt: string, now = new Date()): boolean {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/Lisbon",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(now);
-  const get = (type: string) =>
-    parts.find((p) => p.type === type)?.value ?? "00";
-  const nowLocal = `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
-  return startsAt > nowLocal;
+  return startsAt > lisbonWallClock(now);
 }
 
 export function publicSlot(row: SlotRow) {

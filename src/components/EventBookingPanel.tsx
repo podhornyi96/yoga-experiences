@@ -4,7 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { BookingCTA } from "@/components/BookingCTA";
 import { siteConfig, whatsappLink } from "@/config/site";
-import { EVENT_POLICY_SHORT } from "@/lib/booking-policy";
+import {
+  EVENT_LEAD_POLICY_SHORT,
+  EVENT_POLICY_SHORT,
+} from "@/lib/booking-policy";
 import {
   createCheckoutSession,
   createHold,
@@ -124,7 +127,7 @@ export function EventBookingPanel({ event }: { event: PublicEventDetail }) {
           {busy ? "Starting checkout…" : `Pay & book · ${formatMoney(totalEur)}`}
         </button>
         <p className="mt-2 text-center text-xs text-muted">
-          {EVENT_POLICY_SHORT}{" "}
+          {EVENT_POLICY_SHORT} {EVENT_LEAD_POLICY_SHORT}{" "}
           <Link href="/terms/" className="underline underline-offset-2">
             Terms
           </Link>

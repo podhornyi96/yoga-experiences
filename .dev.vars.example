@@ -3,7 +3,7 @@
 
 ADMIN_PASSWORD=change-me
 ADMIN_SESSION_SECRET=generate-a-long-random-string
-# SCHEDULE_HOLD_MINUTES=20
+# SCHEDULE_HOLD_MINUTES=35
 
 # Stripe (test keys locally). Also set SITE_URL for Checkout redirects.
 # STRIPE_SECRET_KEY=sk_test_...
