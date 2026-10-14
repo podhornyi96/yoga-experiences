@@ -101,7 +101,7 @@ export default function TermsPage() {
                 Gift certificates can be bought for Sunrise Yoga, Sunset Yoga by
                 the Ocean, and private or tandem park sessions, for one or two
                 people. The buyer pays the full price online. A certificate is
-                valid for 12 months from payment, is not refundable, and cannot
+                valid for 3 months from payment, is not refundable, and cannot
                 be exchanged for cash or a different experience. Yoga mats are
                 not included.
               </p>

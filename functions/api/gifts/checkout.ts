@@ -71,7 +71,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       currency: "eur",
       productName: `Gift — ${title} · ${who}`,
       productDescription:
-        "Gift certificate, valid 12 months. The recipient chooses a date. Non-refundable.",
+        "Gift certificate, valid 3 months. The recipient chooses a date. Non-refundable.",
       successUrl: `${origin}/gift/success/?session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${origin}/gift/`,
       customerEmail: value.buyerEmail,

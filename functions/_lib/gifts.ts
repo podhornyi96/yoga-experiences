@@ -26,7 +26,7 @@ import {
   type StripeCheckoutSessionObject,
 } from "./stripe";
 
-export const GIFT_VALIDITY_MS = 365 * 24 * 60 * 60 * 1000;
+export const GIFT_VALIDITY_MS = 90 * 24 * 60 * 60 * 1000;
 
 export const GIFT_SLUGS = [
   "sunrise-yoga-lisbon",

@@ -267,7 +267,7 @@ export function GiftPurchaseForm() {
           {busy ? "Starting checkout…" : `Buy gift · ${money(price)}`}
         </button>
         <p className="mt-3 text-center text-xs text-muted">
-          {title} · {people === 1 ? "1 person" : "2 people"}. Valid 12 months,
+          {title} · {people === 1 ? "1 person" : "2 people"}. Valid 3 months,
           non-refundable.{" "}
           <a href="/terms/" className="font-medium text-forest underline-offset-2 hover:underline">
             Terms
