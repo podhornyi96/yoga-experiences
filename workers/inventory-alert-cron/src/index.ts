@@ -1,6 +1,7 @@
 /**
- * Hourly cron Worker → hits Pages /api/cron/low-inventory.
- * The API only acts at 11:00 Europe/Lisbon (DST-safe).
+ * Hourly cron Worker → hits Pages cron APIs.
+ * The low-inventory API only acts at 11:00 Europe/Lisbon (DST-safe).
+ * Booking reminders run every hour (guest windows + teacher digests at 07:00 / 20:00).
  *
  * Deploy:
  *   npx wrangler secret put CRON_SECRET -c workers/inventory-alert-cron/wrangler.toml
@@ -14,9 +15,13 @@ export interface Env {
   CRON_SECRET: string;
 }
 
-async function runLowInventoryCheck(env: Env): Promise<void> {
+async function hitCron(
+  env: Env,
+  path: string,
+  label: string,
+): Promise<void> {
   const base = (env.SITE_URL || "https://ivanna-yoga.com").replace(/\/$/, "");
-  const url = `${base}/api/cron/low-inventory`;
+  const url = `${base}${path}`;
   const secret = env.CRON_SECRET?.trim().replace(/^["']|["']$/g, "") ?? "";
   const res = await fetch(url, {
     method: "GET",
@@ -26,7 +31,7 @@ async function runLowInventoryCheck(env: Env): Promise<void> {
     },
   });
   const body = await res.text();
-  console.log("[inventory-alert-cron]", {
+  console.log(`[inventory-alert-cron] ${label}`, {
     status: res.status,
     body: body.slice(0, 500),
   });
@@ -38,6 +43,7 @@ export default {
     env: Env,
     _ctx: ExecutionContext,
   ): Promise<void> {
-    await runLowInventoryCheck(env);
+    await hitCron(env, "/api/cron/low-inventory", "low-inventory");
+    await hitCron(env, "/api/cron/booking-reminders", "booking-reminders");
   },
 };

@@ -27,6 +27,9 @@ export interface BookingRow {
   location_id: string | null;
   /** 1 when trainer added the guest offline (no Stripe). */
   added_manually: number;
+  reminder_24h_sent_at?: string | null;
+  reminder_12h_sent_at?: string | null;
+  reminder_3h_sent_at?: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -1,5 +1,6 @@
-# Thin companion Worker: hourly cron → Pages low-inventory alert API.
-# Pages Functions cannot attach Cron Triggers; this Worker only fetches the API.
+# Thin companion Worker: hourly cron → Pages cron APIs
+# (low-inventory + booking-reminders).
+# Pages Functions cannot attach Cron Triggers; this Worker only fetches the APIs.
 
 name = "yoga-inventory-alert-cron"
 main = "src/index.ts"

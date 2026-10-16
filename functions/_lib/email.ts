@@ -711,6 +711,280 @@ export async function sendBookingConfirmation(
   return { sent: true, teacherNotified, teacherTelegramNotified };
 }
 
+export type ReminderWindowHours = 24 | 12 | 3;
+
+export type TeacherDigestKind = "morning" | "evening";
+
+export type TeacherDigestGuest = {
+  bookingId: string;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  people: number;
+  mats: number;
+};
+
+export type TeacherDigestSlot = {
+  startsAt: string;
+  experienceSlug: string;
+  locationId: string | null;
+  guests: TeacherDigestGuest[];
+};
+
+function reminderWindowLabel(hours: ReminderWindowHours): string {
+  if (hours === 24) return "in 24 hours";
+  if (hours === 12) return "in 12 hours";
+  return "in 3 hours";
+}
+
+/** Guest nudge before the session (same details as confirmation, shorter intro). */
+export async function sendBookingReminder(
+  booking: BookingRow,
+  env: EmailEnv,
+  windowHours: ReminderWindowHours,
+): Promise<{ sent: boolean; reason?: string }> {
+  const to = booking.guest_email?.trim() ?? "";
+  if (!to) return { sent: false, reason: "no_guest_email" };
+
+  const meta = sessionMeta(booking);
+  const when = formatSlotLabel(booking.starts_at);
+  const site = (env.SITE_URL ?? "https://ivanna-yoga.com").replace(/\/$/, "");
+  const wa = env.WHATSAPP ?? "351964275367";
+  const contactEmail = env.CONTACT_EMAIL ?? "ivannapylypchuk@gmail.com";
+  const waLink = `https://wa.me/${wa}`;
+  const firstName = booking.guest_name?.trim().split(/\s+/)[0];
+  const windowLabel = reminderWindowLabel(windowHours);
+  const subject = `Reminder — ${meta.title} ${windowLabel}`;
+
+  const locationBlock =
+    meta.locationLabel && meta.locationUrl
+      ? `Location: ${meta.locationLabel}\nMaps: ${meta.locationUrl}\n`
+      : meta.locationLabel
+        ? `Location: ${meta.locationLabel}\n`
+        : "";
+
+  const remaining =
+    booking.payment_status !== "paid_in_full" && booking.remaining_eur > 0
+      ? `Remaining balance: ${money(booking.remaining_eur)} (due later)`
+      : null;
+
+  const text = [
+    `Hi${firstName ? ` ${firstName}` : ""},`,
+    ``,
+    `Friendly reminder: your ${meta.title} is ${windowLabel}.`,
+    ``,
+    `When: ${when} (Lisbon time)`,
+    `Duration: ${meta.duration}`,
+    locationBlock.trimEnd(),
+    `Guests: ${booking.people}`,
+    booking.mats > 0 ? `Yoga mats: ${booking.mats}` : null,
+    remaining,
+    ``,
+    `Questions: WhatsApp ${waLink} or ${contactEmail}`,
+    `Terms: ${site}/terms/`,
+    ``,
+    `— Ivanna Yoga Lisbon`,
+  ]
+    .filter((line) => line != null)
+    .join("\n");
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<body style="font-family: Georgia, serif; color: #1a2e1a; line-height: 1.5; max-width: 560px; margin: 0 auto; padding: 24px;">
+  <p>Hi${firstName ? ` ${escapeHtml(firstName)}` : ""},</p>
+  <p>Friendly reminder: your <strong>${escapeHtml(meta.title)}</strong> is <strong>${escapeHtml(windowLabel)}</strong>.</p>
+  <table style="width:100%; border-collapse: collapse; margin: 20px 0;">
+    <tr><td style="padding: 6px 0; color: #5c6b5c;">When</td><td style="padding: 6px 0;"><strong>${escapeHtml(when)}</strong> (Lisbon time)</td></tr>
+    <tr><td style="padding: 6px 0; color: #5c6b5c;">Duration</td><td style="padding: 6px 0;">${escapeHtml(meta.duration)}</td></tr>
+    ${
+      meta.locationLabel
+        ? `<tr><td style="padding: 6px 0; color: #5c6b5c;">Location</td><td style="padding: 6px 0;">${
+            meta.locationUrl
+              ? `<a href="${escapeHtml(meta.locationUrl)}">${escapeHtml(meta.locationLabel)}</a>`
+              : escapeHtml(meta.locationLabel)
+          }</td></tr>`
+        : ""
+    }
+    <tr><td style="padding: 6px 0; color: #5c6b5c;">Guests</td><td style="padding: 6px 0;">${booking.people}</td></tr>
+    ${
+      booking.mats > 0
+        ? `<tr><td style="padding: 6px 0; color: #5c6b5c;">Yoga mats</td><td style="padding: 6px 0;">${booking.mats}</td></tr>`
+        : ""
+    }
+    ${
+      remaining
+        ? `<tr><td style="padding: 6px 0; color: #5c6b5c;">Remaining</td><td style="padding: 6px 0;">${money(booking.remaining_eur)}</td></tr>`
+        : ""
+    }
+  </table>
+  <p style="font-size: 14px;">Questions: <a href="${waLink}">WhatsApp</a> or <a href="mailto:${contactEmail}">${escapeHtml(contactEmail)}</a></p>
+  <p style="font-size: 13px; color: #5c6b5c;"><a href="${site}/terms/">Terms of booking</a></p>
+  <p>— Ivanna Yoga Lisbon</p>
+</body>
+</html>`.trim();
+
+  return sendResendEmail(env, { to, subject, html, text });
+}
+
+function digestSlotMeta(slot: TeacherDigestSlot) {
+  const people = slot.guests.reduce((sum, g) => sum + g.people, 0);
+  return sessionMeta({
+    id: slot.guests[0]?.bookingId ?? "digest",
+    slot_id: "",
+    experience_slug: slot.experienceSlug,
+    starts_at: slot.startsAt,
+    guest_email: null,
+    guest_name: null,
+    guest_phone: null,
+    people,
+    mats: 0,
+    total_eur: 0,
+    deposit_eur: 0,
+    remaining_eur: 0,
+    payment_status: "deposit_paid",
+    stripe_checkout_session_id: null,
+    stripe_payment_intent_id: null,
+    notes: null,
+    paid_in_full_at: null,
+    location_id: slot.locationId,
+    added_manually: 0,
+    reminder_24h_sent_at: null,
+    reminder_12h_sent_at: null,
+    reminder_3h_sent_at: null,
+    created_at: "",
+    updated_at: "",
+  });
+}
+
+function formatDigestDate(ymd: string): string {
+  const [y, m, d] = ymd.split("-").map(Number);
+  if (!y || !m || !d) return ymd;
+  return new Intl.DateTimeFormat("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(y, m - 1, d, 12)));
+}
+
+/** Morning (today) / evening (tomorrow) schedule digest for the teacher. */
+export async function sendTeacherScheduleDigest(
+  env: EmailEnv,
+  digest: {
+    kind: TeacherDigestKind;
+    sessionDate: string;
+    slots: TeacherDigestSlot[];
+  },
+): Promise<{
+  emailSent: boolean;
+  telegramSent: boolean;
+  reason?: string;
+}> {
+  if (digest.slots.length === 0) {
+    return { emailSent: false, telegramSent: false, reason: "no_bookings" };
+  }
+
+  const site = (env.SITE_URL ?? "https://ivanna-yoga.com").replace(/\/$/, "");
+  const adminUrl = `${site}/admin/`;
+  const dateLabel = formatDigestDate(digest.sessionDate);
+  const whenWord = digest.kind === "morning" ? "Today" : "Tomorrow";
+  const subject = `${whenWord}'s schedule — ${dateLabel} · ${digest.slots.length} session${digest.slots.length === 1 ? "" : "s"}`;
+
+  const textBlocks: string[] = [
+    `${whenWord}'s yoga schedule (${dateLabel}, Lisbon time).`,
+    ``,
+  ];
+
+  for (const slot of digest.slots) {
+    const meta = digestSlotMeta(slot);
+    const when = formatSlotLabel(slot.startsAt);
+    const totalPeople = slot.guests.reduce((sum, g) => sum + g.people, 0);
+    textBlocks.push(`• ${when} — ${meta.title}`);
+    if (meta.locationLabel) textBlocks.push(`  Location: ${meta.locationLabel}`);
+    textBlocks.push(`  Guests: ${totalPeople} (${slot.guests.length} booking${slot.guests.length === 1 ? "" : "s"})`);
+    for (const guest of slot.guests) {
+      const who = guest.name?.trim() || guest.email?.trim() || "Guest";
+      const bits = [
+        who,
+        `${guest.people}p`,
+        guest.phone?.trim() || null,
+        guest.email?.trim() || null,
+      ].filter(Boolean);
+      textBlocks.push(`  – ${bits.join(" · ")}`);
+    }
+    textBlocks.push(``);
+  }
+
+  textBlocks.push(`Admin: ${adminUrl}`);
+  const text = textBlocks.join("\n");
+
+  const slotsHtml = digest.slots
+    .map((slot) => {
+      const meta = digestSlotMeta(slot);
+      const when = formatSlotLabel(slot.startsAt);
+      const totalPeople = slot.guests.reduce((sum, g) => sum + g.people, 0);
+      const guestsHtml = slot.guests
+        .map((guest) => {
+          const who = escapeHtml(
+            guest.name?.trim() || guest.email?.trim() || "Guest",
+          );
+          const phone = guest.phone?.trim()
+            ? ` · ${escapeHtml(guest.phone.trim())}`
+            : "";
+          const email = guest.email?.trim()
+            ? ` · <a href="mailto:${escapeHtml(guest.email.trim())}">${escapeHtml(guest.email.trim())}</a>`
+            : "";
+          return `<li>${who} (${guest.people}p)${phone}${email}</li>`;
+        })
+        .join("");
+      return `
+      <div style="margin: 16px 0; padding-bottom: 12px; border-bottom: 1px solid #e5ebe5;">
+        <p style="margin: 0 0 6px;"><strong>${escapeHtml(when)}</strong> — ${escapeHtml(meta.title)}</p>
+        ${
+          meta.locationLabel
+            ? `<p style="margin: 0 0 6px; color: #5c6b5c; font-size: 14px;">${
+                meta.locationUrl
+                  ? `<a href="${escapeHtml(meta.locationUrl)}">${escapeHtml(meta.locationLabel)}</a>`
+                  : escapeHtml(meta.locationLabel)
+              }</p>`
+            : ""
+        }
+        <p style="margin: 0 0 6px; font-size: 14px;">${totalPeople} guest${totalPeople === 1 ? "" : "s"}</p>
+        <ul style="margin: 0; padding-left: 18px; font-size: 14px;">${guestsHtml}</ul>
+      </div>`;
+    })
+    .join("");
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<body style="font-family: Georgia, serif; color: #1a2e1a; line-height: 1.5; max-width: 560px; margin: 0 auto; padding: 24px;">
+  <p><strong>${escapeHtml(whenWord)}'s schedule</strong> — ${escapeHtml(dateLabel)} (Lisbon time).</p>
+  ${slotsHtml}
+  <p><a href="${escapeHtml(adminUrl)}">Open admin</a></p>
+</body>
+</html>`.trim();
+
+  const email = await sendResendEmail(env, {
+    to: teacherNotifyAddress(env),
+    subject,
+    html,
+    text,
+  });
+  const telegram = await sendTelegramMessage(env, text);
+
+  return {
+    emailSent: email.sent,
+    telegramSent: telegram.sent,
+    reason:
+      email.sent || telegram.sent
+        ? undefined
+        : email.reason || telegram.reason || "send_failed",
+  };
+}
+
 export type GiftEmailPayload = {
   code: string;
   displayCode: string;

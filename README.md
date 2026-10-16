@@ -51,11 +51,9 @@ In the Cloudflare Pages project → Settings:
 npm run db:migrate:remote
 ```
 
-### Low-inventory daily email
+### Cron jobs (low inventory + booking reminders)
 
-At **11:00 Europe/Lisbon**, if Sunrise, Sunset, or Private/Tandem have **fewer than 5** future `open` slots, the trainer gets one email with counts and a link to `/admin/`.
-
-Pages Functions cannot run Cron Triggers, so:
+Pages Functions cannot run Cron Triggers, so a companion Worker calls the APIs hourly:
 
 1. Set the same **`CRON_SECRET`** on the Pages project and on the companion Worker.
 2. Deploy the Worker once:
@@ -65,13 +63,19 @@ npx wrangler secret put CRON_SECRET -c workers/inventory-alert-cron/wrangler.tom
 npx wrangler deploy -c workers/inventory-alert-cron/wrangler.toml
 ```
 
-The Worker runs hourly (`0 * * * *`); `/api/cron/low-inventory` only sends when Lisbon hour is 11.
+The Worker runs hourly (`0 * * * *`) and hits:
 
-Manual test (skips the hour gate):
+- `/api/cron/low-inventory` — at **11:00 Europe/Lisbon**, emails the trainer when Sunrise / Sunset / Private-Tandem have fewer than 5 future `open` slots.
+- `/api/cron/booking-reminders` — guest emails at **24h / 12h / 3h** before `starts_at` (Lisbon); skips the 3h window overnight (00:00–06:59). Trainer gets a **morning digest at 07:00** (today) and **evening digest at 20:00** (tomorrow) by email + Telegram. Late bookings simply miss windows that already passed (cascade to the next).
+
+Manual tests (`?force=1` skips hour / quiet-hour gates):
 
 ```bash
 curl -H "Authorization: Bearer $CRON_SECRET" \
   "https://ivanna-yoga.com/api/cron/low-inventory?force=1"
+
+curl -H "Authorization: Bearer $CRON_SECRET" \
+  "https://ivanna-yoga.com/api/cron/booking-reminders?force=1"
 ```
 
 ### Stripe webhook
