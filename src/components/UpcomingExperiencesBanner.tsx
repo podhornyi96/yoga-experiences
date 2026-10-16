@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { EventCountdown } from "@/components/EventCountdown";
 import {
   fetchUpcomingEvents,
   formatSlotLabel,
@@ -39,6 +40,10 @@ export function UpcomingExperiencesBanner() {
           <div className="min-w-0">
             <p className="text-sm font-semibold sm:text-base">
               {formatSlotLabel(event.startsAt)}
+              <EventCountdown
+                startsAt={event.startsAt}
+                className="font-medium text-cream/85"
+              />
               <span className="mx-2 text-cream/50">·</span>
               {event.title}
             </p>

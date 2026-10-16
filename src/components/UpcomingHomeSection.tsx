@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { EventCountdown } from "@/components/EventCountdown";
 import { Section } from "@/components/Section";
 import {
   fetchUpcomingEvents,
@@ -64,6 +65,10 @@ export function UpcomingHomeSection() {
             <div className="flex flex-1 flex-col justify-center p-5 sm:p-6">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-sage-dark">
                 {formatSlotLabel(event.startsAt)}
+                <EventCountdown
+                  startsAt={event.startsAt}
+                  className="font-semibold normal-case tracking-normal text-clay-dark"
+                />
               </p>
               <h3 className="mt-1.5 text-xl text-forest group-hover:text-clay-dark">
                 {event.title}

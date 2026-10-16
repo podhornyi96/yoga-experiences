@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { WhatsAppIcon } from "@/components/BookingCTA";
 import { Container } from "@/components/Container";
 import { EventBookingPanel } from "@/components/EventBookingPanel";
+import { EventCountdown } from "@/components/EventCountdown";
 import { ExperienceGallery } from "@/components/ExperienceGallery";
 import { MapPinIcon } from "@/components/icons";
 import { siteConfig, whatsappLink } from "@/config/site";
@@ -197,6 +198,10 @@ export function EventDetailClient({ slotId }: { slotId: string }) {
             </h1>
             <p className="mt-3 text-lg font-medium text-ink">
               {formatSlotLabel(event.startsAt)}
+              <EventCountdown
+                startsAt={event.startsAt}
+                className="font-medium text-sage-dark"
+              />
             </p>
             <p className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-muted">
               <MapPinIcon className="h-4 w-4 shrink-0" />
