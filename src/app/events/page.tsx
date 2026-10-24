@@ -8,6 +8,7 @@ export const metadata: Metadata = pageSeo({
     "View date, location and book a scheduled yoga session with Ivanna in Lisbon.",
   path: "/events/",
   noIndex: true,
+  omitCanonicalUrl: true,
 });
 
 export default function EventsPage() {

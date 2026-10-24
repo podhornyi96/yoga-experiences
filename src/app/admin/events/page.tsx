@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { AdminNav } from "@/components/AdminNav";
 import { AdminSlotTimeScope } from "@/components/AdminSlotTimeScope";
 import { Container } from "@/components/Container";
-import { getEventTemplates } from "@/data/event-templates";
+import { eventPagePath, getEventTemplates } from "@/data/event-templates";
 import { formatSlotLabel } from "@/lib/schedule-api";
 import {
   adminApi,
@@ -947,7 +947,7 @@ export default function AdminEventsPage() {
   }
 
   async function copyLink(id: string) {
-    const url = `${window.location.origin}/events/?id=${encodeURIComponent(id)}`;
+    const url = `${window.location.origin}${eventPagePath(id)}`;
     try {
       await navigator.clipboard.writeText(url);
       setCopiedId(id);

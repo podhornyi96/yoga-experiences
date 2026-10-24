@@ -45,7 +45,7 @@ export const SCHEDULED_SLUGS = [
 ] as const;
 
 /**
- * Trainer-organised events (Events admin) — public `/events/?id=`.
+ * Trainer-organised events (Events admin) — public `/events/{slotId}/`.
  */
 export const EVENT_SLUGS = [
   "yoga-studio-saldanha",

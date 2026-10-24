@@ -99,7 +99,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         template.maxGuests - (Number(slot.seats_taken) || 0),
       ),
       whatsappOnly: false,
-      href: `/events/?id=${encodeURIComponent(slot.id)}`,
+      href: `/events/${encodeURIComponent(slot.id)}/`,
     });
   }
 

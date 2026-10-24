@@ -123,6 +123,7 @@ export function getEventTemplates(): EventTemplate[] {
   return EVENT_TEMPLATES;
 }
 
+/** Public share URL — path segment (Instagram-safe). `?id=` still works via rewrite. */
 export function eventPagePath(slotId: string): string {
-  return `/events/?id=${encodeURIComponent(slotId)}`;
+  return `/events/${encodeURIComponent(slotId)}/`;
 }

@@ -147,9 +147,9 @@ export const groups: Record<
   experiences: {
     slug: "experiences",
     label: "Experiences",
-    tagline: "Outdoor sunrise, sunset & beach yoga near Lisbon",
+    tagline: "Private yoga experiences around Lisbon",
     description:
-      "English-friendly sessions in parks and by the ocean. Book a date online; mats on request. Made for travellers and expats.",
+      "Private sessions around Lisbon — parks, ocean and unique venues. Book for yourself or bring your own group; you choose how many people join. English-friendly, mats on request.",
   },
   private: {
     slug: "private",

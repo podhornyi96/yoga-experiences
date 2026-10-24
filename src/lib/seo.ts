@@ -9,6 +9,7 @@ export function pageSeo({
   image,
   absolute = false,
   noIndex = false,
+  omitCanonicalUrl = false,
 }: {
   title: string;
   description: string;
@@ -18,17 +19,22 @@ export function pageSeo({
   absolute?: boolean;
   /** Hide from search engines (booking success/cancel, admin helpers). */
   noIndex?: boolean;
+  /**
+   * Skip canonical + og:url. Needed for `/events/{id}/` (one static HTML for many
+   * URLs) so Meta/Instagram keep the pasted path instead of collapsing to `/events/`.
+   */
+  omitCanonicalUrl?: boolean;
 }): Metadata {
   const ogImage = image ?? siteConfig.ogImage;
   return {
     title: absolute ? { absolute: title } : title,
     description,
-    alternates: { canonical: path },
+    ...(omitCanonicalUrl ? {} : { alternates: { canonical: path } }),
     ...(noIndex ? { robots: { index: false, follow: false } } : {}),
     openGraph: {
       type: "website",
       locale: "en_US",
-      url: path,
+      ...(omitCanonicalUrl ? {} : { url: path }),
       siteName: siteConfig.name,
       title,
       description,
