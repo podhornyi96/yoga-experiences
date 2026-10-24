@@ -21,10 +21,23 @@ yoga packs, and corporate stay on **WhatsApp**.
 
 ```bash
 npm install
-npm run dev      # http://localhost:3000 (static UI only; /api/* needs pages dev)
+npm run dev      # http://localhost:3000 (static UI only; /api/* needs pages dev or proxy)
 npm run build    # static export to ./out
 npm run lint
 ```
+
+### Use production schedule data with `next dev`
+
+`next dev` does not run Pages Functions. To load real upcoming events / event
+detail on localhost without `wrangler pages dev`, create `.env.local`:
+
+```bash
+DEV_API_PROXY=https://ivanna-yoga.com
+```
+
+Restart `npm run dev`. Only public **GET** `/api/upcoming` and `/api/events` are
+proxied (same-origin from the browser, no CORS). Booking POSTs stay local and
+will 404 unless you run Pages Functions.
 
 ### Schedule API locally
 

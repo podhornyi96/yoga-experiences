@@ -204,6 +204,7 @@ export type UpcomingEvent = {
   durationMinutes: number;
   pricePerPersonEur: number | null;
   maxGuests: number;
+  seatsRemaining?: number;
   whatsappOnly: boolean;
   href: string;
 };

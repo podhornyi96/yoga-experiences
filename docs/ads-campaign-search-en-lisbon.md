@@ -1,8 +1,9 @@
 # Google Ads — `Search_EN_Lisbon_InMarket`
 
-Живая кампания. Это то, что реально запущено, не черновик стратегии.
+Живая кампания. Это то, что реально запущено / менялось, не черновик стратегии.
 
-**Запущена 20 сентября 2026.** На 21 сентября кампания включена, объявления `Eligible`, связка Campaign → 3 ad groups → RSA собрана. Показы в первые сутки могут быть нулевыми: узкие phrase/exact ключи, английский, Presence, модерация и лаг отчётов.
+**Запущена:** 20 сентября 2026.  
+**Последнее обновление доки:** 17 октября 2026.
 
 Почему выбран Search, а не Meta — в [`ads-strategy-v2.md`](./ads-strategy-v2.md).
 
@@ -10,11 +11,13 @@
 
 ## Цель
 
-Забрать уже готовый спрос: человек **в Лиссабоне** ищет на английском `yoga lisbon` / sunrise / sunset и **платит 30% депозит** на групповой экспириенс.
+Забрать уже готовый спрос: человек **в Лиссабоне** (или регулярно там) ищет на английском `yoga lisbon` / sunrise / sunset и **платит депозит** на групповой outdoor-экспириенс.
 
-Не узнаваемость, не WhatsApp как главная конверсия, не локалы на pt, не Private за €45.
+Не узнаваемость, не WhatsApp как главная конверсия в Ads, не локалы на pt, не Private за €45.
 
 Конверсия в Google Ads: визит на `https://ivanna-yoga.com/booking/success/` (page load). Ценность по умолчанию **€95**, учитывать **одну** на клик, статус **Primary**.
+
+**Важно:** при Reject cookies (Consent Mode) Ads часто **не видит** конверсию, Clarity тоже пустой. Реальные оплаты сверять по Stripe + Cloudflare (`gclid` / время), не только по Ads Conversions.
 
 ---
 
@@ -29,50 +32,52 @@
 | Consent | Тег в HTML сразу (Consent Mode, cookies denied до Accept) |
 | Purchase event `send_to` | Не нужен: действие «Покупка» — загрузка URL, не event snippet |
 
-Тег не грузится на localhost. На проде должен быть в исходнике страницы: `googletagmanager.com/gtag/js?id=AW-18460763664`.
+Тег не грузится на localhost. На проде: `googletagmanager.com/gtag/js?id=AW-18460763664`.
 
 ---
 
-## Настройки кампании
+## Настройки кампании (актуально на 17 окт 2026)
 
-| Поле | Как стоит / как должно стоять |
+| Поле | Значение |
 |---|---|
-| Budget | Average daily **€2,30** (~€70/мес). В отдельные дни до ~2×, за месяц не выше ~€70 |
-| Bidding | Maximize clicks, CPC cap **€0,60** |
+| Budget | Average daily **€2,30** (~€70/мес). Не поднимать до решения на чекпоинте |
+| Bidding | Maximize clicks, CPC cap **€0,90** (было €0,60 до 17 окт) |
 | Networks | Только Search. Display и Search Partners **выкл** |
 | Locations | Lisbon, Cascais, Sintra |
-| Location options | **Presence** (люди в локации или регулярно там). Не Presence or Interest |
+| Location options | **Presence** (не Presence or Interest) |
 | Languages | English |
 | AI Max / text optimization / Final URL Supplement | Выкл |
 | Ad rotation | Optimise: prefer best performing |
 | Schedule | Круглосуточно |
-| Auto-apply recommendations | Всё **0** ([настройки](https://ads.google.com/aw/recommendations/settings)) |
+| Auto-apply recommendations | Всё **0** — не жать Improve health / Apply |
 | EU political ads | Нет |
 | Call extension | Не добавлять |
 
-Мастер иногда не даёт переключить Presence при создании — править в Settings после публикации.
+Не гнаться за Optimization score. Recommendations Google (broad, AI Max, raise budget) — dismiss.
 
 ---
 
 ## Структура
 
-Три **ad groups** (в Google это не ad set). Группа = тема запроса. Объявление = текст и URL.
+Три **ad groups**. На 17 окт — **по одному Enabled RSA** в каждой группе (дубли удалены).
 
-| Ad group | Посадочная | Зачем |
-|---|---|---|
-| `Yoga Lisbon` | `/experiences/` | Общий спрос `yoga lisbon` |
-| `Sunrise Yoga` | `/experiences/sunrise-yoga-lisbon/` | Рассвет |
-| `Sunset & Beach` | `/experiences/sunset-yoga-ocean/` | Закат / пляж |
+| Ad group | Final URL | Path | Зачем |
+|---|---|---|---|
+| `Yoga Lisbon` | `/experiences/` | `yoga` / `lisbon` | Общий спрос `yoga lisbon` |
+| `Sunrise Yoga` | `/experiences/sunrise-yoga-lisbon/` | `sunrise` / `lisbon` | Рассвет |
+| `Sunset & Beach` | `/experiences/sunset-yoga-ocean/` | `sunset` / `beach` | Закат / пляж |
 
-`Sintra` **не запущена** — слотов instant booking ещё нет. `Private` не запускать.
+`Sintra` **не запущена**. `Private` не запускать.
 
-На 20 сентября в отчёте Ads было **5 RSA** (дубли в Yoga Lisbon и Sunrise Yoga). Оставить **по одному** Enabled на группу, лишние Pause.
+Business name: `Ivanna Yoga Lisbon`. Logo — квадрат из `brand/`.
 
 ---
 
 ## Ключи
 
-Только phrase `"..."` и exact `[...]`. Broad не использовать. Не жать Google «Add keywords» / Update suggestions.
+Только phrase `"..."` и exact `[...]`. Broad не использовать. Не жать Google «Add keywords».
+
+Search term matching: **Using only your keywords and match types**.
 
 ### `Yoga Lisbon`
 
@@ -116,11 +121,13 @@
 "beach yoga"
 ```
 
-Search term matching: **Using only your keywords and match types**.
+На практике почти весь трафик ест **Yoga Lisbon**. Sunrise/Sunset ключи — единичные показы/клики.
 
 ---
 
-## Минус-слова (кампания)
+## Минус-слова (уровень Campaign)
+
+Стартовый список + волны из Search terms (6 окт и 17 окт). Добавлять к существующим, не заменять.
 
 ```
 teacher training
@@ -153,35 +160,63 @@ barato
 preço
 clothes
 leggings
+studio
+studios
+aerial
+goat
+retreat
+loft
+lx portal
+leela
+purna
+kynd
+natha
+dhara
+jaya
+tenderness
+iyengar
+ashtanga
+yin
+campolide
+chiado
+rossio
+saldanha
+sintra
+kundalini
+puppy
+vinyasa
 ```
+
+Не минусовать: `yoga`, `lisbon`, `sunrise`, `sunset`, `beach`, `outdoor`, `english`.
 
 ---
 
-## Объявления (RSA)
+## Объявления (RSA) — актуально после 17 окт
 
-Business name: `Ivanna Yoga Lisbon`. Logo — квадрат из `brand/`.
+В каждой группе **один** RSA. Дубли в Yoga Lisbon и Sunrise Yoga удалены 17 окт.
 
-### Yoga Lisbon
+### Yoga Lisbon (оставить этот)
 
 - Final URL: `https://ivanna-yoga.com/experiences/`
 - Path: `yoga` / `lisbon`
-- Headlines: Outdoor Yoga in Lisbon · Yoga Lisbon · Book Online in 1 Minute · English Yoga in Lisbon · Sunrise, Sunset & Beach · All Levels Welcome · From €50 Per Session · Instant Online Booking · Parks & Ocean Views · Small Groups, Big Views · Certified RYT-300 Teacher · Pay 30% Deposit Online · Yoga Experiences Lisbon · Outdoor Yoga Lisbon
-- **Не использовать:** `Drop-In Yoga in Lisbon`, `Yoga Classes in Lisbon` — звучит как студия; search terms показали студийный интент.
-- Descriptions: outdoor parks & ocean, sunrise + sunset, instant book, €50 / €100 for 5, RYT-300 + mats · For travellers & expats
+- **Заменено 17 окт:**
+  - ~~Yoga Classes in Lisbon~~ → outdoor-вариант (`Outdoor Yoga Lisbon` / `Yoga in Lisbon Parks`)
+  - ~~Drop-In Yoga in Lisbon~~ → `Parks & Ocean Views` / `Book Sunrise or Sunset`
+- Остальные headlines ок: Yoga Lisbon · Book Online · English Yoga · Sunrise, Sunset & Beach · Outdoor Yoga in Lisbon · From €50 · deposit и т.д.
+- Descriptions уже про outdoor (sunrise/sunset, book online, deposit) — не трогали
 
 ### Sunrise Yoga
 
 - Final URL: `https://ivanna-yoga.com/experiences/sunrise-yoga-lisbon/`
 - Path: `sunrise` / `lisbon`
-- Headlines: Sunrise Yoga in Lisbon · Sunrise Yoga Lisbon · Morning Yoga Lisbon · Book Online in 1 Minute · Yoga Over Lisbon at Dawn · 60 Min at Portas do Sol · Morning Yoga in Lisbon · All Levels Welcome · From €50 Per Session · Instant Online Booking · Classes in English · Small Groups, Big Views · Pay 30% Deposit Online · Certified RYT-300 Teacher
-- Descriptions: 60-min dawn flow, instant book, цена, Portas do Sol
+- Оставлен ad с историей кликов (`Sunrise Yoga in Lisbon | Sunrise Yoga Lisbon | Morning Yoga…`)
+- Headlines продуктовые — студийный язык не правили
 
 ### Sunset & Beach
 
 - Final URL: `https://ivanna-yoga.com/experiences/sunset-yoga-ocean/`
 - Path: `sunset` / `beach`
-- Headlines: Sunset Yoga by the Ocean · Beach Yoga in Lisbon · Sunset Yoga Lisbon · Beach Yoga Lisbon · Book Online in 1 Minute · Golden Hour on the Sand · Beach Yoga Cascais · All Levels Welcome · From €50 Per Session · Instant Online Booking · Small Group, Max 8 · Classes in English · Pay 30% Deposit Online · Yoga on the Beach Lisbon
-- Descriptions: Atlantic sunset flow, instant book, цена, max 8 + mats
+- Один RSA (дублей на 17 окт не разбирали отдельно; если появятся — оставить один)
 
 Не добавлять в sitelinks: Private Yoga, Corporate Yoga, Contact Us.
 
@@ -201,37 +236,140 @@ Sitelinks:
 
 Callouts: All Levels Welcome · Instant Online Booking · Classes in English · Small Groups · Certified RYT-300 · Mats On Request
 
-Картинки в Search не обязательны. Display expansion не включать.
-
 ---
 
-## Чего не трогать первую неделю
+## Связанные правки сайта / ops (не Ads UI)
 
-Не включать AI Max, broad, Display, Page view как цель, Call. Не кликать свои объявления — проверка только через **Ad preview and diagnosis**.
+Сделаны параллельно с разбором воронки (Clarity + Ads, ~6–17 окт):
 
-Таблица Ads в интерфейсе может быть пустой при `1–5 of 5` — баг UI. Факт: Download / Ad report.
-
----
-
-## Как судить
-
-| Когда | Что смотреть |
+| Что | Зачем |
 |---|---|
-| 20–27 сен | Serving / Eligible, расход ~€2/день, не править ключи и ставки |
-| ~28 сен – 4 окт | Search terms → минус-слова; реальный CPC; какая группа ест бюджет |
-| Октябрь | CPA брони ≤ €25 coastal. Синтру включать после слотов в админке |
-
-Ожидание на месяц: мало запросов, **2–4 брони из Ads** реалистично. 0 броней за первые 10 дней — не провал. Главное за 2 недели: англоязычные запросы Lisbon/sunrise/sunset и цена клика.
-
-Клики из Ads: в URL будет `gclid`. `utm_source` сам не появляется. Clarity видит сессию только после Accept.
+| Копирайт `/experiences/` — outdoor / parks & ocean / travellers & expats | Интент `yoga lisbon` ≠ студия |
+| Порядок карточек: Sunrise → Sunset → Cascais → Sintra | Ads-трафик не уводить сразу в €299 |
+| Cascais/Sintra убраны из homepage Featured | Тяжёлые WA-only офферы |
+| Карточки: `Book online · deposit` / `WhatsApp booking` | Ожидание по способу брони |
+| Клик по фото карточки → detail, не zoom | Меньше тупиковых кликов |
+| Empty state без слотов + явный WA | Clarity: закрывали availability |
+| Депозит: `Pay €X today (30% deposit)` | Путаница с ценой |
+| Фокус модалки на title, не на ✕; крупнее CTA | Open → мгновенный ✕ |
+| Ask questions? (WA) в модалке слотов | Опциональный off-ramp |
+| **Min 12h до слота** — слот не показывается | Кейс: букинг в 6:00 на sunrise 7:00 |
 
 ---
 
-## Хвосты (не блокер кампании)
+## История тестов и изменения
 
-- Presence, если мастер не дал переключить
-- Дубли RSA на Pause
-- Billing
-- Ситра / Cascais слоты → отдельная ad group позже
-- GBP, отзывы, маркетплейсы — сильнее рекламы на 10 слотах/мес
-- Meta — не раньше ~€300/мес
+### Фаза 1 — запуск гипотезы спроса (20 сен – ~6 окт)
+
+| | |
+|---|---|
+| Бюджет / CPC | €2,30/день · cap **€0,60** |
+| Цель фазы | Есть ли EN search demand в Lisbon |
+| Результат | Спрос на широкий `yoga lisbon` **есть**; sunrise/sunset ключи почти пустые |
+| Spend (примерно) | ~€16 за ~16 дней |
+| Клики / показы | ~27 кликов / ~320 impr (keywords) |
+| Ads conversions | 0 |
+| Search terms | Много studio/бренд/стиль (LX Portal, Leela, aerial…); клики в основном на `yoga lisbon` / `yoga in lisbon` |
+| Вердикт | Спрос широкий есть; product-market fit Ads→outdoor booking **не доказан**; не масштабировать |
+
+**Действия ~6 окт:** минусы studio/бренды/стили; бюджет не поднимать; UI outdoor на `/experiences/`.
+
+### Фаза 2 — после минусов + UI (7–17 окт)
+
+| | |
+|---|---|
+| Бюджет / CPC | €2,30 · cap всё ещё **€0,60** |
+| Impr / Clicks / CTR / Cost | **72 / 9 / 12,5% / €5,38** |
+| Ads conversions | 0 |
+| Реальность | **1 оплата €50** (высокая вероятность Ads: Cloudflare timing + gclid-логика); cookies Reject → нет Clarity, Ads не засчитал |
+| Исход брони | Session не состоялась (букинг за ~1 ч до sunrise); **refund**; клиентка из США, ожидала групповую/студийную логику |
+| Bid limit warning | «100% of spend limited by max bid» — cap резал аукцион; бюджет недобирался |
+| Вердикт | **Осторожный плюс:** воронка клик→оплата живая; объём мал; сезон холодает; не масштабировать |
+
+### Изменения 17 окт 2026
+
+1. CPC cap **€0,60 → €0,90**
+2. Минусы: kundalini, puppy, vinyasa (+ пересечения со старым списком)
+3. Yoga Lisbon: удалён дубль RSA; в оставшемся заменены `Yoga Classes…` и `Drop-In…`
+4. Sunrise Yoga: удалён дубль RSA (оставлен с кликами)
+5. Budget **не** меняли (€2,30)
+6. Improve health / auto recommendations — **не** применять
+
+---
+
+## Как читать аукцион (для нас)
+
+При Maximize clicks + CPC cap Google не ставит ставку выше cap. Если конкуренты/аукцион требуют выше — меньше показов/кликов, бюджет не добирается.
+
+Теоретический потолок кликов:  
+`дневной budget ÷ CPC` → при €2,30 и €0,60 ≈ 3–4 клика/день; при €0,90 ≈ 2–3/день **если** бюджет выбирается.  
+Факт 7–17 окт: &lt;1 клика/день — упирались в аукцион/спрос, не в «кончились €2,30».
+
+Малый объём = **cap + узкий EN outdoor + сезон**, не только ставка.
+
+---
+
+## Сезонность
+
+Октябрь–февраль: outdoor/sunrise/beach слабее; больше студийного интента.  
+Весна–лето: оффер сильнее.
+
+На чекпоинтах отделять «Ads сломан» от «сезон срезал объём». Зимой нормально: маленький бюджет или Pause при пустом календаре / погоде — не €300/мес в пустой outdoor.
+
+---
+
+## Календарь проверок
+
+| Когда | Что делать | Чего не делать |
+|---|---|---|
+| **Каждый день** | Слоты Sunrise/Sunset на 7–14 дней | Крутить ключи/ads каждый день |
+| **~20–22 окт** | Быстро: есть ли ещё «bid limits 100%»? Spend ближе к €2/день? Если всё ещё 100% limited → cap **€1,00**. Budget не трогать | Полный редизайн кампании |
+| **25 окт** | Полный разбор **18–25 окт**: Keywords + Search terms CSV; Stripe/WA; слоты | Jump to €300/мес без данных |
+| **После 25 окт** | Решение: держать €2,30 / поднять до €4–5 / Pause | Meta cold до стабильного Search |
+
+### Критерии на 25 окт (ориентиры)
+
+| Сигнал | Действие |
+|---|---|
+| Cap перестал душить, есть клики, 0 броней, воронка в Clarity снова ✕ / нет слотов | Чинить inventory/UX; budget не↑ |
+| 1+ оплата или несколько checkout/hold с Ads | Можно **€2,30 → €4–5/день**, ещё 7 дней |
+| Показы умерли / только мусор | Диагностика; не масштаб |
+| Холод + пустой спрос при живой воронке | Сезон: держать микро или Pause до весны |
+
+Масштаб **€250–300/мес** — только после серии броней и понятного CPA, не после одной refunded оплаты.
+
+---
+
+## Что приносить на разбор (чеклист выгрузки)
+
+1. **Search keywords** CSV — Impr, Clicks, CTR, Cost, Avg CPC, Conversions  
+2. **Search terms** CSV  
+3. Текстом: Stripe-брони, WA, были ли слоты  
+4. Опционально: Clarity с `gclid` (длинные)
+
+Не нужен: time series только Cost/CPC; Improve health.
+
+Путь в UI: кампания → **Ads** (не Ad groups → Keywords). Search terms: Insights / вкладка Search terms у keywords.
+
+---
+
+## Чего никогда не включать без отдельного решения
+
+- AI Max, broad match, Display, Search Partners  
+- Auto-apply recommendations / Improve health ради score  
+- Page view как primary conversion  
+- Private / Sintra ad groups без слотов и оффера  
+- Meta cold conversion до ~€300/мес Search и ясного CPA  
+
+Не кликать свои объявления из поиска — только **Ad preview and diagnosis**.
+
+---
+
+## Хвосты
+
+- Presence — проверить в Settings, если мастер не дал при создании  
+- Billing  
+- Sintra / Cascais instant slots → отдельная ad group позже  
+- GBP, отзывы, hostels/Airbnb — сильнее рекламы на малом outdoor inventory  
+- Трекинг без cookies: Ads Conversions занижены — сверка Stripe/CF обязательна  
+- Meta — см. [`ads-strategy-v2.md`](./ads-strategy-v2.md)
