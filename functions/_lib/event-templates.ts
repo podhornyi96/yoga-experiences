@@ -96,8 +96,17 @@ export const SERVER_EVENT_TEMPLATES: Record<string, ServerEventTemplate> = {
     images: [
       "/images/experiences/sintra/sintra-cover.jpg",
       "/images/experiences/sintra/sintra-1.jpg",
-      "/images/experiences/sintra/sintra-2.jpg",
+      "/videos/sintra/sintra-5736.mp4",
       "/images/experiences/sintra/sintra-3.jpg",
+      "/videos/sintra/sintra-5744.mp4",
+      "/images/experiences/sintra/sintra-11.jpg",
+      "/images/experiences/sintra/sintra-2.jpg",
+      "/images/experiences/sintra/sintra-5.jpg",
+      "/images/experiences/sintra/sintra-6.jpg",
+      "/images/experiences/sintra/sintra-7.jpg",
+      "/images/experiences/sintra/sintra-8.jpg",
+      "/images/experiences/sintra/sintra-9.jpg",
+      "/images/experiences/sintra/sintra-10.jpg",
     ],
     includes: [
       "Yoga mat & equipment",

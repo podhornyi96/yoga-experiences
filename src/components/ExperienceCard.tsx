@@ -21,7 +21,9 @@ export function ExperienceCard({
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-sand-dark bg-white shadow-sm transition-shadow hover:shadow-md">
       {cover ? (
         <div
-          className={`relative overflow-hidden ${compact ? "aspect-[3/2]" : "aspect-[4/3]"}`}
+          className={`relative overflow-hidden ${
+            compact ? "aspect-[3/2] lg:aspect-[5/3]" : "aspect-[4/3]"
+          }`}
         >
           {isPartyBooking ? (
             <span className="absolute left-3 top-3 z-10 rounded-md bg-white/95 px-2 py-1 text-[11px] font-semibold tracking-wide text-forest shadow-sm">
@@ -43,7 +45,9 @@ export function ExperienceCard({
           />
         </div>
       ) : null}
-      <div className={`flex flex-1 flex-col ${compact ? "p-4" : "p-6"}`}>
+      <div
+        className={`flex flex-1 flex-col ${compact ? "p-4 lg:p-3.5" : "p-6"}`}
+      >
         <p
           className={`flex items-center gap-1.5 text-xs font-semibold text-sage-dark ${
             compact ? "min-w-0 truncate" : ""
@@ -55,7 +59,9 @@ export function ExperienceCard({
           </span>
         </p>
         <h3
-          className={`text-forest ${compact ? "mt-1.5 text-lg" : "mt-2 text-xl"}`}
+          className={`text-forest ${
+            compact ? "mt-1.5 text-lg lg:mt-1 lg:text-base" : "mt-2 text-xl"
+          }`}
         >
           <Link href={href} className="hover:text-clay-dark">
             {experience.title}
@@ -64,14 +70,16 @@ export function ExperienceCard({
         <p
           className={`text-sm text-muted ${
             compact
-              ? "mt-1.5 line-clamp-2 leading-snug"
+              ? "mt-1.5 line-clamp-2 leading-snug lg:mt-1"
               : "mt-2 flex-1 leading-relaxed"
           }`}
         >
           {experience.summary}
         </p>
         <div
-          className={`mt-auto flex items-end justify-between gap-3 border-t border-sand ${compact ? "pt-3" : "pt-4"}`}
+          className={`mt-auto flex items-end justify-between gap-3 border-t border-sand ${
+            compact ? "pt-3 lg:pt-2.5" : "pt-4"
+          }`}
         >
           <div className="min-w-0">
             <PriceTag price={experience.price} />
@@ -79,7 +87,7 @@ export function ExperienceCard({
               <p className="mt-0.5 text-xs text-muted">
                 Private session · WhatsApp
               </p>
-            ) : isPartyBooking ? (
+            ) : isPartyBooking && !compact ? (
               <p className="mt-0.5 text-xs text-muted">
                 Private session · book online
               </p>

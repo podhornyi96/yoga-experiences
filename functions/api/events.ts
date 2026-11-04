@@ -5,10 +5,10 @@
 
 import {
   effectiveDurationMinutes,
-  effectivePricePerPerson,
   getServerEventTemplate,
 } from "../_lib/event-templates";
 import { eventMaxGuests, eventSeatsRemaining } from "../_lib/event-capacity";
+import { resolveEventPricing } from "../_lib/event-promo";
 import { error, json } from "../_lib/http";
 import { meetsLeadTimeForKind } from "../_lib/booking-lead-time";
 import { expireHolds, getSlotById, isFutureStartsAt } from "../_lib/slots";
@@ -39,7 +39,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     template,
     slot.duration_minutes,
   );
-  const pricePerPersonEur = effectivePricePerPerson(template, slot.price_eur);
+  const pricing = resolveEventPricing(slot, template.pricePerPersonEur);
   const maxGuests = eventMaxGuests(slot);
   const seatsRemaining = eventSeatsRemaining(slot);
   const bookable =
@@ -68,7 +68,11 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       seatsRemaining,
       images: template.images,
       includes: template.includes,
-      pricePerPersonEur,
+      pricePerPersonEur: pricing.pricePerPersonEur,
+      regularPricePerPersonEur: pricing.regularPricePerPersonEur,
+      promoActive: pricing.active,
+      promoPriceEur: pricing.promoPriceEur,
+      promoEndsOn: pricing.promoEndsOn,
       priceSchedule: null,
       privatePricing: false,
       mats: template.mats,

@@ -28,14 +28,15 @@ export default function ExperiencesPage() {
         ])}
       />
       <section className="bg-gradient-to-b from-sand to-cream">
-        <Container className="max-w-7xl py-6 sm:py-8 lg:min-h-[calc(100dvh-4.5rem)] lg:py-10">
+        <Container className="max-w-7xl py-6 sm:py-8 lg:pb-10 lg:pt-5">
           <SectionHeading
             as="h1"
+            compact
             eyebrow="English-friendly · book online"
             title="Yoga experiences in Lisbon"
             description={g.description}
           />
-          <div className="mt-6">
+          <div className="mt-4 lg:mt-4">
             <ExperiencesGrid items={items} />
           </div>
         </Container>

@@ -39,6 +39,11 @@ export function EventBookingPanel({ event }: { event: PublicEventDetail }) {
   const pricePerPerson = event.pricePerPersonEur ?? 0;
   const totalEur = pricePerPerson * people;
   const payments = siteConfig.paymentsEnabled;
+  const promoLive =
+    Boolean(event.promoActive) &&
+    event.regularPricePerPersonEur != null &&
+    event.promoEndsOn != null &&
+    event.regularPricePerPersonEur > pricePerPerson;
 
   const bookMessage = `Hi ${siteConfig.teacher.name}! I'd like to book ${event.title} on ${formatSlotLabel(event.startsAt)} (${event.locationLabel}).`;
 
@@ -128,10 +133,16 @@ export function EventBookingPanel({ event }: { event: PublicEventDetail }) {
             ? "Starting checkout…"
             : `Reserve your place · ${formatMoney(totalEur)}`}
         </button>
-        <p className="mt-2 break-words text-center text-xs leading-snug text-muted">
-          Open group session · {formatMoney(pricePerPerson)} per person
-        </p>
-        <p className="mt-1 break-words text-center text-xs leading-snug text-muted">
+        {promoLive ? null : (
+          <p className="mt-2 break-words text-center text-xs leading-snug text-muted">
+            Open group session · {formatMoney(pricePerPerson)} per person
+          </p>
+        )}
+        <p
+          className={`${
+            promoLive ? "mt-2" : "mt-1"
+          } break-words text-center text-xs leading-snug text-muted`}
+        >
           {EVENT_POLICY_SHORT} {EVENT_LEAD_POLICY_SHORT}{" "}
           <Link href="/terms/" className="underline underline-offset-2">
             Terms

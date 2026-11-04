@@ -39,6 +39,14 @@ function objectPosition(position: ImageFocalPoint = "center") {
   return position;
 }
 
+function isVideo(src: string) {
+  return /\.(mp4|webm)(\?|$)/i.test(src);
+}
+
+function videoPoster(src: string) {
+  return src.replace(/\.(mp4|webm)(\?|$)/i, ".jpg$2");
+}
+
 function slideIndexFromScroll(el: HTMLElement) {
   const width = el.clientWidth;
   if (width <= 0) return 0;
@@ -47,6 +55,50 @@ function slideIndexFromScroll(el: HTMLElement) {
 
 const stripScrollClass =
   "flex gap-2 overflow-x-auto overscroll-x-contain px-1.5 py-1.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
+
+function GalleryVideo({
+  src,
+  active,
+  className,
+  onActivate,
+}: {
+  src: string;
+  active: boolean;
+  className?: string;
+  onActivate?: () => void;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    if (active) {
+      el.currentTime = 0;
+      void el.play().catch(() => undefined);
+    } else {
+      el.pause();
+    }
+  }, [active, src]);
+
+  return (
+    <video
+      ref={videoRef}
+      src={src}
+      poster={videoPoster(src)}
+      muted
+      loop
+      playsInline
+      autoPlay={active}
+      preload={active ? "auto" : "metadata"}
+      aria-label="Video"
+      className={className}
+      onClick={(event) => {
+        event.stopPropagation();
+        onActivate?.();
+      }}
+    />
+  );
+}
 
 export function ExperienceGallery({
   images,
@@ -141,10 +193,22 @@ export function ExperienceGallery({
   if (!images.length) return null;
 
   if (!multiple) {
+    const src = images[0];
+    if (isVideo(src)) {
+      return (
+        <div className="relative aspect-[16/10] w-full max-w-full overflow-hidden rounded-2xl">
+          <GalleryVideo
+            src={src}
+            active
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        </div>
+      );
+    }
     return (
       <div className="relative aspect-[16/10] w-full max-w-full overflow-hidden rounded-2xl">
         <ZoomableImage
-          src={images[0]}
+          src={src}
           alt={title}
           sizes="(max-width: 1024px) 100vw, 60vw"
           priority
@@ -162,7 +226,7 @@ export function ExperienceGallery({
           className="flex w-full max-w-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain rounded-2xl [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           role="region"
           aria-roledescription="carousel"
-          aria-label={`${title} photos`}
+          aria-label={`${title} gallery`}
         >
           {images.map((src, i) => (
             <div
@@ -178,20 +242,28 @@ export function ExperienceGallery({
                 if (Math.abs(event.clientX - start) < 12) setLightbox(i);
               }}
             >
-              <Image
-                src={src}
-                alt={i === 0 ? title : `${title} — photo ${i + 1}`}
-                fill
-                sizes="(max-width: 1024px) 100vw, 60vw"
-                priority={i === 0}
-                draggable={false}
-                className="cursor-zoom-in object-cover select-none"
-                style={
-                  i === 0
-                    ? { objectPosition: objectPosition(coverImagePosition) }
-                    : undefined
-                }
-              />
+              {isVideo(src) ? (
+                <GalleryVideo
+                  src={src}
+                  active={index === i && lightbox === null}
+                  className="absolute inset-0 h-full w-full cursor-zoom-in object-cover"
+                />
+              ) : (
+                <Image
+                  src={src}
+                  alt={i === 0 ? title : `${title} — photo ${i + 1}`}
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 60vw"
+                  priority={i === 0}
+                  draggable={false}
+                  className="cursor-zoom-in object-cover select-none"
+                  style={
+                    i === 0
+                      ? { objectPosition: objectPosition(coverImagePosition) }
+                      : undefined
+                  }
+                />
+              )}
             </div>
           ))}
         </div>
@@ -201,7 +273,7 @@ export function ExperienceGallery({
           className="absolute left-3 top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-cream backdrop-blur-sm transition-colors hover:bg-black/55 disabled:pointer-events-none disabled:opacity-30 sm:flex"
           onClick={() => scrollTo(index - 1)}
           disabled={index === 0}
-          aria-label="Previous photo"
+          aria-label="Previous"
         >
           <Chevron direction="left" className="h-5 w-5" />
         </button>
@@ -210,7 +282,7 @@ export function ExperienceGallery({
           className="absolute right-3 top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-cream backdrop-blur-sm transition-colors hover:bg-black/55 disabled:pointer-events-none disabled:opacity-30 sm:flex"
           onClick={() => scrollTo(index + 1)}
           disabled={index === images.length - 1}
-          aria-label="Next photo"
+          aria-label="Next"
         >
           <Chevron direction="right" className="h-5 w-5" />
         </button>
@@ -227,36 +299,53 @@ export function ExperienceGallery({
                 ? "w-6 bg-clay"
                 : "w-2 bg-sand-dark hover:bg-clay/60"
             }`}
-            aria-label={`Go to photo ${i + 1}`}
+            aria-label={`Go to item ${i + 1}`}
             aria-current={i === index}
           />
         ))}
       </div>
 
       <div className={`mt-4 min-w-0 max-w-full ${stripScrollClass}`}>
-        {images.map((src, i) => (
-          <button
-            key={src}
-            type="button"
-            onClick={() => scrollTo(i)}
-            className={`shrink-0 rounded-lg outline-none [-webkit-tap-highlight-color:transparent] ${
-              i === index
-                ? "ring-2 ring-clay ring-offset-2 ring-offset-cream"
-                : ""
-            }`}
-            aria-label={`Show ${title} — photo ${i + 1}`}
-          >
-            <span className="relative block h-20 w-28 overflow-hidden rounded-lg sm:h-24 sm:w-32">
-              <Image
-                src={src}
-                alt={`${title} — photo ${i + 1}`}
-                fill
-                sizes="128px"
-                className="object-cover"
-              />
-            </span>
-          </button>
-        ))}
+        {images.map((src, i) => {
+          const thumbSrc = isVideo(src) ? videoPoster(src) : src;
+          return (
+            <button
+              key={src}
+              type="button"
+              onClick={() => scrollTo(i)}
+              className={`relative shrink-0 rounded-lg outline-none [-webkit-tap-highlight-color:transparent] ${
+                i === index
+                  ? "ring-2 ring-clay ring-offset-2 ring-offset-cream"
+                  : ""
+              }`}
+              aria-label={`Show ${title} — item ${i + 1}`}
+            >
+              <span className="relative block h-20 w-28 overflow-hidden rounded-lg sm:h-24 sm:w-32">
+                <Image
+                  src={thumbSrc}
+                  alt={`${title} — item ${i + 1}`}
+                  fill
+                  sizes="128px"
+                  className="object-cover"
+                />
+                {isVideo(src) ? (
+                  <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/25">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-cream">
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="h-3.5 w-3.5 translate-x-px"
+                        fill="currentColor"
+                        aria-hidden="true"
+                      >
+                        <path d="M8 5.5v13l11-6.5L8 5.5Z" />
+                      </svg>
+                    </span>
+                  </span>
+                ) : null}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {lightbox !== null ? (
@@ -264,7 +353,7 @@ export function ExperienceGallery({
           className="fixed inset-0 z-50 bg-black/90"
           role="dialog"
           aria-modal="true"
-          aria-label="Photo gallery"
+          aria-label="Gallery"
           onClick={() => {
             if (lightboxDragged.current) return;
             setLightbox(null);
@@ -307,16 +396,25 @@ export function ExperienceGallery({
                 key={src}
                 className="flex h-full w-full min-w-full shrink-0 snap-center items-center justify-center p-4 sm:p-8"
               >
-                <Image
-                  src={src}
-                  alt={i === 0 ? title : `${title} — photo ${i + 1}`}
-                  width={2400}
-                  height={1800}
-                  sizes="100vw"
-                  className="max-h-[90vh] w-auto max-w-full object-contain"
-                  draggable={false}
-                  onClick={(event) => event.stopPropagation()}
-                />
+                {isVideo(src) ? (
+                  <GalleryVideo
+                    src={src}
+                    active={lightbox === i}
+                    className="max-h-[90vh] w-auto max-w-full object-contain"
+                    onActivate={() => undefined}
+                  />
+                ) : (
+                  <Image
+                    src={src}
+                    alt={i === 0 ? title : `${title} — photo ${i + 1}`}
+                    width={2400}
+                    height={1800}
+                    sizes="100vw"
+                    className="max-h-[90vh] w-auto max-w-full object-contain"
+                    draggable={false}
+                    onClick={(event) => event.stopPropagation()}
+                  />
+                )}
               </div>
             ))}
           </div>

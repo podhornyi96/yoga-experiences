@@ -18,6 +18,14 @@ export interface SlotRow {
   kind: SlotKind;
   /** Confirmed + reserved seats for multi-book events. */
   seats_taken: number;
+  /** Early bird € / person (null = no promo). */
+  promo_price_eur: number | null;
+  /** Inclusive last Lisbon calendar day for early bird (`YYYY-MM-DD`). */
+  promo_ends_on: string | null;
+  /** Max early-bird bookings (people) for this event. */
+  promo_max_bookings: number | null;
+  /** Claimed early-bird seats (paid promo + active promo holds). */
+  promo_seats_taken: number;
   created_at: string;
   updated_at: string;
 }

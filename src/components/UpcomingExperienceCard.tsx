@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { EventCountdown } from "@/components/EventCountdown";
+import { EventPromoPrice } from "@/components/EventPromoPrice";
 import { ClockIcon, MapPinIcon } from "@/components/icons";
 import {
   formatSlotLabel,
@@ -26,7 +27,7 @@ export function UpcomingExperienceCard({
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl bg-forest text-cream shadow-md transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-lg sm:flex-row">
       {event.image ? (
-        <div className="relative aspect-[2.2/1] shrink-0 overflow-hidden sm:aspect-auto sm:w-[32%] sm:max-w-xs sm:min-h-[8.25rem] lg:w-[26%]">
+        <div className="relative aspect-[2.2/1] shrink-0 overflow-hidden sm:aspect-auto sm:w-[30%] sm:max-w-xs sm:min-h-[7.25rem] lg:w-[24%] lg:min-h-[6.75rem]">
           <span className="absolute left-3 top-3 z-10 rounded-md bg-clay px-2.5 py-1 text-[11px] font-semibold tracking-wide text-cream shadow-sm">
             Next session
           </span>
@@ -36,23 +37,23 @@ export function UpcomingExperienceCard({
               alt={event.title}
               fill
               className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-              sizes="(max-width: 640px) 100vw, 280px"
+              sizes="(max-width: 640px) 100vw, 260px"
             />
           </Link>
         </div>
       ) : (
-        <div className="relative flex aspect-[2.2/1] shrink-0 items-end bg-forest-deep p-3 sm:aspect-auto sm:w-[32%] sm:max-w-xs sm:min-h-[8.25rem] lg:w-[26%]">
+        <div className="relative flex aspect-[2.2/1] shrink-0 items-end bg-forest-deep p-3 sm:aspect-auto sm:w-[30%] sm:max-w-xs sm:min-h-[7.25rem] lg:w-[24%] lg:min-h-[6.75rem]">
           <span className="rounded-md bg-clay px-2.5 py-1 text-[11px] font-semibold tracking-wide text-cream">
             Next session
           </span>
         </div>
       )}
-      <div className="flex flex-1 flex-col justify-center p-3 sm:px-5 sm:py-3">
+      <div className="flex flex-1 flex-col justify-center p-3 sm:px-5 sm:py-2.5 lg:py-2">
         <p className="flex min-w-0 items-center gap-1.5 truncate text-xs font-semibold uppercase tracking-[0.14em] text-cream/70">
           <MapPinIcon className="h-3.5 w-3.5 shrink-0" />
           <span className="truncate">{event.locationLabel}</span>
         </p>
-        <h3 className="mt-0.5 text-lg text-cream sm:text-xl">
+        <h3 className="mt-0.5 text-lg text-cream sm:text-xl lg:text-lg">
           <Link href={event.href} className="hover:text-sand">
             {event.title}
           </Link>
@@ -73,9 +74,19 @@ export function UpcomingExperienceCard({
           ) : null}
           <span>Open group · join this date</span>
         </p>
-        <div className="mt-2.5 flex items-center justify-between gap-3 border-t border-cream/15 pt-2 sm:mt-3">
+        <div className="mt-2 flex items-center justify-between gap-3 border-t border-cream/15 pt-2 sm:mt-2.5">
           <div className="min-w-0">
-            {event.pricePerPersonEur != null ? (
+            {event.promoActive &&
+            event.regularPricePerPersonEur != null &&
+            event.pricePerPersonEur != null &&
+            event.promoEndsOn ? (
+              <EventPromoPrice
+                tone="dark"
+                regularPriceEur={event.regularPricePerPersonEur}
+                promoPriceEur={event.pricePerPersonEur}
+                promoEndsOn={event.promoEndsOn}
+              />
+            ) : event.pricePerPersonEur != null ? (
               <span className="font-semibold text-cream">
                 €{event.pricePerPersonEur}
                 <span className="text-sm font-normal text-cream/70">

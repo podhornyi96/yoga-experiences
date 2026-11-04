@@ -77,6 +77,11 @@ export function adminSlot(row: SlotRow) {
     holdToken: row.hold_token,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    // Early-bird cap is admin-only (not exposed on public APIs).
+    promoPriceEur: row.promo_price_eur ?? null,
+    promoEndsOn: row.promo_ends_on ?? null,
+    promoMaxBookings: row.promo_max_bookings ?? null,
+    promoSeatsTaken: Number(row.promo_seats_taken) || 0,
   };
 }
 
@@ -297,6 +302,9 @@ export type SlotOverrides = {
   priceEur?: number | null;
   durationMinutes?: number | null;
   kind?: SlotKind;
+  promoPriceEur?: number | null;
+  promoEndsOn?: string | null;
+  promoMaxBookings?: number | null;
 };
 
 function normalizeOverridePrice(value: number | null | undefined): number | null {
@@ -338,6 +346,30 @@ export async function createOpenSlot(
   const priceEur = normalizeOverridePrice(overrides.priceEur);
   const durationMinutes = normalizeOverrideDuration(overrides.durationMinutes);
   const kind: SlotKind = overrides.kind === "event" ? "event" : "inventory";
+  const promoPriceCandidate =
+    kind === "event" ? normalizeOverridePrice(overrides.promoPriceEur) : null;
+  const promoEndsCandidate =
+    kind === "event" &&
+    typeof overrides.promoEndsOn === "string" &&
+    /^\d{4}-\d{2}-\d{2}$/.test(overrides.promoEndsOn)
+      ? overrides.promoEndsOn
+      : null;
+  const promoMaxRaw =
+    kind === "event" && overrides.promoMaxBookings != null
+      ? Math.floor(Number(overrides.promoMaxBookings))
+      : null;
+  const promoMaxCandidate =
+    promoMaxRaw != null && Number.isFinite(promoMaxRaw) && promoMaxRaw >= 1
+      ? promoMaxRaw
+      : null;
+  // All three required together; otherwise store no promo.
+  const promoComplete =
+    promoPriceCandidate != null &&
+    promoEndsCandidate != null &&
+    promoMaxCandidate != null;
+  const promoPriceEur = promoComplete ? promoPriceCandidate : null;
+  const promoEndsOn = promoComplete ? promoEndsCandidate : null;
+  const promoMaxBookings = promoComplete ? promoMaxCandidate : null;
 
   // Overlapping *offers* are allowed. Only reject if the new window already
   // conflicts with a booked/held session (teacher is busy).
@@ -353,6 +385,10 @@ export async function createOpenSlot(
     duration_minutes: durationMinutes,
     kind,
     seats_taken: 0,
+    promo_price_eur: promoPriceEur,
+    promo_ends_on: promoEndsOn,
+    promo_max_bookings: promoMaxBookings,
+    promo_seats_taken: 0,
     created_at: "",
     updated_at: "",
   };
@@ -372,8 +408,9 @@ export async function createOpenSlot(
       `INSERT INTO slots (
         id, experience_slug, starts_at, day, status,
         hold_token, hold_expires_at, price_eur, duration_minutes, kind,
+        promo_price_eur, promo_ends_on, promo_max_bookings, promo_seats_taken,
         created_at, updated_at
-      ) VALUES (?, ?, ?, ?, 'open', NULL, NULL, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, 'open', NULL, NULL, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
     )
     .bind(
       id,
@@ -383,6 +420,9 @@ export async function createOpenSlot(
       priceEur,
       durationMinutes,
       kind,
+      promoPriceEur,
+      promoEndsOn,
+      promoMaxBookings,
       ts,
       ts,
     )

@@ -4,6 +4,7 @@
  * and covers both confirmed bookings and active Stripe soft-reservations.
  */
 
+import { releasePromoSeats, tryClaimPromoSeats } from "./event-promo";
 import { getServerEventTemplate } from "./event-templates";
 import { nowIso } from "./slots";
 import type { SlotRow } from "./types";
@@ -26,11 +27,11 @@ export async function expireEventReservations(
 ): Promise<void> {
   const { results } = await db
     .prepare(
-      `SELECT id, slot_id, people FROM event_reservations
+      `SELECT id, slot_id, people, promo FROM event_reservations
        WHERE expires_at < ?`,
     )
     .bind(now)
-    .all<{ id: string; slot_id: string; people: number }>();
+    .all<{ id: string; slot_id: string; people: number; promo: number }>();
 
   for (const row of results ?? []) {
     await db.batch([
@@ -49,6 +50,9 @@ export async function expireEventReservations(
         .prepare(`DELETE FROM event_reservations WHERE id = ?`)
         .bind(row.id),
     ]);
+    if (row.promo) {
+      await releasePromoSeats(db, row.slot_id, row.people);
+    }
 
     const slot = await db
       .prepare(`SELECT experience_slug, seats_taken, status FROM slots WHERE id = ?`)
@@ -104,11 +108,11 @@ export async function reserveEventSeats(
   if (existingHoldToken) {
     const existing = await db
       .prepare(
-        `SELECT id, people FROM event_reservations
+        `SELECT id, people, promo FROM event_reservations
          WHERE hold_token = ? AND slot_id = ? LIMIT 1`,
       )
       .bind(existingHoldToken, slot.id)
-      .first<{ id: string; people: number }>();
+      .first<{ id: string; people: number; promo: number }>();
     if (existing) {
       await db
         .prepare(
@@ -139,15 +143,30 @@ export async function reserveEventSeats(
     return { ok: false, error: "This event is full." };
   }
 
+  const fresh =
+    (await db
+      .prepare(`SELECT * FROM slots WHERE id = ?`)
+      .bind(slot.id)
+      .first<SlotRow>()) ?? slot;
+  const promoClaimed = await tryClaimPromoSeats(db, fresh, seats);
+
   const holdToken = crypto.randomUUID();
   const reservationId = crypto.randomUUID();
   await db
     .prepare(
       `INSERT INTO event_reservations (
-        id, slot_id, hold_token, people, expires_at, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?)`,
+        id, slot_id, hold_token, people, expires_at, created_at, promo
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
     )
-    .bind(reservationId, slot.id, holdToken, seats, expiresAt, ts)
+    .bind(
+      reservationId,
+      slot.id,
+      holdToken,
+      seats,
+      expiresAt,
+      ts,
+      promoClaimed ? 1 : 0,
+    )
     .run();
 
   // Mark full events as booked so inventory conflicts treat them as busy.
@@ -179,14 +198,17 @@ export async function consumeEventReservation(
   db: D1Database,
   slotId: string,
   holdToken: string,
-): Promise<{ ok: true; people: number } | { ok: false; error: string }> {
+): Promise<
+  | { ok: true; people: number; promo: boolean }
+  | { ok: false; error: string }
+> {
   const row = await db
     .prepare(
-      `SELECT id, people FROM event_reservations
+      `SELECT id, people, promo FROM event_reservations
        WHERE slot_id = ? AND hold_token = ? LIMIT 1`,
     )
     .bind(slotId, holdToken)
-    .first<{ id: string; people: number }>();
+    .first<{ id: string; people: number; promo: number }>();
 
   if (!row) {
     return { ok: false, error: "Reservation not found or expired." };
@@ -197,7 +219,8 @@ export async function consumeEventReservation(
     .bind(row.id)
     .run();
 
-  return { ok: true, people: row.people };
+  // promo_seats_taken stays claimed — booking inherits promo_applied.
+  return { ok: true, people: row.people, promo: Boolean(row.promo) };
 }
 
 /** Atomically claim seats for a manual (offline) booking. */

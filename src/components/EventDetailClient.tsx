@@ -7,6 +7,7 @@ import { WhatsAppIcon } from "@/components/BookingCTA";
 import { Container } from "@/components/Container";
 import { EventBookingPanel } from "@/components/EventBookingPanel";
 import { EventCountdown } from "@/components/EventCountdown";
+import { EventPromoPrice } from "@/components/EventPromoPrice";
 import { ExperienceGallery } from "@/components/ExperienceGallery";
 import { MapPinIcon } from "@/components/icons";
 import { siteConfig, whatsappLink } from "@/config/site";
@@ -150,6 +151,12 @@ export function EventDetailClient({ slotId }: { slotId: string }) {
     );
   }
 
+  const promoLive =
+    Boolean(event.promoActive) &&
+    event.promoPriceEur != null &&
+    event.regularPricePerPersonEur != null &&
+    Boolean(event.promoEndsOn);
+
   const priceLabel =
     event.pricePerPersonEur != null
       ? `€${event.pricePerPersonEur} per person`
@@ -227,34 +234,40 @@ export function EventDetailClient({ slotId }: { slotId: string }) {
                 </button>
               ) : null}
             </p>
-            <p className="mt-4 break-words rounded-xl border border-sand bg-sand/40 px-3.5 py-3 text-sm leading-relaxed text-ink">
-              You&apos;re reserving{" "}
-              <span className="font-medium">your place</span> in a shared outdoor
-              session — arrive, meet the group, and practise together. This is
-              not a private booking.
-            </p>
             <p className="mt-4 text-sm leading-relaxed text-muted">
               {event.description}
             </p>
+            <p className="mt-4 break-words rounded-xl border border-sand bg-sand/40 px-3.5 py-3 text-sm leading-relaxed text-ink">
+              You&apos;re reserving{" "}
+              <span className="font-medium">your place</span> in a shared group
+              session — arrive, meet the others, and practise together. This is
+              not a private booking.
+            </p>
 
             <dl className="mt-6 grid grid-cols-2 gap-3 text-sm">
+              <div className="rounded-xl bg-sand/60 px-3 py-2.5">
+                <dt className="text-muted">Price</dt>
+                <dd className="mt-0.5 font-medium text-ink">
+                  {promoLive ? (
+                    <EventPromoPrice
+                      regularPriceEur={event.regularPricePerPersonEur!}
+                      promoPriceEur={event.promoPriceEur!}
+                      promoEndsOn={event.promoEndsOn!}
+                    />
+                  ) : (
+                    priceLabel
+                  )}
+                </dd>
+              </div>
               <div className="rounded-xl bg-sand/60 px-3 py-2.5">
                 <dt className="text-muted">Duration</dt>
                 <dd className="mt-0.5 font-medium text-ink">
                   {durationLabel(event.durationMinutes)}
                 </dd>
-              </div>
-              <div className="rounded-xl bg-sand/60 px-3 py-2.5">
-                <dt className="text-muted">Price</dt>
-                <dd className="mt-0.5 font-medium text-ink">{priceLabel}</dd>
-              </div>
-              <div className="rounded-xl bg-sand/60 px-3 py-2.5">
-                <dt className="text-muted">Status</dt>
+                <dt className="mt-2 text-muted">Status</dt>
                 <dd
                   className={`mt-0.5 font-medium capitalize ${
-                    event.status === "open"
-                      ? "text-emerald-700"
-                      : "text-ink"
+                    event.status === "open" ? "text-emerald-700" : "text-ink"
                   }`}
                 >
                   {event.status}

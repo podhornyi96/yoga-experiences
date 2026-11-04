@@ -18,6 +18,7 @@ import {
   eventSeatsRemaining,
   releaseEventSeats,
 } from "../../../_lib/event-capacity";
+import { releasePromoSeats } from "../../../_lib/event-promo";
 import {
   effectivePricePerPerson,
   getServerEventTemplate,
@@ -271,6 +272,9 @@ export const onRequestDelete: PagesFunction<Env> = async (context) => {
     .run();
 
   await releaseEventSeats(env.DB, booking.slot_id, booking.people || 1);
+  if (booking.promo_applied) {
+    await releasePromoSeats(env.DB, booking.slot_id, booking.people || 1);
+  }
 
   if (nextStatus !== "refunded") {
     return json({ ok: true, bookingId, paymentStatus: nextStatus });

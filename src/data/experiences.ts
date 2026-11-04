@@ -390,8 +390,11 @@ export const experiences: Experience[] = [
     images: [
       "/images/experiences/sintra/sintra-cover.jpg",
       "/images/experiences/sintra/sintra-1.jpg",
-      "/images/experiences/sintra/sintra-2.jpg",
+      "/videos/sintra/sintra-5736.mp4",
       "/images/experiences/sintra/sintra-3.jpg",
+      "/videos/sintra/sintra-5744.mp4",
+      "/images/experiences/sintra/sintra-11.jpg",
+      "/images/experiences/sintra/sintra-2.jpg",
       "/images/experiences/sintra/sintra-5.jpg",
       "/images/experiences/sintra/sintra-6.jpg",
       "/images/experiences/sintra/sintra-7.jpg",

@@ -32,18 +32,33 @@ const nextConfig: NextConfig = {
   // Clean URLs as directories (e.g. /experiences/ -> /experiences/index.html),
   // which plays nicely with static hosting on Cloudflare Pages.
   trailingSlash: true,
-  ...(apiProxy
+  // `output: "export"` has no dynamic `/events/[id]` page. Production uses
+  // `public/_redirects` (Cloudflare). Mirror that in `next dev` so local
+  // `/events/{uuid}/` links work instead of 404.
+  ...(process.env.NODE_ENV === "development"
     ? {
         async rewrites() {
           return [
             {
-              source: "/api/upcoming",
-              destination: `${apiProxy}/api/upcoming`,
+              source: "/events/:id",
+              destination: "/events/?id=:id",
             },
             {
-              source: "/api/events",
-              destination: `${apiProxy}/api/events`,
+              source: "/events/:id/",
+              destination: "/events/?id=:id",
             },
+            ...(apiProxy
+              ? [
+                  {
+                    source: "/api/upcoming",
+                    destination: `${apiProxy}/api/upcoming`,
+                  },
+                  {
+                    source: "/api/events",
+                    destination: `${apiProxy}/api/events`,
+                  },
+                ]
+              : []),
           ];
         },
       }

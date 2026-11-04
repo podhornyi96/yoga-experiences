@@ -203,6 +203,9 @@ export type UpcomingEvent = {
   image: string | null;
   durationMinutes: number;
   pricePerPersonEur: number | null;
+  regularPricePerPersonEur?: number | null;
+  promoActive?: boolean;
+  promoEndsOn?: string | null;
   maxGuests: number;
   seatsRemaining?: number;
   whatsappOnly: boolean;
@@ -243,6 +246,10 @@ export type PublicEventDetail = {
   images: string[];
   includes: string[];
   pricePerPersonEur: number | null;
+  regularPricePerPersonEur?: number | null;
+  promoActive?: boolean;
+  promoPriceEur?: number | null;
+  promoEndsOn?: string | null;
   priceSchedule: "coastal" | "sintra" | "cascais" | null;
   privatePricing: boolean;
   mats: boolean;

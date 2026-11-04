@@ -5,10 +5,10 @@
 
 import {
   effectiveDurationMinutes,
-  effectivePricePerPerson,
   getServerEventTemplate,
 } from "../_lib/event-templates";
 import { slotsConflict } from "../_lib/capacity";
+import { resolveEventPricing } from "../_lib/event-promo";
 import { error, json } from "../_lib/http";
 import { meetsLeadTimeForKind } from "../_lib/booking-lead-time";
 import {
@@ -80,6 +80,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     const template = getServerEventTemplate(slot.experience_slug);
     if (!template) continue;
 
+    const pricing = resolveEventPricing(slot, template.pricePerPersonEur);
     events.push({
       id: slot.id,
       slug: template.slug,
@@ -92,7 +93,10 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         template,
         slot.duration_minutes,
       ),
-      pricePerPersonEur: effectivePricePerPerson(template, slot.price_eur),
+      pricePerPersonEur: pricing.pricePerPersonEur,
+      regularPricePerPersonEur: pricing.regularPricePerPersonEur,
+      promoActive: pricing.active,
+      promoEndsOn: pricing.promoEndsOn,
       maxGuests: template.maxGuests,
       seatsRemaining: Math.max(
         0,

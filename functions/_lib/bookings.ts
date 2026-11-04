@@ -27,6 +27,8 @@ export interface BookingRow {
   location_id: string | null;
   /** 1 when trainer added the guest offline (no Stripe). */
   added_manually: number;
+  /** 1 when this booking used early-bird pricing. */
+  promo_applied?: number;
   reminder_24h_sent_at?: string | null;
   reminder_12h_sent_at?: string | null;
   reminder_3h_sent_at?: string | null;
@@ -121,6 +123,7 @@ export type InsertBookingInput = {
   locationId?: string | null;
   paidInFullAt?: string | null;
   addedManually?: boolean;
+  promoApplied?: boolean;
 };
 
 export async function insertBooking(
@@ -139,8 +142,9 @@ export async function insertBooking(
         guest_email, guest_name, guest_phone,
         people, mats, total_eur, deposit_eur, remaining_eur,
         payment_status, stripe_checkout_session_id, stripe_payment_intent_id,
-        notes, paid_in_full_at, location_id, added_manually, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        notes, paid_in_full_at, location_id, added_manually, promo_applied,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .bind(
       id,
@@ -162,6 +166,7 @@ export async function insertBooking(
       paidInFullAt,
       input.locationId ?? null,
       input.addedManually ? 1 : 0,
+      input.promoApplied ? 1 : 0,
       ts,
       ts,
     )

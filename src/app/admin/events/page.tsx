@@ -28,6 +28,10 @@ type AdminSlot = {
   durationMinutes?: number | null;
   kind?: string;
   seatsTaken?: number;
+  promoPriceEur?: number | null;
+  promoEndsOn?: string | null;
+  promoMaxBookings?: number | null;
+  promoSeatsTaken?: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -607,11 +611,18 @@ function CreateEventModal({
     time: "10:00",
     priceEur: "",
     durationMinutes: "",
+    promoPriceEur: "",
+    promoEndsOn: "",
+    promoMaxBookings: "",
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const selected = templates.find((t) => t.slug === form.experienceSlug);
+  const promoAnyFilled =
+    form.promoPriceEur.trim() !== "" ||
+    form.promoEndsOn.trim() !== "" ||
+    form.promoMaxBookings.trim() !== "";
 
   useEffect(() => {
     closeRef.current?.focus();
@@ -648,6 +659,42 @@ function CreateEventModal({
       return;
     }
 
+    let promoPriceEur: number | null = null;
+    let promoEndsOn: string | null = null;
+    let promoMaxBookings: number | null = null;
+    if (promoAnyFilled) {
+      const promoPriceRaw = form.promoPriceEur.trim();
+      const promoEndsRaw = form.promoEndsOn.trim();
+      const promoMaxRaw = form.promoMaxBookings.trim();
+      if (!promoPriceRaw || !promoEndsRaw || !promoMaxRaw) {
+        setError(
+          "Early bird needs promo price, end date, and max bookings together (or leave all empty).",
+        );
+        return;
+      }
+      promoPriceEur = Number(promoPriceRaw);
+      promoMaxBookings = Number(promoMaxRaw);
+      promoEndsOn = promoEndsRaw;
+      if (!Number.isFinite(promoPriceEur) || promoPriceEur <= 0) {
+        setError("Promo price must be a positive number (€).");
+        return;
+      }
+      if (!Number.isFinite(promoMaxBookings) || promoMaxBookings < 1) {
+        setError("Promo max bookings must be an integer ≥ 1.");
+        return;
+      }
+      if (promoEndsOn < today) {
+        setError("Promo end date must be today or later (Lisbon time).");
+        return;
+      }
+      const regular =
+        priceEur ?? selected?.pricePerPersonEur ?? null;
+      if (regular != null && promoPriceEur >= regular) {
+        setError("Promo price should be lower than the regular price.");
+        return;
+      }
+    }
+
     setBusy(true);
     const res = await adminApi<{ slot: AdminSlot }>("/api/admin/slots", {
       method: "POST",
@@ -658,6 +705,9 @@ function CreateEventModal({
         kind: "event",
         priceEur,
         durationMinutes,
+        promoPriceEur,
+        promoEndsOn,
+        promoMaxBookings,
       }),
     });
     setBusy(false);
@@ -716,6 +766,9 @@ function CreateEventModal({
                   experienceSlug: e.target.value,
                   priceEur: "",
                   durationMinutes: "",
+                  promoPriceEur: "",
+                  promoEndsOn: "",
+                  promoMaxBookings: "",
                 }))
               }
               className="mt-1.5 w-full rounded-xl border border-sand-dark bg-white px-3 py-2.5 text-sm"
@@ -800,9 +853,79 @@ function CreateEventModal({
               />
             </div>
           </div>
+          <fieldset className="rounded-xl border border-sand-dark bg-sand/30 p-4">
+            <legend className="px-1 text-sm font-medium text-ink">
+              Early bird (optional)
+            </legend>
+            <p className="mb-3 text-xs text-muted">
+              Fill all three fields to enable a limited promo. Guests see the
+              crossed-out regular price, the promo price, and the end date. The
+              booking cap is enforced server-side and not shown publicly. Soft
+              holds reserve a promo seat until checkout expires.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div>
+                <label
+                  htmlFor="ev-promo-price"
+                  className="text-sm font-medium text-ink"
+                >
+                  Promo € / person
+                </label>
+                <input
+                  id="ev-promo-price"
+                  type="number"
+                  min={1}
+                  step={0.5}
+                  value={form.promoPriceEur}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, promoPriceEur: e.target.value }))
+                  }
+                  className="mt-1.5 w-full rounded-xl border border-sand-dark bg-white px-3 py-2.5 text-sm"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="ev-promo-ends"
+                  className="text-sm font-medium text-ink"
+                >
+                  Until (inclusive)
+                </label>
+                <input
+                  id="ev-promo-ends"
+                  type="date"
+                  min={lisbonToday()}
+                  value={form.promoEndsOn}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, promoEndsOn: e.target.value }))
+                  }
+                  className="mt-1.5 w-full rounded-xl border border-sand-dark bg-white px-3 py-2.5 text-sm"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="ev-promo-max"
+                  className="text-sm font-medium text-ink"
+                >
+                  Max at promo price
+                </label>
+                <input
+                  id="ev-promo-max"
+                  type="number"
+                  min={1}
+                  step={1}
+                  placeholder="e.g. 10"
+                  value={form.promoMaxBookings}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, promoMaxBookings: e.target.value }))
+                  }
+                  className="mt-1.5 w-full rounded-xl border border-sand-dark bg-white px-3 py-2.5 text-sm"
+                />
+              </div>
+            </div>
+          </fieldset>
           <p className="text-xs text-muted">
-            Leave overrides empty to use template defaults. Stripe charges full
-            amount online.
+            Leave price/duration overrides empty to use template defaults. Stripe
+            charges full amount online.
           </p>
           {error ? (
             <p role="alert" className="text-sm text-red-700">
@@ -816,6 +939,266 @@ function CreateEventModal({
           >
             {busy ? "Creating…" : "Create event"}
           </button>
+        </form>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+function EditPromoModal({
+  slot,
+  regularPriceHint,
+  onClose,
+  onSaved,
+}: {
+  slot: AdminSlot;
+  regularPriceHint: number | null;
+  onClose: () => void;
+  onSaved: (slot: AdminSlot) => void;
+}) {
+  const titleId = useId();
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const [form, setForm] = useState({
+    promoPriceEur:
+      slot.promoPriceEur != null ? String(slot.promoPriceEur) : "",
+    promoEndsOn: slot.promoEndsOn ?? "",
+    promoMaxBookings:
+      slot.promoMaxBookings != null ? String(slot.promoMaxBookings) : "",
+  });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const taken = slot.promoSeatsTaken ?? 0;
+  const promoAnyFilled =
+    form.promoPriceEur.trim() !== "" ||
+    form.promoEndsOn.trim() !== "" ||
+    form.promoMaxBookings.trim() !== "";
+
+  useEffect(() => {
+    closeRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+
+    let promoPriceEur: number | null = null;
+    let promoEndsOn: string | null = null;
+    let promoMaxBookings: number | null = null;
+
+    if (promoAnyFilled) {
+      const promoPriceRaw = form.promoPriceEur.trim();
+      const promoEndsRaw = form.promoEndsOn.trim();
+      const promoMaxRaw = form.promoMaxBookings.trim();
+      if (!promoPriceRaw || !promoEndsRaw || !promoMaxRaw) {
+        setError(
+          "Early bird needs promo price, end date, and max bookings together — or clear all to remove.",
+        );
+        return;
+      }
+      promoPriceEur = Number(promoPriceRaw);
+      promoMaxBookings = Number(promoMaxRaw);
+      promoEndsOn = promoEndsRaw;
+      if (!Number.isFinite(promoPriceEur) || promoPriceEur <= 0) {
+        setError("Promo price must be a positive number (€).");
+        return;
+      }
+      if (!Number.isFinite(promoMaxBookings) || promoMaxBookings < 1) {
+        setError("Promo max bookings must be an integer ≥ 1.");
+        return;
+      }
+      if (promoMaxBookings < taken) {
+        setError(
+          `Max cannot be below ${taken} already claimed early-bird seat${
+            taken === 1 ? "" : "s"
+          }.`,
+        );
+        return;
+      }
+      if (regularPriceHint != null && promoPriceEur >= regularPriceHint) {
+        setError("Promo price should be lower than the regular price.");
+        return;
+      }
+    }
+
+    setBusy(true);
+    const res = await adminApi<{ slot: AdminSlot }>("/api/admin/slots", {
+      method: "PATCH",
+      body: JSON.stringify({
+        id: slot.id,
+        action: "update_promo",
+        promoPriceEur,
+        promoEndsOn,
+        promoMaxBookings,
+      }),
+    });
+    setBusy(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+    if (!res.data.slot) {
+      setError("Update failed.");
+      return;
+    }
+    onSaved(res.data.slot);
+  }
+
+  async function onClear() {
+    setError(null);
+    setBusy(true);
+    const res = await adminApi<{ slot: AdminSlot }>("/api/admin/slots", {
+      method: "PATCH",
+      body: JSON.stringify({
+        id: slot.id,
+        action: "update_promo",
+        promoPriceEur: null,
+        promoEndsOn: null,
+        promoMaxBookings: null,
+      }),
+    });
+    setBusy(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+    if (!res.data.slot) {
+      setError("Clear failed.");
+      return;
+    }
+    onSaved(res.data.slot);
+  }
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50 p-4 sm:items-center"
+      role="presentation"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl bg-cream p-6 shadow-xl"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 id={titleId} className="text-xl text-forest">
+              Early bird
+            </h2>
+            <p className="mt-1 text-sm text-muted">
+              {formatSlotLabel(slot.startsAt)}
+              {regularPriceHint != null
+                ? ` · regular €${regularPriceHint}/pp`
+                : null}
+              {taken > 0
+                ? ` · ${taken} early-bird seat${taken === 1 ? "" : "s"} already claimed`
+                : null}
+            </p>
+          </div>
+          <button
+            ref={closeRef}
+            type="button"
+            onClick={onClose}
+            className="rounded-full border border-sand-dark px-3 py-1 text-sm text-ink hover:bg-sand"
+          >
+            Close
+          </button>
+        </div>
+
+        <form onSubmit={(e) => void onSubmit(e)} className="mt-6 space-y-4">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div>
+              <label
+                htmlFor="edit-promo-price"
+                className="text-sm font-medium text-ink"
+              >
+                Promo € / person
+              </label>
+              <input
+                id="edit-promo-price"
+                type="number"
+                min={1}
+                step={0.5}
+                value={form.promoPriceEur}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, promoPriceEur: e.target.value }))
+                }
+                className="mt-1.5 w-full rounded-xl border border-sand-dark bg-white px-3 py-2.5 text-sm"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="edit-promo-ends"
+                className="text-sm font-medium text-ink"
+              >
+                Until (inclusive)
+              </label>
+              <input
+                id="edit-promo-ends"
+                type="date"
+                value={form.promoEndsOn}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, promoEndsOn: e.target.value }))
+                }
+                className="mt-1.5 w-full rounded-xl border border-sand-dark bg-white px-3 py-2.5 text-sm"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="edit-promo-max"
+                className="text-sm font-medium text-ink"
+              >
+                Max at promo price
+              </label>
+              <input
+                id="edit-promo-max"
+                type="number"
+                min={Math.max(1, taken)}
+                step={1}
+                value={form.promoMaxBookings}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, promoMaxBookings: e.target.value }))
+                }
+                className="mt-1.5 w-full rounded-xl border border-sand-dark bg-white px-3 py-2.5 text-sm"
+              />
+            </div>
+          </div>
+          <p className="text-xs text-muted">
+            Clear all fields and save, or use Remove, to turn early bird off.
+            Existing promo holds still keep their reserved price until they
+            expire or pay.
+          </p>
+          {error ? (
+            <p role="alert" className="text-sm text-red-700">
+              {error}
+            </p>
+          ) : null}
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button
+              type="submit"
+              disabled={busy}
+              className="flex-1 rounded-full bg-clay px-6 py-3 text-sm font-semibold text-cream hover:bg-clay-dark disabled:opacity-60"
+            >
+              {busy ? "Saving…" : "Save early bird"}
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void onClear()}
+              className="rounded-full border border-sand-dark px-6 py-3 text-sm font-semibold text-ink hover:bg-sand disabled:opacity-60"
+            >
+              Remove
+            </button>
+          </div>
         </form>
       </div>
     </div>,
@@ -837,6 +1220,7 @@ export default function AdminEventsPage() {
   const [participantsSlot, setParticipantsSlot] = useState<AdminSlot | null>(
     null,
   );
+  const [promoEditSlot, setPromoEditSlot] = useState<AdminSlot | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const titleBySlug = useMemo(() => {
@@ -1095,6 +1479,13 @@ export default function AdminEventsPage() {
                     </span>
                     {slot.status === "held" && hold ? ` · ${hold}` : null}
                     {slot.priceEur != null ? ` · €${slot.priceEur}/pp` : null}
+                    {slot.promoPriceEur != null && slot.promoEndsOn
+                      ? ` · early bird €${slot.promoPriceEur} until ${slot.promoEndsOn}${
+                          slot.promoMaxBookings != null
+                            ? ` (${slot.promoSeatsTaken ?? 0}/${slot.promoMaxBookings})`
+                            : ""
+                        }`
+                      : null}
                     {slot.durationMinutes != null
                       ? ` · ${slot.durationMinutes} min`
                       : null}
@@ -1117,6 +1508,17 @@ export default function AdminEventsPage() {
                   ) : null}
                 </div>
                 <div className="flex flex-wrap gap-2">
+                  {slot.status !== "cancelled" ? (
+                    <button
+                      type="button"
+                      onClick={() => setPromoEditSlot(slot)}
+                      className="rounded-full border border-clay px-4 py-2 text-xs font-semibold text-clay-dark hover:bg-clay hover:text-cream"
+                    >
+                      {slot.promoPriceEur != null
+                        ? "Edit early bird"
+                        : "Add early bird"}
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     onClick={() => setParticipantsSlot(slot)}
@@ -1183,6 +1585,29 @@ export default function AdminEventsPage() {
           onClose={() => {
             setParticipantsSlot(null);
             void refreshSlots();
+          }}
+        />
+      ) : null}
+      {promoEditSlot ? (
+        <EditPromoModal
+          slot={promoEditSlot}
+          regularPriceHint={
+            promoEditSlot.priceEur ??
+            templates.find((t) => t.slug === promoEditSlot.experienceSlug)
+              ?.pricePerPersonEur ??
+            null
+          }
+          onClose={() => setPromoEditSlot(null)}
+          onSaved={(updated) => {
+            setPromoEditSlot(null);
+            setSlots((prev) =>
+              prev.map((s) => (s.id === updated.id ? updated : s)),
+            );
+            setMessage(
+              updated.promoPriceEur != null
+                ? `Early bird updated for ${formatSlotLabel(updated.startsAt)}`
+                : `Early bird removed from ${formatSlotLabel(updated.startsAt)}`,
+            );
           }}
         />
       ) : null}

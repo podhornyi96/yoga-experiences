@@ -16,6 +16,7 @@ import {
   claimEventSeatsForManualBooking,
   consumeEventReservation,
 } from "../../_lib/event-capacity";
+import { tryClaimPromoSeats } from "../../_lib/event-promo";
 import { sendBookingConfirmation } from "../../_lib/email";
 import { error, json } from "../../_lib/http";
 import {
@@ -135,6 +136,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
   let slotBookedNow = false;
   let eventOverbookRisk = false;
+  let promoApplied = meta.promoApplied === "1";
 
   if (slot.kind === "event") {
     const consumed = await consumeEventReservation(
@@ -159,6 +161,19 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           reason: reclaim.error,
         });
       }
+      // Promo seat was released with the expired hold; if metadata says promo,
+      // try to reclaim a promo seat so the paid guest keeps early bird.
+      if (promoApplied && !eventOverbookRisk) {
+        const fresh = await getSlotById(env.DB, slotId);
+        if (fresh) {
+          const claimed = await tryClaimPromoSeats(env.DB, fresh, people);
+          if (!claimed) promoApplied = false;
+        } else {
+          promoApplied = false;
+        }
+      }
+    } else {
+      promoApplied = consumed.promo || promoApplied;
     }
   } else if (slot.status === "held" && slot.hold_token === holdToken) {
     const result = await env.DB.prepare(
@@ -203,6 +218,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       stripeCheckoutSessionId: sessionId,
       stripePaymentIntentId: paymentIntentIdFromSession(session),
       locationId,
+      promoApplied: slot.kind === "event" ? promoApplied : false,
       notes: eventOverbookRisk
         ? "Paid after hold expired; event may be over capacity — review manually."
         : null,

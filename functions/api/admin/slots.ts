@@ -3,6 +3,7 @@ import {
   cancelActiveBookingsForSlot,
   listActiveBookingsForSlot,
 } from "../../_lib/bookings";
+import { normalizeEventPromoInput } from "../../_lib/event-promo";
 import { error, json, readJson } from "../../_lib/http";
 import {
   adminSlot,
@@ -81,7 +82,8 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
 /**
  * POST /api/admin/slots
- * Body: { experienceSlug, date, time, kind?, priceEur?, durationMinutes? }
+ * Body: { experienceSlug, date, time, kind?, priceEur?, durationMinutes?,
+ *         promoPriceEur?, promoEndsOn?, promoMaxBookings? }
  */
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
@@ -95,6 +97,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     kind?: SlotKind;
     priceEur?: number | null;
     durationMinutes?: number | null;
+    promoPriceEur?: number | null;
+    promoEndsOn?: string | null;
+    promoMaxBookings?: number | null;
   }>(request);
 
   const experienceSlug = body?.experienceSlug?.trim() ?? "";
@@ -108,6 +113,23 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     return error("Unsupported experience slug.", 400);
   }
 
+  let promoPriceEur: number | null = null;
+  let promoEndsOn: string | null = null;
+  let promoMaxBookings: number | null = null;
+  if (kind === "event") {
+    const promo = normalizeEventPromoInput({
+      promoPriceEur: body?.promoPriceEur,
+      promoEndsOn: body?.promoEndsOn,
+      promoMaxBookings: body?.promoMaxBookings,
+    });
+    if (!promo.ok) return error(promo.error, 400);
+    if (promo.promo) {
+      promoPriceEur = promo.promo.promoPriceEur;
+      promoEndsOn = promo.promo.promoEndsOn;
+      promoMaxBookings = promo.promo.promoMaxBookings;
+    }
+  }
+
   const result = await createOpenSlot(
     env.DB,
     experienceSlug,
@@ -117,6 +139,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       priceEur: kind === "event" ? body?.priceEur : null,
       durationMinutes: kind === "event" ? body?.durationMinutes : null,
       kind,
+      promoPriceEur,
+      promoEndsOn,
+      promoMaxBookings,
     },
   );
   if (!result.ok) {
@@ -134,7 +159,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
 /**
  * PATCH /api/admin/slots
- * Body: { id, action: 'book' | 'release' | 'cancel' }
+ * Body:
+ *  - { id, action: 'book' | 'release' | 'cancel' }
+ *  - { id, action: 'update_promo', promoPriceEur?, promoEndsOn?, promoMaxBookings? }
+ *    (omit / null all three to clear early bird)
  */
 export const onRequestPatch: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
@@ -145,7 +173,10 @@ export const onRequestPatch: PagesFunction<Env> = async (context) => {
 
   const body = await readJson<{
     id?: string;
-    action?: "book" | "release" | "cancel";
+    action?: "book" | "release" | "cancel" | "update_promo";
+    promoPriceEur?: number | null;
+    promoEndsOn?: string | null;
+    promoMaxBookings?: number | null;
   }>(request);
 
   const id = body?.id?.trim();
@@ -159,6 +190,52 @@ export const onRequestPatch: PagesFunction<Env> = async (context) => {
 
   const ts = nowIso();
   let nextStatus: SlotStatus = slot.status;
+
+  if (action === "update_promo") {
+    if (slot.kind !== "event") {
+      return error("Early bird is only available on events.", 400);
+    }
+    const promo = normalizeEventPromoInput({
+      promoPriceEur: body?.promoPriceEur,
+      promoEndsOn: body?.promoEndsOn,
+      promoMaxBookings: body?.promoMaxBookings,
+    });
+    if (!promo.ok) return error(promo.error, 400);
+
+    const promoPriceEur = promo.promo?.promoPriceEur ?? null;
+    const promoEndsOn = promo.promo?.promoEndsOn ?? null;
+    const promoMaxBookings = promo.promo?.promoMaxBookings ?? null;
+    const taken = Math.max(0, Number(slot.promo_seats_taken) || 0);
+
+    if (
+      promoMaxBookings != null &&
+      taken > promoMaxBookings
+    ) {
+      return error(
+        `Cannot set max to ${promoMaxBookings}: ${taken} early-bird seat${
+          taken === 1 ? "" : "s"
+        } already claimed.`,
+        409,
+      );
+    }
+
+    await env.DB.prepare(
+      `UPDATE slots
+       SET promo_price_eur = ?,
+           promo_ends_on = ?,
+           promo_max_bookings = ?,
+           updated_at = ?
+       WHERE id = ? AND kind = 'event'`,
+    )
+      .bind(promoPriceEur, promoEndsOn, promoMaxBookings, ts, id)
+      .run();
+
+    const updatedPromo = await getSlotById(env.DB, id);
+    return json({
+      slot: updatedPromo ? adminSlot(updatedPromo) : null,
+      status: updatedPromo?.status ?? slot.status,
+    });
+  }
 
   if (action === "book") {
     if (slot.status !== "open" && slot.status !== "held") {

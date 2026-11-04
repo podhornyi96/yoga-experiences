@@ -9,14 +9,14 @@ import {
   type UpcomingEvent,
 } from "@/lib/schedule-api";
 
-/** Featured dated sessions above a full catalogue row (avoids a half-empty grid). */
+/** Featured dated session above a full catalogue row (avoids a half-empty grid). */
 export function ExperiencesGrid({ items }: { items: Experience[] }) {
   const [events, setEvents] = useState<UpcomingEvent[] | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const list = await fetchUpcomingEvents(2);
+      const list = await fetchUpcomingEvents(1);
       if (!cancelled) setEvents(list);
     })();
     return () => {

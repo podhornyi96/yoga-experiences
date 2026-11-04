@@ -10,6 +10,8 @@ import {
   leadTimeClosedMessage,
   meetsLeadTimeForKind,
 } from "../_lib/booking-lead-time";
+import { getServerEventTemplate } from "../_lib/event-templates";
+import { resolveEventPricing } from "../_lib/event-promo";
 import { error, json, readJson } from "../_lib/http";
 import { quoteCheckout } from "../_lib/pricing";
 import {
@@ -130,19 +132,21 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   /** Stripe requires Checkout Session expires_at ≥ 30 minutes from creation. */
   const stripeExpiresAtUnix = Math.floor(Date.now() / 1000) + minutes * 60;
 
+  let eventPromoHold = false;
   if (slot.kind === "event") {
     const reservation = await env.DB.prepare(
-      `SELECT id, expires_at FROM event_reservations
+      `SELECT id, expires_at, promo FROM event_reservations
        WHERE slot_id = ? AND hold_token = ? LIMIT 1`,
     )
       .bind(slotId, holdToken)
-      .first<{ id: string; expires_at: string }>();
+      .first<{ id: string; expires_at: string; promo: number }>();
     if (!reservation) {
       return error("Hold this date before paying.", 409);
     }
     if (reservation.expires_at < nowIso()) {
       return error("Your hold expired. Pick the date again.", 409);
     }
+    eventPromoHold = Boolean(reservation.promo);
     // Align seat reservation with Stripe Checkout Session lifetime.
     if (reservation.expires_at < checkoutHoldUntil) {
       await env.DB.prepare(
@@ -179,11 +183,25 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     }
   }
 
+  let pricePerPersonOverride = slot.price_eur;
+  let promoApplied = false;
+  if (slot.kind === "event") {
+    const template = getServerEventTemplate(slot.experience_slug);
+    if (!template) {
+      return error("Event template not found.", 404);
+    }
+    const pricing = resolveEventPricing(slot, template.pricePerPersonEur, {
+      honorPromoHold: eventPromoHold,
+    });
+    pricePerPersonOverride = pricing.pricePerPersonEur;
+    promoApplied = pricing.active;
+  }
+
   const quote = quoteCheckout({
     slug,
     people,
     mats,
-    pricePerPersonOverride: slot.price_eur,
+    pricePerPersonOverride,
   });
   if (!quote.ok) return error(quote.error);
 
@@ -193,7 +211,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     ? quote.title
     : `Deposit ${Math.round(quote.depositRate * 100)}% — ${quote.title}`;
   const productDescription = quote.fullPay
-    ? `${slotLabel} (Lisbon time) · Paid in full €${quote.totalEur}`
+    ? `${slotLabel} (Lisbon time) · Paid in full €${quote.totalEur}${
+        promoApplied ? " · Early bird" : ""
+      }`
     : `${slotLabel} (Lisbon time) · Total €${quote.totalEur} · Remaining €${quote.remainingEur} due later`;
 
   try {
@@ -215,6 +235,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         depositEur: String(quote.depositEur),
         remainingEur: String(quote.remainingEur),
         fullPay: quote.fullPay ? "1" : "0",
+        promoApplied: promoApplied ? "1" : "0",
         ...(locationId ? { locationId } : {}),
       },
     });
