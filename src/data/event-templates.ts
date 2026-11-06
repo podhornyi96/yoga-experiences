@@ -3,15 +3,20 @@
  * Instant-book inventory (Sunrise / Sunset / Private) stays on experience pages + Schedule.
  */
 
+import type { Faq } from "@/data/experiences";
+
 export type EventTemplate = {
   slug: string;
   title: string;
   summary: string;
   description: string;
   locationLabel: string;
+  /** Extra line under the pin on the event page. Not shown on cards. */
+  locationNote?: string;
   locationUrl?: string;
   /** Step-by-step how to enter the venue (shown in a details modal). */
   accessDirections?: string[];
+  faq?: Faq[];
   durationMinutes: number;
   maxGuests: number;
   images: string[];
@@ -94,6 +99,34 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
     description:
       "An immersive experience in the Sintra forest combining deep meditation, conscious breathwork, mindful movement and sound healing.",
     locationLabel: "Sintra",
+    locationNote: "Sintra (5-minute walk from train station)",
+    faq: [
+      {
+        question: "What happens after I pay?",
+        answer:
+          "You get a confirmation email straight away. It includes the date, start time (Lisbon time), duration, number of places, the amount paid, and a Google Maps link to the meeting point. We add you to a Telegram channel for this session for any updates before the day.",
+      },
+      {
+        question: "How do I get there?",
+        answer:
+          "Take the train to Sintra station, then walk about 5 minutes. There is parking for cars. The pin is not on this page. Right after you pay, we email you a Google Maps link to the location and the rest of the event details.",
+      },
+      {
+        question: "What should I bring?",
+        answer:
+          "All the equipment for the practice is included, and the room is heated. Wear clothes you can move in and bring water.",
+      },
+      {
+        question: "Do I need experience?",
+        answer:
+          "No. It is open to all levels, including complete beginners, if you have no medical contraindications. The session is guided in English.",
+      },
+      {
+        question: "Can I cancel or change the date?",
+        answer:
+          "Payment is non-refundable, and a scheduled event cannot be moved to another date. Online booking closes 3 hours before the start.",
+      },
+    ],
     durationMinutes: 150,
     maxGuests: 20,
     pricePerPersonEur: 40,
@@ -113,10 +146,12 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
       "/images/experiences/sintra/sintra-10.jpg",
     ],
     includes: [
-      "Yoga mat & equipment",
-      "Guided meditation & breathwork",
-      "Sound healing session",
       "2.5-hour forest immersion",
+      "Sound healing session",
+      "Guided meditation & breathwork",
+      "All equipment included",
+      "Heated room",
+      "Parking for cars",
     ],
     mats: false,
     depositRate: 1,

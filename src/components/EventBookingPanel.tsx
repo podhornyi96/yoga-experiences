@@ -143,7 +143,9 @@ export function EventBookingPanel({ event }: { event: PublicEventDetail }) {
             promoLive ? "mt-2" : "mt-1"
           } break-words text-center text-xs leading-snug text-muted`}
         >
-          {EVENT_POLICY_SHORT} {EVENT_LEAD_POLICY_SHORT}{" "}
+          {event.slug === "yoga-sintra-forest"
+            ? EVENT_POLICY_SHORT
+            : `${EVENT_POLICY_SHORT} ${EVENT_LEAD_POLICY_SHORT}`}{" "}
           <Link href="/terms/" className="underline underline-offset-2">
             Terms
           </Link>

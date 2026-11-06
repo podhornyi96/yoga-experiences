@@ -145,14 +145,22 @@ function durationLabelMinutes(minutes: number): string {
   return `${minutes} minutes`;
 }
 
-function sessionMeta(booking: BookingRow) {
+function sessionMeta(booking: BookingRow): {
+  title: string;
+  duration: string;
+  locationLabel?: string;
+  locationUrl?: string;
+  emailNote?: string;
+} {
   const eventTemplate = getServerEventTemplate(booking.experience_slug);
   if (eventTemplate) {
     return {
       title: eventTemplate.title,
       duration: durationLabelMinutes(eventTemplate.durationMinutes),
-      locationLabel: eventTemplate.locationLabel,
-      locationUrl: eventTemplate.locationUrl,
+      locationLabel:
+        eventTemplate.emailLocationLabel ?? eventTemplate.locationLabel,
+      locationUrl: eventTemplate.emailMapsUrl ?? eventTemplate.locationUrl,
+      emailNote: eventTemplate.emailNote,
     };
   }
 
@@ -245,6 +253,7 @@ export function buildBookingConfirmationEmail(
     `When: ${when} (Lisbon time)`,
     `Duration: ${meta.duration}`,
     locationBlock.trimEnd(),
+    meta.emailNote?.trim() || null,
     `Guests: ${booking.people}`,
     booking.mats > 0 ? `Yoga mats: ${booking.mats}` : null,
     `Paid: ${money(booking.deposit_eur)}${fullPay ? "" : ` of ${money(booking.total_eur)} total`}`,
@@ -295,6 +304,7 @@ export function buildBookingConfirmationEmail(
     }
     <tr><td style="padding: 6px 0; color: #5c6b5c;">Paid</td><td style="padding: 6px 0;">${money(booking.deposit_eur)}${fullPay ? "" : ` of ${money(booking.total_eur)}`}</td></tr>
   </table>
+  ${meta.emailNote?.trim() ? `<p style="font-size: 14px;">${escapeHtml(meta.emailNote.trim())}</p>` : ""}
   <p style="font-size: 14px; color: #5c6b5c;">Sessions are beginner-friendly and taught in English.</p>
   <p style="font-size: 14px;">${escapeHtml(policy).replace(/\n\n/g, "</p><p style=\"font-size: 14px;\">").replace(/\n/g, "<br/>")}</p>
   <p style="font-size: 14px;">${contactHtml}</p>
@@ -776,6 +786,7 @@ export async function sendBookingReminder(
     `When: ${when} (Lisbon time)`,
     `Duration: ${meta.duration}`,
     locationBlock.trimEnd(),
+    meta.emailNote?.trim() || null,
     `Guests: ${booking.people}`,
     booking.mats > 0 ? `Yoga mats: ${booking.mats}` : null,
     remaining,
@@ -818,6 +829,7 @@ export async function sendBookingReminder(
         : ""
     }
   </table>
+  ${meta.emailNote?.trim() ? `<p style="font-size: 14px;">${escapeHtml(meta.emailNote.trim())}</p>` : ""}
   <p style="font-size: 14px;">Questions: <a href="${waLink}">WhatsApp</a> or <a href="mailto:${contactEmail}">${escapeHtml(contactEmail)}</a></p>
   <p style="font-size: 13px; color: #5c6b5c;"><a href="${site}/terms/">Terms of booking</a></p>
   <p>— Ivanna Yoga Lisbon</p>

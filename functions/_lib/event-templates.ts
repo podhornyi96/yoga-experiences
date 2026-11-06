@@ -10,6 +10,12 @@ export type ServerEventTemplate = {
   description: string;
   locationLabel: string;
   locationUrl?: string;
+  /** Meeting point in guest emails only. Not returned on the public page. */
+  emailMapsUrl?: string;
+  /** Location line in guest emails. Falls back to locationLabel. */
+  emailLocationLabel?: string;
+  /** Extra paragraph in the guest confirmation and reminder emails. */
+  emailNote?: string;
   accessDirections?: string[];
   durationMinutes: number;
   maxGuests: number;
@@ -90,6 +96,10 @@ export const SERVER_EVENT_TEMPLATES: Record<string, ServerEventTemplate> = {
     description:
       "An immersive experience in the Sintra forest combining deep meditation, conscious breathwork, mindful movement and sound healing.",
     locationLabel: "Sintra",
+    emailLocationLabel: "Sintra — 5-minute walk from the train station",
+    emailMapsUrl: "https://maps.app.goo.gl/rPB4P8r11A8NxiUh8?g_st=ipc",
+    emailNote:
+      "We add you to a Telegram channel for this group for any updates before the day.",
     durationMinutes: 150,
     maxGuests: 20,
     pricePerPersonEur: 40,
@@ -109,10 +119,12 @@ export const SERVER_EVENT_TEMPLATES: Record<string, ServerEventTemplate> = {
       "/images/experiences/sintra/sintra-10.jpg",
     ],
     includes: [
-      "Yoga mat & equipment",
-      "Guided meditation & breathwork",
-      "Sound healing session",
       "2.5-hour forest immersion",
+      "Sound healing session",
+      "Guided meditation & breathwork",
+      "All equipment included",
+      "Heated room",
+      "Parking for cars",
     ],
     mats: false,
     depositRate: 1,

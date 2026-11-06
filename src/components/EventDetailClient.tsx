@@ -9,8 +9,10 @@ import { EventBookingPanel } from "@/components/EventBookingPanel";
 import { EventCountdown } from "@/components/EventCountdown";
 import { EventPromoPrice } from "@/components/EventPromoPrice";
 import { ExperienceGallery } from "@/components/ExperienceGallery";
+import { Faq } from "@/components/Faq";
 import { MapPinIcon } from "@/components/icons";
 import { siteConfig, whatsappLink } from "@/config/site";
+import { getEventTemplate } from "@/data/event-templates";
 import {
   fetchEventDetail,
   formatSlotLabel,
@@ -164,6 +166,12 @@ export function EventDetailClient({ slotId }: { slotId: string }) {
 
   const askMessage = `Hi ${siteConfig.teacher.name}! I have a question about ${event.title} on ${formatSlotLabel(event.startsAt)}.`;
   const accessDirections = event.accessDirections ?? [];
+  const template = getEventTemplate(event.slug);
+  const locationNote = template?.locationNote;
+  const faq = template?.faq ?? [];
+  const includes = template?.includes?.length
+    ? template.includes
+    : event.includes;
 
   return (
     <>
@@ -179,13 +187,23 @@ export function EventDetailClient({ slotId }: { slotId: string }) {
         </nav>
 
         <div className="mt-6 grid min-w-0 gap-8 lg:grid-cols-2 lg:gap-12">
-          <div className="min-w-0">
-            {event.images.length > 0 ? (
-              <ExperienceGallery images={event.images} title={event.title} />
+          <div className="min-w-0 max-lg:contents">
+            <div className="min-w-0 max-lg:order-1">
+              {event.images.length > 0 ? (
+                <ExperienceGallery images={event.images} title={event.title} />
+              ) : null}
+            </div>
+            {faq.length > 0 ? (
+              <div className="min-w-0 max-lg:order-3 lg:mt-10">
+                <h2 className="mb-4 text-2xl text-forest">
+                  Frequently asked questions
+                </h2>
+                <Faq items={faq} />
+              </div>
             ) : null}
           </div>
 
-          <div className="min-w-0">
+          <div className="min-w-0 max-lg:order-2">
             <p className="text-sm font-semibold uppercase tracking-[0.14em] text-sage-dark">
               Open group session
             </p>
@@ -219,10 +237,10 @@ export function EventDetailClient({ slotId }: { slotId: string }) {
                   rel="noopener noreferrer"
                   className="hover:text-clay-dark hover:underline"
                 >
-                  {event.locationLabel}
+                  {locationNote ?? event.locationLabel}
                 </a>
               ) : (
-                event.locationLabel
+                (locationNote ?? event.locationLabel)
               )}
               {accessDirections.length > 0 ? (
                 <button
@@ -240,8 +258,7 @@ export function EventDetailClient({ slotId }: { slotId: string }) {
             <p className="mt-4 break-words rounded-xl border border-sand bg-sand/40 px-3.5 py-3 text-sm leading-relaxed text-ink">
               You&apos;re reserving{" "}
               <span className="font-medium">your place</span> in a shared group
-              session — arrive, meet the others, and practise together. This is
-              not a private booking.
+              session — arrive, meet the others, and practise together.
             </p>
 
             <dl className="mt-6 grid grid-cols-2 gap-3 text-sm">
@@ -275,9 +292,9 @@ export function EventDetailClient({ slotId }: { slotId: string }) {
               </div>
             </dl>
 
-            {event.includes.length > 0 ? (
+            {includes.length > 0 ? (
               <ul className="mt-5 space-y-1.5 text-sm text-muted">
-                {event.includes.map((item) => (
+                {includes.map((item) => (
                   <li key={item}>· {item}</li>
                 ))}
               </ul>
