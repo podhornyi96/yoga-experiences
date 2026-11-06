@@ -94,7 +94,7 @@ export const SERVER_EVENT_TEMPLATES: Record<string, ServerEventTemplate> = {
     summary:
       "A 2.5-hour forest immersion — meditation, breathwork, movement and sound healing in Sintra.",
     description:
-      "An immersive experience in the Sintra forest combining deep meditation, conscious breathwork, mindful movement and sound healing.",
+      "Jala Sadhana, a water practice: breath and inner observation, a soft warm-up and Jala Namaskar, hip-opening postures, then Nadi Shodhana and Shavasana with Divya, a brook chime, and Koshi chimes.",
     locationLabel: "Sintra",
     emailLocationLabel: "Sintra — 5-minute walk from the train station",
     emailMapsUrl: "https://maps.app.goo.gl/rPB4P8r11A8NxiUh8?g_st=ipc",

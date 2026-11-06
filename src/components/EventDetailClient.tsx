@@ -12,7 +12,10 @@ import { ExperienceGallery } from "@/components/ExperienceGallery";
 import { Faq } from "@/components/Faq";
 import { MapPinIcon } from "@/components/icons";
 import { siteConfig, whatsappLink } from "@/config/site";
-import { getEventTemplate } from "@/data/event-templates";
+import {
+  getEventTemplate,
+  type EventStory,
+} from "@/data/event-templates";
 import {
   fetchEventDetail,
   formatSlotLabel,
@@ -111,6 +114,75 @@ function AccessDirectionsModal({
   );
 }
 
+function PracticeStory({
+  en,
+  uk,
+}: {
+  en: EventStory;
+  uk: EventStory;
+}) {
+  const [lang, setLang] = useState<"en" | "uk">("en");
+  const copy = lang === "uk" ? uk : en;
+
+  return (
+    <section className="mt-8 border-t border-sand-dark pt-6">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-2xl text-forest">
+          {lang === "uk" ? "Практика" : "The practice"}
+        </h2>
+        <div
+          className="inline-flex shrink-0 rounded-full border border-sand-dark p-0.5 text-xs font-semibold"
+          role="group"
+          aria-label={lang === "uk" ? "Мова опису" : "Description language"}
+        >
+          {(
+            [
+              ["en", "EN"],
+              ["uk", "UA"],
+            ] as const
+          ).map(([code, label]) => (
+            <button
+              key={code}
+              type="button"
+              aria-pressed={lang === code}
+              onClick={() => setLang(code)}
+              className={`rounded-full px-3 py-1 ${
+                lang === code ? "bg-forest text-cream" : "text-muted"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <p className="mt-4 text-xs font-semibold uppercase tracking-[0.16em] text-sage-dark">
+        {copy.kicker}
+      </p>
+      <p className="mt-1 text-xl text-forest">{copy.title}</p>
+      <p className="mt-1 text-sm text-ink">{copy.gloss}</p>
+      <p className="mt-4 text-sm font-medium text-ink">{copy.during}</p>
+      <ol className="mt-3 space-y-3">
+        {copy.steps.map((step, index) => (
+          <li key={step.title} className="flex gap-3 text-sm leading-relaxed">
+            <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-forest text-xs font-semibold text-cream">
+              {index + 1}
+            </span>
+            <span>
+              <span className="font-semibold text-forest">{step.title}</span>
+              <span className="text-muted"> — {step.detail}</span>
+            </span>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-4 text-sm leading-relaxed text-muted">
+        {copy.closingBefore}
+        <strong className="font-semibold text-ink">{copy.closingStrong}</strong>
+        {copy.closingAfter}
+      </p>
+    </section>
+  );
+}
+
 export function EventDetailClient({ slotId }: { slotId: string }) {
   const [event, setEvent] = useState<PublicEventDetail | null | undefined>(
     undefined,
@@ -172,6 +244,7 @@ export function EventDetailClient({ slotId }: { slotId: string }) {
   const includes = template?.includes?.length
     ? template.includes
     : event.includes;
+  const story = template?.story;
 
   return (
     <>
@@ -252,16 +325,18 @@ export function EventDetailClient({ slotId }: { slotId: string }) {
                 </button>
               ) : null}
             </p>
-            <p className="mt-4 text-sm leading-relaxed text-muted">
-              {event.description}
-            </p>
+            {story ? null : (
+              <p className="mt-4 text-sm leading-relaxed text-muted">
+                {event.description}
+              </p>
+            )}
             <p className="mt-4 break-words rounded-xl border border-sand bg-sand/40 px-3.5 py-3 text-sm leading-relaxed text-ink">
               You&apos;re reserving{" "}
               <span className="font-medium">your place</span> in a shared group
               session — arrive, meet the others, and practise together.
             </p>
 
-            <dl className="mt-6 grid grid-cols-2 gap-3 text-sm">
+            <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
               <div className="rounded-xl bg-sand/60 px-3 py-2.5">
                 <dt className="text-muted">Price</dt>
                 <dd className="mt-0.5 font-medium text-ink">
@@ -299,6 +374,8 @@ export function EventDetailClient({ slotId }: { slotId: string }) {
                 ))}
               </ul>
             ) : null}
+
+            {story ? <PracticeStory en={story.en} uk={story.uk} /> : null}
 
             <a
               href={whatsappLink(askMessage)}

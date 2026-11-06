@@ -5,11 +5,27 @@
 
 import type { Faq } from "@/data/experiences";
 
+export type EventStory = {
+  kicker: string;
+  title: string;
+  gloss: string;
+  during: string;
+  steps: { title: string; detail: string }[];
+  closingBefore: string;
+  closingStrong: string;
+  closingAfter: string;
+};
+
 export type EventTemplate = {
   slug: string;
   title: string;
   summary: string;
   description: string;
+  /** Longer story on the event page, shown below the date and price. */
+  story?: {
+    en: EventStory;
+    uk: EventStory;
+  };
   locationLabel: string;
   /** Extra line under the pin on the event page. Not shown on cards. */
   locationNote?: string;
@@ -97,7 +113,71 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
     summary:
       "A 2.5-hour forest immersion — meditation, breathwork, movement and sound healing in Sintra.",
     description:
-      "An immersive experience in the Sintra forest combining deep meditation, conscious breathwork, mindful movement and sound healing.",
+      "Jala Sadhana, a water practice: breath and inner observation, a soft warm-up and Jala Namaskar, hip-opening postures, then Nadi Shodhana and Shavasana with Divya, a brook chime, and Koshi chimes.",
+    story: {
+      en: {
+        kicker: "Water",
+        title: "Jala Sadhana",
+        gloss: "jala — water · sādhana — spiritual practice",
+        during: "During this time we",
+        steps: [
+          {
+            title: "Settle in",
+            detail:
+              "breath (Dirgha Pranayama) and observation (Antar Mauna)",
+          },
+          {
+            title: "Wake the body",
+            detail:
+              "a gentle warm-up and Jala Namaskar (Salutation to Water)",
+          },
+          {
+            title: "Open the hips",
+            detail: "static postures",
+          },
+          {
+            title: "Close",
+            detail:
+              "Nadi Shodhana Pranayama and Shavasana, with Divya, a brook chime, and Koshi chimes",
+          },
+        ],
+        closingBefore:
+          "A gentle shift from the active summer-and-autumn state into a quieter winter one. Through movement and concentration we learn to slow down, so the session holds both ",
+        closingStrong: "an active part and a calm one",
+        closingAfter: ".",
+      },
+      uk: {
+        kicker: "Вода",
+        title: "Джала садхана",
+        gloss: "jala — вода · sādhana — духовна практика",
+        during: "Протягом цього часу ми",
+        steps: [
+          {
+            title: "Налаштовуємося",
+            detail:
+              "дихання (Дірґха Пранаяма) та спостереження (Антар Мауна)",
+          },
+          {
+            title: "Запускаємо тіло",
+            detail:
+              "м’яка розминка та Джала Намаскар (Привітання Воді)",
+          },
+          {
+            title: "Закріплюємо",
+            detail: "статичні асани на розкриття тазу",
+          },
+          {
+            title: "Завершуємо",
+            detail:
+              "Наді Шодхана Пранаяма та шавасана з Дів’єю, струмочком і коші",
+          },
+        ],
+        closingBefore:
+          "М’який перехід від активного літньо-осіннього стану до спокійного зимового. Через рух і концентрацію ми вчимося уповільнюватися, тож практика поєднує ",
+        closingStrong: "і активний блок, і спокійний",
+        closingAfter: ".",
+      },
+    },
     locationLabel: "Sintra",
     locationNote: "Sintra (5-minute walk from train station)",
     faq: [
