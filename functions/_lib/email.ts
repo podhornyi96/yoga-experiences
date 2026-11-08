@@ -151,6 +151,7 @@ function sessionMeta(booking: BookingRow): {
   locationLabel?: string;
   locationUrl?: string;
   emailNote?: string;
+  telegramUrl?: string;
   languageLine?: string;
 } {
   const eventTemplate = getServerEventTemplate(booking.experience_slug);
@@ -162,6 +163,7 @@ function sessionMeta(booking: BookingRow): {
         eventTemplate.emailLocationLabel ?? eventTemplate.locationLabel,
       locationUrl: eventTemplate.emailMapsUrl ?? eventTemplate.locationUrl,
       emailNote: eventTemplate.emailNote,
+      telegramUrl: eventTemplate.emailTelegramUrl,
       languageLine: eventTemplate.languageLine,
     };
   }
@@ -249,6 +251,7 @@ export function buildBookingConfirmationEmail(
   const languageLine =
     meta.languageLine ??
     "Sessions are beginner-friendly and taught in English.";
+  const extra = guestExtraBlocks(meta);
 
   const text = [
     `Hi${booking.guest_name ? ` ${booking.guest_name.split(" ")[0]}` : ""},`,
@@ -259,7 +262,7 @@ export function buildBookingConfirmationEmail(
     `When: ${when} (Lisbon time)`,
     `Duration: ${meta.duration}`,
     locationBlock.trimEnd(),
-    meta.emailNote?.trim() || null,
+    extra.text,
     `Guests: ${booking.people}`,
     booking.mats > 0 ? `Yoga mats: ${booking.mats}` : null,
     `Paid: ${money(booking.deposit_eur)}${fullPay ? "" : ` of ${money(booking.total_eur)} total`}`,
@@ -310,7 +313,7 @@ export function buildBookingConfirmationEmail(
     }
     <tr><td style="padding: 6px 0; color: #5c6b5c;">Paid</td><td style="padding: 6px 0;">${money(booking.deposit_eur)}${fullPay ? "" : ` of ${money(booking.total_eur)}`}</td></tr>
   </table>
-  ${meta.emailNote?.trim() ? `<p style="font-size: 14px;">${escapeHtml(meta.emailNote.trim())}</p>` : ""}
+  ${extra.html}
   <p style="font-size: 14px; color: #5c6b5c;">${escapeHtml(languageLine)}</p>
   <p style="font-size: 14px;">${escapeHtml(policy).replace(/\n\n/g, "</p><p style=\"font-size: 14px;\">").replace(/\n/g, "<br/>")}</p>
   <p style="font-size: 14px;">${contactHtml}</p>
@@ -392,6 +395,27 @@ export function buildRefundConfirmationEmail(
 </html>`.trim();
 
   return { subject, html, text };
+}
+
+function guestExtraBlocks(meta: {
+  emailNote?: string;
+  telegramUrl?: string;
+}): { text: string | null; html: string } {
+  const note = meta.emailNote?.trim() ?? "";
+  const telegram = meta.telegramUrl?.trim() ?? "";
+  const text = [
+    note || null,
+    telegram ? `Telegram group: ${telegram}` : null,
+  ]
+    .filter((line) => line != null)
+    .join("\n");
+  const html = [
+    note ? `<p style="font-size: 14px;">${escapeHtml(note)}</p>` : "",
+    telegram
+      ? `<p style="font-size: 14px;"><a href="${escapeHtml(telegram)}">Join the Telegram group</a></p>`
+      : "",
+  ].join("");
+  return { text: text || null, html };
 }
 
 function escapeHtml(value: string): string {
@@ -783,6 +807,7 @@ export async function sendBookingReminder(
     booking.payment_status !== "paid_in_full" && booking.remaining_eur > 0
       ? `Remaining balance: ${money(booking.remaining_eur)} (due later)`
       : null;
+  const extra = guestExtraBlocks(meta);
 
   const text = [
     `Hi${firstName ? ` ${firstName}` : ""},`,
@@ -792,7 +817,7 @@ export async function sendBookingReminder(
     `When: ${when} (Lisbon time)`,
     `Duration: ${meta.duration}`,
     locationBlock.trimEnd(),
-    meta.emailNote?.trim() || null,
+    extra.text,
     `Guests: ${booking.people}`,
     booking.mats > 0 ? `Yoga mats: ${booking.mats}` : null,
     remaining,
@@ -835,7 +860,7 @@ export async function sendBookingReminder(
         : ""
     }
   </table>
-  ${meta.emailNote?.trim() ? `<p style="font-size: 14px;">${escapeHtml(meta.emailNote.trim())}</p>` : ""}
+  ${extra.html}
   <p style="font-size: 14px;">Questions: <a href="${waLink}">WhatsApp</a> or <a href="mailto:${contactEmail}">${escapeHtml(contactEmail)}</a></p>
   <p style="font-size: 13px; color: #5c6b5c;"><a href="${site}/terms/">Terms of booking</a></p>
   <p>— Ivanna Yoga Lisbon</p>

@@ -184,7 +184,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
       {
         question: "What happens after I pay?",
         answer:
-          "You get a confirmation email straight away. It includes the date, start time (Lisbon time), duration, number of places, the amount paid, and a Google Maps link to the meeting point. We add you to a Telegram channel for this session for any updates before the day.",
+          "You get a confirmation email straight away. It includes the date, start time (Lisbon time), duration, number of places, the amount paid, a Google Maps link to the meeting point, and a link to join the Telegram group, where the latest details and any updates are posted.",
       },
       {
         question: "How do I get there?",
