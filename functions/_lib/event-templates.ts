@@ -16,6 +16,8 @@ export type ServerEventTemplate = {
   emailLocationLabel?: string;
   /** Extra paragraph in the guest confirmation and reminder emails. */
   emailNote?: string;
+  /** Replaces the default “taught in English” line in the confirmation email. */
+  languageLine?: string;
   accessDirections?: string[];
   durationMinutes: number;
   maxGuests: number;
@@ -100,6 +102,8 @@ export const SERVER_EVENT_TEMPLATES: Record<string, ServerEventTemplate> = {
     emailMapsUrl: "https://maps.app.goo.gl/rPB4P8r11A8NxiUh8?g_st=ipc",
     emailNote:
       "We add you to a Telegram channel for this group for any updates before the day.",
+    languageLine:
+      "The session is beginner-friendly and guided in Ukrainian. If someone in the group needs English, the main instructions are repeated in English.",
     durationMinutes: 150,
     maxGuests: 20,
     pricePerPersonEur: 40,

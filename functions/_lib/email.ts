@@ -151,6 +151,7 @@ function sessionMeta(booking: BookingRow): {
   locationLabel?: string;
   locationUrl?: string;
   emailNote?: string;
+  languageLine?: string;
 } {
   const eventTemplate = getServerEventTemplate(booking.experience_slug);
   if (eventTemplate) {
@@ -161,6 +162,7 @@ function sessionMeta(booking: BookingRow): {
         eventTemplate.emailLocationLabel ?? eventTemplate.locationLabel,
       locationUrl: eventTemplate.emailMapsUrl ?? eventTemplate.locationUrl,
       emailNote: eventTemplate.emailNote,
+      languageLine: eventTemplate.languageLine,
     };
   }
 
@@ -244,6 +246,10 @@ export function buildBookingConfirmationEmail(
       ? `Your ${meta.title} is booked and paid in full.`
       : `We've received your deposit for ${meta.title}.`;
 
+  const languageLine =
+    meta.languageLine ??
+    "Sessions are beginner-friendly and taught in English.";
+
   const text = [
     `Hi${booking.guest_name ? ` ${booking.guest_name.split(" ")[0]}` : ""},`,
     ``,
@@ -259,7 +265,7 @@ export function buildBookingConfirmationEmail(
     `Paid: ${money(booking.deposit_eur)}${fullPay ? "" : ` of ${money(booking.total_eur)} total`}`,
     !fullPay ? `Remaining: ${money(booking.remaining_eur)} (due later)` : null,
     ``,
-    `Sessions are beginner-friendly and taught in English.`,
+    languageLine,
     ``,
     policy,
     ``,
@@ -305,7 +311,7 @@ export function buildBookingConfirmationEmail(
     <tr><td style="padding: 6px 0; color: #5c6b5c;">Paid</td><td style="padding: 6px 0;">${money(booking.deposit_eur)}${fullPay ? "" : ` of ${money(booking.total_eur)}`}</td></tr>
   </table>
   ${meta.emailNote?.trim() ? `<p style="font-size: 14px;">${escapeHtml(meta.emailNote.trim())}</p>` : ""}
-  <p style="font-size: 14px; color: #5c6b5c;">Sessions are beginner-friendly and taught in English.</p>
+  <p style="font-size: 14px; color: #5c6b5c;">${escapeHtml(languageLine)}</p>
   <p style="font-size: 14px;">${escapeHtml(policy).replace(/\n\n/g, "</p><p style=\"font-size: 14px;\">").replace(/\n/g, "<br/>")}</p>
   <p style="font-size: 14px;">${contactHtml}</p>
   <p style="font-size: 13px; color: #5c6b5c;"><a href="${site}/terms/">Terms of booking</a></p>

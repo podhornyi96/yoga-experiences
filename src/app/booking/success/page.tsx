@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BookingCTA } from "@/components/BookingCTA";
+import { BookingSuccessIntro, BookingSuccessPolicy } from "@/components/BookingSuccessPolicy";
 import { ClearPendingHold } from "@/components/ClearPendingHold";
 import { Container } from "@/components/Container";
 import { SectionHeading } from "@/components/Section";
 import { siteConfig } from "@/config/site";
-import { DEPOSIT_POLICY_SUCCESS } from "@/lib/booking-policy";
 import { pageSeo } from "@/lib/seo";
 
 export const metadata: Metadata = pageSeo({
@@ -25,15 +25,15 @@ export default function BookingSuccessPage() {
           as="h1"
           eyebrow="Booking"
           title="Payment received"
-          description="Thank you — your date is reserved. Check your email for confirmation details."
         />
+        <BookingSuccessIntro />
         <div className="mx-auto mt-8 max-w-xl space-y-4 text-center text-sm text-ink">
           <p>
             You’ll also hear from {siteConfig.teacher.name} on WhatsApp if
             anything needs confirming. If anything looks off, message right
             away.
           </p>
-          <p className="text-muted">{DEPOSIT_POLICY_SUCCESS}</p>
+          <BookingSuccessPolicy />
           <p className="text-muted">
             <Link
               href="/terms/"

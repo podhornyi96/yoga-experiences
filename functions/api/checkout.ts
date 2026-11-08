@@ -222,7 +222,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       currency: "eur",
       productName,
       productDescription,
-      successUrl: `${origin}/booking/success/?session_id={CHECKOUT_SESSION_ID}`,
+      successUrl: `${origin}/booking/success/?session_id={CHECKOUT_SESSION_ID}${
+        slot.kind === "event" ? "&kind=event" : ""
+      }`,
       cancelUrl: `${origin}/booking/cancel/?slug=${encodeURIComponent(slug)}`,
       expiresAt: stripeExpiresAtUnix,
       metadata: {

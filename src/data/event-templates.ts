@@ -199,12 +199,17 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
       {
         question: "Do I need experience?",
         answer:
-          "No. It is open to all levels, including complete beginners, if you have no medical contraindications. The session is guided in English.",
+          "No. It is open to all levels, including complete beginners, if you have no medical contraindications.",
       },
       {
         question: "Can I cancel or change the date?",
         answer:
           "Payment is non-refundable, and a scheduled event cannot be moved to another date. Online booking closes 3 hours before the start.",
+      },
+      {
+        question: "What language is the session in?",
+        answer:
+          "Ukrainian. If someone in the group needs English, the main instructions are repeated in English.",
       },
     ],
     durationMinutes: 150,
